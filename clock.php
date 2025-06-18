@@ -8,7 +8,18 @@
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
 
-<body leftmargin="0" topmargin="0" rightmargin="0" bottommargin="0"> 
-<div align="right"><embed pluginspage="http://www.macromedia.com/go/getflashplayer" src="http://www.eigenstart.nl/images/analogeklok.swf" width="140" height="140" type="application/x-shockwave-flash" menu="false" wmode="transparent" bgcolor="#87CEFA" quality="high"></div>
+<body leftmargin="0" topmargin="0" rightmargin="0" bottommargin="0">
+<div align="right" id="clock" style="font-size:18px;font-family:Arial,Helvetica,sans-serif;color:#000;background:#87CEFA;width:140px;height:140px;display:flex;justify-content:center;align-items:center;"></div>
+<script type="text/javascript">
+function updateClock(){
+  var now = new Date();
+  var h = now.getHours().toString().padStart(2,'0');
+  var m = now.getMinutes().toString().padStart(2,'0');
+  var s = now.getSeconds().toString().padStart(2,'0');
+  document.getElementById('clock').textContent = h+":"+m+":"+s;
+}
+updateClock();
+setInterval(updateClock,1000);
+</script>
 </body>
 </html>
