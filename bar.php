@@ -36,11 +36,11 @@ $getal[$i] = preg_replace("/\[b\](.*?)\[\/b\]/si", "<b>\\1</b>", $getal[$i]);
 $getal[$i] = preg_replace("/\[u\](.*?)\[\/u\]/si", "<u>\\1</u>", $getal[$i]);
 $getal[$i] = preg_replace("/\[i\](.*?)\[\/i\]/si", "<i>\\1</i>", $getal[$i]);
 $getal[$i] = preg_replace("/\[color=(.*?)\](.*?)\[\/color\]/si", "<font color=\"\\1\">\\2</font>", $getal[$i]);
-$getal[$i] = eregi_replace("[[:graph:]]+@[^<>[:space:]]+[[:alnum:]]", "<a href=\"mailto:\\0\">\\0</a>", $getal[$i]);
-$getal[$i] = eregi_replace("(^|[>[:space:]\n])([[:alnum:]]+)://([^[:space:]]*)([[:alnum:]#?/&=])([<[:space:]\n]|$)","\\1<a href=\"\\2://\\3\\4\" target=\"_blank\">\\2://\\3\\4</a>\\5", $getal[$i]);
+$getal[$i] = preg_replace("~[[:graph:]]+@[^<>[:space:]]+[[:alnum:]]~i", "<a href=\"mailto:\\0\">\\0</a>", $getal[$i]);
+$getal[$i] = preg_replace("~(^|[>[:space:]\n])([[:alnum:]]+)://([^[:space:]]*)([[:alnum:]#?/&=])([<[:space:]\n]|$)~i","\\1<a href=\"\\2://\\3\\4\" target=\"_blank\">\\2://\\3\\4</a>\\5", $getal[$i]);
 $getal[$i] = preg_replace("/\[URL\](.+?)\[\/URL\]/si",'<a href="\1" target="_blank">\1</a>', $getal[$i]); 
-$getal[$i] = eregi_replace("\\[email\\]([^\\[]*)\\[/email\\]", "<a href=\"mailto:\\1\">\\1</a>", $getal[$i]);  
-$getal[$i] = eregi_replace("\\[email=([^\\[]*)\\]([^\\[]*)\\[/email\\]", "<a href=\"mailto:\\1\">\\2</a>", $getal[$i]); 
+$getal[$i] = preg_replace("~\\[email\\]([^\\[]*)\\[/email\\]~i", "<a href=\"mailto:\\1\">\\1</a>", $getal[$i]);  
+$getal[$i] = preg_replace("~\\[email=([^\\[]*)\\]([^\\[]*)\\[/email\\]~i", "<a href=\"mailto:\\1\">\\2</a>", $getal[$i]); 
 }
 if(!$bestand){  
 	echo("$leeg");  
