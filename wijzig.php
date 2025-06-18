@@ -1,0 +1,55 @@
+<?
+include("admin.php");
+if($wijzig){
+	$open = fopen("config.php", "w");
+	fputs($open, "<?\n");
+	fputs($open, '$admin');
+	fputs($open, " = \"$text\";\n");
+	fputs($open, '$paswoord');
+	fputs($open, " = \"$text2\";\n");
+	fputs($open, '$fout');
+	fputs($open, " = \"$text3\";\n");
+	fputs($open, '$vooraan');
+	fputs($open, " = \"$text4\";\n");
+	fputs($open, '$maxn');
+	fputs($open, " = \"$text5\";\n");
+	fputs($open, '$maxb');
+	fputs($open, " = \"$text6\";\n");
+	fputs($open, '$max');
+	fputs($open, " = \"$text7\";\n");
+	fputs($open, '$file');
+	fputs($open, " = \"$text8\";\n");
+	fputs($open, '$form');
+	fputs($open, " = \"$text9\";\n");
+	fputs($open, '$bar');
+	fputs($open, " = \"$text18\";\n");
+	fputs($open, '$leeg');
+	fputs($open, " = \"$text11\";\n");
+	fputs($open, '$ongeldig');
+	fputs($open, " = \"$text12\";\n");
+	fputs($open, '$tussen');
+	fputs($open, " = \"$text13\";\n");
+	fputs($open, '$post');
+	fputs($open, " = \"$text14\";\n");
+	fputs($open, '$dir');
+	fputs($open, " = \"$text15\";\n");
+	fputs($open, '$verlooptijd');
+	fputs($open, " = $text16;\n");
+	fputs($open, '$flood');
+	fputs($open, " = \"$text17\";\n");
+	fputs($open, "include(\"");
+	fputs($open, '$file');
+	fputs($open, "\");\n");
+	fputs($open, '$bestand');
+	fputs($open, " = file(");
+	fputs($open, '$file');
+	fputs($open, ");\n");
+	fputs($open, '$hits');
+	fputs($open, " = count(");
+	fputs($open, '$getal');
+	fputs($open, ");\n");
+	fputs($open, "\n?>");
+	fclose($open);
+	echo"<b>De berichtenbalk instellingen zijn gewijzigd!</b><br>";
+}
+?>

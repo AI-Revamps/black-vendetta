@@ -1,0 +1,47 @@
+body			{ background: #000000; color: #000000; font-family: "verdana"; font-size: 8pt; cursor: default; }
+p			{ color: #000000; font-family: "verdana"; font-size: 8pt; cursor: default; }
+a:link			{ color: #FF9900; font-family: "verdana"; font-size: 8pt; text-decoration: none; }
+a:visited		{ color: #FF9900; font-family: "verdana"; font-size: 8pt; text-decoration: none; }
+a:active		{ color: #FF9900; font-family: "verdana"; font-size: 8pt; text-decoration: none; }
+a:hover			{ color: #000; font-family: "verdana"; font-size: 8pt; text-decoration: none; }
+
+textarea		{ border: 1px solid #000000; background: url(images/c.gif); font-size: 8pt; color: FFFFFF;}
+input			{ border: 1px solid #000000; background: url(images/b.gif); font-size: 8pt; color: FFFFFF;}
+input.normalRadio	{ border: none; background: none; }
+select			{ border: 1px solid #000000; font-size: 8pt; color: FFFFFF; background-color: 505050;}
+
+table			{ color: #FFFFFF; font-family: "verdana"; font-size: 8pt;}
+table.main		{ background: #CCCCCC; color: #000000; font-family: "verdana"; font-size: 8pt; }
+td.subTitle		{ border: 1px solid #222; background: url(images/subtitle2.gif); color: #000; font-family: "verdana"; font-size: 8pt; text-align: center; }
+td.mainTxt		{ border: 1px solid #808080; background: #363636; font-family: "verdana"; font-size: 8pt; padding-left: 5px; text-align: center; }
+
+table.menu		{ color: #000000; font-family: "verdana"; font-size: 8pt;  border-spacing: 3px}
+td.menuTitle	{ background: #cccccc; color: #000000; font-family: "verdana"; font-size: 8pt; }
+td.menuLink		{ background: #666; color: #000; font-family: "verdana"; font-size: 8pt; }
+td.menuOver {background: #303030; color: #FF9900; font-family: "verdana"; border: 1px solid #808080;}
+td.menuOff {background: #202020; color: #FFFFFF; font-family: "verdana"; border: 1px solid #808080;}
+td.menutitleOver {background: url(images/btnon.gif); color: #CCC; font-family: "verdana"; height: 25px;border: 1px solid #000000;}
+td.menutitleOff {background: url(images/btnoff.gif); color: #000; font-family: "verdana"; height: 25px;border: 1px solid #000000;}
+
+td.topmenuOverl {background: url(images/headerbtnlon.gif); color: #000000; font-family: "verdana"; width: 98px; text-align: right; height: 25px; font-weight: bold;}
+td.topmenuOffl {background: url(images/headerbtnl.gif); color: #FFFFFF; font-family: "verdana"; width: 98px; text-align: right; height: 25px; font-weight: bold;}
+td.topmenuOffr {background: url(images/headerbtnr.gif); color: #FFFFFF; font-family: "verdana"; width: 98px; text-align: left; height: 25px; font-weight: bold;}
+td.topmenuOverr {background: url(images/headerbtnron.gif); color: #000000; font-family: "verdana"; width: 98px; text-align: left; height: 25px; font-weight: bold;}
+td.topmenuOver {background: url(images/headerbtnaon.gif); color: #000000; font-family: "verdana"; width: 98px; text-align: center; height: 25px; font-weight: bold;}
+td.topmenuOff {background: url(images/headerbtna.gif); color: #FFFFFF; font-family: "verdana"; width: 98px; text-align: center; height: 25px; font-weight: bold;}
+
+
+a.menu:link		{ color: #000; font-family: "verdana"; font-size: 8pt; text-decoration: none; cursor: default; width: 120; }
+a.menu:visited		{ color: #000; font-family: "verdana"; font-size: 8pt; text-decoration: none; cursor: default; width: 120; }
+a.menu:active		{ color: #000; font-family: "verdana"; font-size: 8pt; text-decoration: none; cursor: default; width: 120; }
+a.menu:hover		{ color: #666666; font-family: "verdana"; font-size: 8pt; text-decoration: none; cursor: default; width: 120; }
+
+body			{ scrollbar-base-color: #000;
+			  scrollbar-3dlight-color: #FFF;
+			  scrollbar-arrow-color: #FFF;
+			  scrollbar-darkshadow-color: #000;
+			  scrollbar-face-color: #000;
+			  scrollbar-highlight-color: #000;
+			  scrollbar-shadow-color: #FFF;
+			  scrollbar-track-color: #000; }
+			  
