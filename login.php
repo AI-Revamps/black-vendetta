@@ -1,8 +1,8 @@
 <?php
   include("config.php");
   if(isset($_POST['login'],$_POST['password'])) {
-    $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`online`) AS `online` FROM `users` WHERE `login`='{$_POST['login']}' AND `pass`=MD5('{$_POST['password']}')");
-    if(($data = mysql_fetch_object($dbres)) && $data->activated == 1) {
+    $stmt = db_query("SELECT *,UNIX_TIMESTAMP(`online`) AS `online` FROM `users` WHERE `login`=? AND `pass`=MD5(?)", array($_POST["login"], $_POST["password"]));
+    if(($data = $stmt->get_result()->fetch_object()) && $data->activated == 1) {
     }
   }
 ?>
@@ -29,24 +29,24 @@
   }
   else if($_GET['x'] == "lostpass") {
       if(isset($_GET['id'],$_GET['code'])) {
-      $dbres				= mysql_query("SELECT `login` FROM `temp` WHERE `id`='{$_GET['id']}' AND `code`='{$_GET['code']}' AND `area`='lostpass'");
-      if($data = mysql_fetch_object($dbres)) {
-        $dbres				= mysql_query("SELECT `login`,`email` FROM `users` WHERE `login`='{$data->login}'");
-        $data				= mysql_fetch_object($dbres);
+        $stmt                            = db_query("SELECT `login` FROM `temp` WHERE `id`=? AND `code`=? AND `area`='lostpass'", array($_GET["id"], $_GET["code"]));
+        $dbres                            = $stmt->get_result();
+          $stmt                          = db_query("SELECT `login`,`email` FROM `users` WHERE `login`=?", array($data->login));
+          $data                           = $stmt->get_result()->fetch_object();
 
         $newpass			= rand(100000,999999);
-        mysql_query("UPDATE `users` SET `pass`=MD5('{$newpass}') WHERE `login`='{$data->login}'");
-        mysql_query("DELETE FROM `temp` WHERE `id`='{$_GET['id']}'");
+          db_query("UPDATE `users` SET `pass`=MD5(?) WHERE `login`=?", array($newpass, $data->login));
+          db_query("DELETE FROM `temp` WHERE `id`=?", array($_GET["id"]));
 		mail($data->email, "Vendetta Password", "Je wachtwoord is gereset. Het is nu : $newpass","From: ".Vendetta." <noreply@vendetta.com>");
        // mail($data->email,"Vendetta password","Je wachtwoord is gereset, je kan nu inloggen met: $newpass","From: Vendetta <noreply@vendetta.com>\n");
         print "Je nieuwe wachtwoord is verstuurt naar {$data->email}.\n";
       }
     }
     else if(isset($_POST['email'],$_POST['login'])) {
-      $dbres				= mysql_query("SELECT `login`,`email` FROM `users` WHERE `login`='{$_POST['login']}' AND `email`='{$_POST['email']}'AND `activated`=1");
-      if($data = mysql_fetch_object($dbres)) {
+      $stmt                            = db_query("SELECT `login`,`email` FROM `users` WHERE `login`=? AND `email`=? AND `activated`=1", array($_POST["login"], $_POST["email"]));
+      if($data = $stmt->get_result()->fetch_object()) {
         $code				= rand(1000000000,9999999999);
-        mysql_query("INSERT INTO `temp`(`login`,`code`,`area`,`time`) values('{$data->login}',$code,'lostpass',NOW())");
+        db_query("INSERT INTO `temp`(`login`,`code`,`area`,`time`) values(?, ?, 'lostpass', NOW())", array($data->login, $code));
         $id				= mysql_insert_id();
         mail($data->email,"Vendetta password","Vraag je wachtwoord op deze link aan. \nhttp://logd.nl/game3/login.php?x=lostpass&id=$id&code=$code","From: logd.nl-game3 <noreply@logd.nl>");
         print "Er is een email met verdere instructies gestuurd naar: {$data->email}.\n";

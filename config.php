@@ -1,6 +1,7 @@
 <?php /* ------------------------- */
 error_reporting(E_PARSE);
-  if(!(@mysql_pconnect("localhost","id027res_game4","marb2726") && @mysql_select_db("id027res_game4"))) {
+$mysqli = new mysqli("localhost","id027res_game4","marb2726","id027res_game4");
+if($mysqli->connect_errno){
     print <<<ENDHTML
 <html>
 <head>
@@ -9,22 +10,54 @@ error_reporting(E_PARSE);
 <META HTTP-EQUIV='refresh' CONTENT='60'; URL='$PHP_SELF'>
 </head>
   <table width=100%>
-     <tr> 
+     <tr>
     <td class="subTitle"><b>MYSQL ERROR</b></td>
   </tr>
   <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
+  <tr>
     <td class="mainTxt">
-	Er is een fout opgetreden tijdens het verbinding maken met de database. Onze excuses voor het ongemak.    </td></tr>
+        Er is een fout opgetreden tijdens het verbinding maken met de database. Onze excuses voor het ongemak.    </td></tr>
   </table>
 </body>
 
 </html>
 ENDHTML;
     exit;
-  }
+}
   session_start();
   if($data->rijvord > 99) {
+function mysql_query($query){
+    global $mysqli;
+    return $mysqli->query($query);
+}
+function mysql_fetch_object($result){
+    return $result->fetch_object();
+}
+function mysql_num_rows($result){
+    return $result->num_rows;
+}
+function mysql_insert_id(){
+    global $mysqli;
+    return $mysqli->insert_id;
+}
+function mysql_result($result,$row=0,$field=0){
+    $result->data_seek($row);
+    $rowData=$result->fetch_array();
+    return $rowData[$field];
+}
+function db_query($sql, $params = array()){
+    global $mysqli;
+    $stmt = $mysqli->prepare($sql);
+    if($params){
+        $types = '';
+        foreach($params as $p){
+            $types .= (is_int($p) ? 'i' : 's');
+        }
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    return $stmt;
+}
 mysql_query("UPDATE `users` SET `rijbewijs`='1'  WHERE `login`='".$data->login."'");
 mysql_query("UPDATE `users` SET `rijvord`='0'  WHERE `login`='".$data->login."'");
   }
