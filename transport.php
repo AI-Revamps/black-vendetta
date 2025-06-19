@@ -1,7 +1,7 @@
 <?php
   include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
+  $stmt    = db_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`=?", array($_SESSION['login']));
+  $data    = $stmt->get_result()->fetch_object();
   if(! check_login()) {
     header("Location: login.php");
     exit;
@@ -9,8 +9,8 @@ $data    = mysql_fetch_object($dbres);
 if ($jisin == 1) { header("Location: jisin.php"); }
 if ($data->trans == 0) { $trans = Geen; }
 else { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`='{$data->trans}'");
-$tran = mysql_fetch_object($dbres);
+  $stmt = db_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`=?", array($data->trans));
+  $tran = $stmt->get_result()->fetch_object();
 $trans = $tran->naam;
 $ptime = $tran->effect;
 }
@@ -52,7 +52,7 @@ if (isset($_GET['x'])) {
 		elseif ($_GET['x'] == Enschede) { $prijs = 3500; if ($data->zak < 4500) { echo "$msg"; exit; } }
 		else{echo"Deze stad is onbekend";exit;}
 		echo "<BR><center><b>Je bent nu in {$_GET['x']}.</b></center>";
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs,`transport`=FROM_UNIXTIME($vtime),`stad`='{$_GET['x']}' WHERE `login`='$data->login'"); 
+                db_query("UPDATE `users` SET `zak`=`zak`-?,`transport`=FROM_UNIXTIME(?),`stad`=? WHERE `login`=?", array($prijs, $vtime, $_GET['x'], $data->login));
 
 }
 else {

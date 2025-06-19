@@ -5,9 +5,10 @@
     exit;
   }
 if ($jisin == 1) { header('Location: jisin.php'); }
-$data = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'"));
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
+$stmt = db_query("SELECT * FROM `users` WHERE `login`=?", array($_SESSION['login']));
+$data = $stmt->get_result()->fetch_object();
+$stmt = db_query("SELECT * FROM `famillie` WHERE `name`=?", array($data->famillie));
+$famillie = $stmt->get_result()->fetch_object();
 ?>
 <html>
 <head>
@@ -24,95 +25,102 @@ echo "<table width=100%><tr>
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class=mainTxt>";
-if(isset($_POST['trans'])) {
 $id = $_POST['id'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
+if(isset($_POST['trans'])) {
+    $stmt = db_query("SELECT * FROM `garage` WHERE `id`=? AND `login`=?", array($id, $data->login));
+    $res  = $stmt->get_result();
+    $b    = $res->fetch_object();
+    $c    = $res->num_rows;
 $prijs = 1000;
 if ($data->zak < $prijs) { echo "Je hebt niet genoeg geld om deze auto te verschepen.";exit; }
 if ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je momenteel bent."; exit; }
 if ($c == 0) { echo "Deze auto bestaat niet of is niet van jou."; exit; }
-mysql_query("UPDATE `garage` SET `stad`='{$_POST['stad']}' WHERE `id`='{$id}'") or die(mysql_error()); 
-mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'") or die(mysql_error());
+db_query("UPDATE `garage` SET `stad`=? WHERE `id`=?", array($_POST['stad'], $id));
+db_query("UPDATE `users` SET `zak`=`zak`-? WHERE `login`=?", array($prijs, $data->login));
 echo "Je hebt de auto verscheept voor &euro; $prijs."; exit;
 }
-$au = mysql_query("SELECT * FROM garage WHERE `login`='{$data->login}'");
-$cars = mysql_num_rows($au);
-      $dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}'");
-$nummer = mysql_num_rows($dbres);
-      while($member = mysql_fetch_object($dbres))
+$stmt = db_query("SELECT * FROM garage WHERE `login`=?", array($data->login));
+$au = $stmt->get_result();
+$cars = $au->num_rows;
+$stmt = db_query("SELECT * FROM `garage` WHERE `login`=?", array($data->login));
+$dbres = $stmt->get_result();
+$nummer = $dbres->num_rows;
+while($member = $dbres->fetch_object())
         $money				+= round(($member->waarde));
 echo "<b><center>Je garage bevat $cars auto's</b><br><b>De totaal waarde van je garage is &euro;{$money}</b><br><br></center>
 ";
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
+$stmt = db_query("SELECT * FROM `famillie` WHERE `name`=?", array($data->famillie));
+$famillie = $stmt->get_result()->fetch_object();
 if (isset($_POST['verkoopall'])) {
-      $dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$money = 0;
-      while($member = mysql_fetch_object($dbres)) {
-        $money				+= round(($member->waarde));
-}
-$dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$nummer = mysql_num_rows($dbres);
-echo "Je hebt $nummer auto's verkocht voor &euro; {$money}.";
-mysql_query("UPDATE `users` SET `zak`=`zak`+$money WHERE `login`='{$data->login}'");
-mysql_query("DELETE FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-}
-if (isset($_POST['crushall'])) {
-$dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='$data->login' AND `stad`='$data->stad'");
-$nummer = mysql_num_rows($dbres);
+    $stmt = db_query("SELECT * FROM `garage` WHERE `login`=? AND `stad`=?", array($data->login, $data->stad));
+    $dbres = $stmt->get_result();
+    $money = 0;
+    while($member = $dbres->fetch_object()) {
+        $money += round($member->waarde);
+    }
+    $stmt = db_query("SELECT * FROM `garage` WHERE `login`=? AND `stad`=?", array($data->login, $data->stad));
+    $dbres = $stmt->get_result();
+    $nummer = $dbres->num_rows;
+    echo "Je hebt $nummer auto's verkocht voor &euro; {$money}.";
+    db_query("UPDATE `users` SET `zak`=`zak`+? WHERE `login`=?", array($money, $data->login));
+    db_query("DELETE FROM `garage` WHERE `login`=? AND `stad`=?", array($data->login, $data->stad));
+$stmt = db_query("SELECT * FROM `garage` WHERE `login`=? AND `stad`=?", array($data->login, $data->stad));
+$dbres = $stmt->get_result();
+$nummer = $dbres->num_rows;
 $kogels = 0;
-      while($member = mysql_fetch_object($dbres)) {
-        $kogels				+= 15;
-if (!$kogels) { $kogels = 0; }
+while($member = $dbres->fetch_object()) {
+    $kogels += 15;
 }
 echo "Je hebt $nummer auto's gecrusht voor $kogels kogels.";
-mysql_query("UPDATE `users` SET `kogels`=`kogels`+$kogels WHERE `login`='{$data->login}'");
-mysql_query("UPDATE `famillie` SET `aantal`=`aantal`-$nummer WHERE `name`='{$data->famillie}'");
-mysql_query("DELETE FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
+db_query("UPDATE `users` SET `kogels`=`kogels`+? WHERE `login`=?", array($kogels, $data->login));
+db_query("UPDATE `famillie` SET `aantal`=`aantal`-? WHERE `name`=?", array($nummer, $data->famillie));
+db_query("DELETE FROM `garage` WHERE `login`=? AND `stad`=?", array($data->login, $data->stad));
 }
 if(isset($_GET['crush'])) {
 $id = $_GET['crush'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
-$exist = mysql_num_rows($dbres);
+$stmt = db_query("SELECT * FROM `garage` WHERE `id`=? AND `login`=?", array($id, $data->login));
+$res  = $stmt->get_result();
+$b    = $res->fetch_object();
+$c    = $res->num_rows;
+$stmt = db_query("SELECT * FROM `famillie` WHERE `name`=?", array($data->famillie));
+$dbres = $stmt->get_result();
+$famillie = $dbres->fetch_object();
+$exist = $dbres->num_rows;
 if ($exist == 0) { echo "Je hebt geen famillie."; }
 elseif ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je momenteel bent."; exit; }
 elseif ($famillie->crusher == 0) { echo "Je famillie heeft geen crusher ingehuurd vandaag.";exit; }
 elseif ($famillie->aantal < 1) { echo "Het maximum aantal auto's is bereikt."; }
 elseif ($c == 0) { echo "Deze auto bestaat niet"; exit; }
 else {
-  mysql_query("DELETE FROM `garage` WHERE `id`='{$_GET['crush']}' AND `login`='{$data->login}'");
-  mysql_query("UPDATE `users` SET `kogels`=`kogels`+15 WHERE `login`='{$data->login}'");
-mysql_query("UPDATE `famillie` SET `aantal`=`aantal`-1 WHERE `name`='{$data->famillie}'");
+  db_query("DELETE FROM `garage` WHERE `id`=? AND `login`=?", array($_GET['crush'], $data->login));
+  db_query("UPDATE `users` SET `kogels`=`kogels`+15 WHERE `login`=?", array($data->login));
+  db_query("UPDATE `famillie` SET `aantal`=`aantal`-1 WHERE `name`=?", array($data->famillie));
 echo "Je auto is gecrusht.";
 }
 }
-if(isset($_GET['safe'])) {
 $id = $_GET['safe'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
+if(isset($_GET['safe'])) {
+    $stmt = db_query("SELECT * FROM `garage` WHERE `id`=? AND `login`=?", array($id, $data->login));
+    $res  = $stmt->get_result();
+    $b    = $res->fetch_object();
+    $c    = $res->num_rows;
 $prijs = 10000;
 if ($data->zak < $prijs) { echo "Je hebt niet genoeg geld om deze auto in een safehouse te zetten.";exit; }
 if ($c == 0) { echo "Deze auto bestaat niet"; exit; }
 else {
-  mysql_query("UPDATE `garage` SET `safe`='1' WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-  mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'") or die(mysql_error());
+  db_query("UPDATE `garage` SET `safe`='1' WHERE `id`=? AND `login`=?", array($id, $data->login));
+  db_query("UPDATE `users` SET `zak`=`zak`-? WHERE `login`=?", array($prijs, $data->login));
 echo "Je auto is in een safehouse geplaatst. Het koste &euro;10.000.";
 }
 }
-if(isset($_GET['repair'])) {
 $id = $_GET['repair'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$car = mysql_query("SELECT * FROM `cars` WHERE `naam`='{$b->naam}'");
-$garage = mysql_fetch_object($car);
+if(isset($_GET['repair'])) {
+    $stmt = db_query("SELECT * FROM `garage` WHERE `id`=? AND `login`=?", array($id, $data->login));
+    $res   = $stmt->get_result();
+    $b     = $res->fetch_object();
+    $c     = $res->num_rows;
+    $stmt  = db_query("SELECT * FROM `cars` WHERE `naam`=?", array($b->naam));
+    $garage = $stmt->get_result()->fetch_object();
 $value = $garage->waarde;
 $prijs = $garage->waarde - $b->waarde;
 if ($c == 0) { echo "Deze auto bestaat niet."; exit; }
@@ -120,8 +128,8 @@ elseif ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je
 elseif ($b->damage == 0){ print"Deze wagen is niet beschadigd.";}
 elseif ($prijs > $data->zak) {print"Je hebt niet genoeg geld op zak.";}
 else {
-  mysql_query("UPDATE `garage` SET `waarde`='$value',`damage`='0' WHERE `id`='{$_GET['repair']}' AND `login`='{$data->login}'");
-  mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'");
+  db_query("UPDATE `garage` SET `waarde`=?,`damage`='0' WHERE `id`=? AND `login`=?", array($value, $_GET['repair'], $data->login));
+  db_query("UPDATE `users` SET `zak`=`zak`-? WHERE `login`=?", array($prijs, $data->login));
 echo "Je auto is gerepaired. Het koste &euro; $prijs.";
 }
 }
@@ -141,14 +149,15 @@ echo "	<form method=post>
 ";exit;
 }
 if(isset($_GET['x'])) {
-$id = $_GET['x'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
+    $id = $_GET['x'];
+    $stmt = db_query("SELECT * FROM `garage` WHERE `id`=? AND `login`=? AND `stad`=?", array($id, $data->login, $data->stad));
+    $res  = $stmt->get_result();
+    $b    = $res->fetch_object();
+    $c    = $res->num_rows;
 if ($c == 0) { echo "Deze auto bestaat niet, of is niet in het stad waar je nu bent."; }
 else {
-  mysql_query("UPDATE `users` SET `zak`=`zak`+$b->waarde WHERE `login`='{$data->login}'");
-  mysql_query("DELETE FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
+  db_query("UPDATE `users` SET `zak`=`zak`+? WHERE `login`=?", array($b->waarde, $data->login));
+  db_query("DELETE FROM `garage` WHERE `id`=? AND `login`=?", array($id, $data->login));
 echo "Je auto is verkocht."; 
 }
 }
@@ -172,11 +181,12 @@ echo "  <tr>
 	    </tr>";
 
 /// Einde uitvoer van query
-$query = "SELECT * FROM garage WHERE `login`='{$data->login}' ORDER BY `waarde` DESC";
-$info = mysql_query($query) or die(mysql_error());
+$stmt = db_query("SELECT * FROM garage WHERE `login`=? ORDER BY `waarde` DESC", array($data->login));
+$info = $stmt->get_result();
 $count = 0;
-while ($gegeven = mysql_fetch_array($info)) {
-$auto = mysql_fetch_object(mysql_query("SELECT * FROM `cars` WHERE `naam`='{$gegeven["naam"]}'"));
+while ($gegeven = $info->fetch_array()) {
+    $stmtCar = db_query("SELECT * FROM `cars` WHERE `naam`=?", array($gegeven["naam"]));
+    $auto = $stmtCar->get_result()->fetch_object();
 $naam = $auto->auto;
 $waarde = $gegeven["waarde"];
 $schade = $gegeven["damage"];
