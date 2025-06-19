@@ -15,7 +15,7 @@ $data    = mysql_fetch_object($dbres);
 <meta name="language" content="english">
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
-<?
+<?php
 $dbres = mysql_query("SELECT * FROM `users` WHERE `activated`='1'");
 $gebruikers = mysql_num_rows($dbres);
 $dbres = mysql_query("SELECT * FROM `users` WHERE `status`='levend' AND `activated`='1'");

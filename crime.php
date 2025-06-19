@@ -17,7 +17,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
 <meta name="language" content="english">
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
-<?PHP
+<?php
 print <<<ENDHTML
 <table width=100% align=center>
   <tr> 
@@ -59,7 +59,7 @@ elseif($_POST['verify'] != $_SESSION['verify']){echo"De code die je hebt ingevoe
 elseif ($_POST['crime'] == kind) {
 $ammount = rand(1,10);
 $msgnum = rand(0,4);
-$message = Array("Het kind had niets bij.","Het kind begon te schreeuwen, je bent dan maar gaan lopen.","Het kind droeg een kort rokje, je kon er niet aan weerstaan... Gelukkig kon je gaan lopen voordat de moeder je sloeg.","Je wou de portefeuille van het kind grijpen, maar ze liep weg. Je greep haar bij haar haar, de pruik kwam er af, maar het meisje kon wegkomen.","Je bent gearresteerd toen je het kind haar hoofd tussen je knieën stak.");
+$message = Array("Het kind had niets bij.","Het kind begon te schreeuwen, je bent dan maar gaan lopen.","Het kind droeg een kort rokje, je kon er niet aan weerstaan... Gelukkig kon je gaan lopen voordat de moeder je sloeg.","Je wou de portefeuille van het kind grijpen, maar ze liep weg. Je greep haar bij haar haar, de pruik kwam er af, maar het meisje kon wegkomen.","Je bent gearresteerd toen je het kind haar hoofd tussen je knieÃ«n stak.");
 $msg = $message[$msgnum];
 if ($kkind == 1) { echo "Je hebt &euro;$ammount Gestolen."; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount WHERE `login`='{$data->login}'"); }
 else { 

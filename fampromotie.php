@@ -23,7 +23,7 @@ if ($data->famrang != 5 && $data->famrang !=3) { exit; }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?
+<?php
 $dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
 $famillie = mysql_fetch_object($dbres);
 if(isset($_POST['submit']) && $_POST['rang2'] >= 0 && $_POST['rang3'] >= 0 && $_POST['rang4'] >= 0 && $_POST['rang5'] >= 0 && $_POST['rang6'] >= 0 && $_POST['rang7'] >= 0 && $_POST['rang8'] >= 0 && $_POST['rang9'] >= 0 && $_POST['rang10'] >= 0 && $_POST['rang11'] >= 0 && $_POST['rang12'] >= 0 && $_POST['rang13'] >= 0 && $_POST['rang14'] >= 0){

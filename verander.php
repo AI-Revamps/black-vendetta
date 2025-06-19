@@ -1,8 +1,8 @@
-<?
+<?php
 include("admin.php");
 if($verander){
 	$open = fopen("$file", "w");
-	fputs($open, "<?");
+	fputs($open, "<?php");
 	for($i = 1; $i <= $hits; $i++){
 		fputs($open, '$getal');  
 		fputs($open, "[$i]");  

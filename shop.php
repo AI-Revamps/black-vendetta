@@ -23,7 +23,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-  <?
+  <?php
 if (isset($_POST['safe1'])) { 
 if($_POST['safe'] != 60 && $_POST['safe'] != 60 && $_POST['safe'] != 120 && $_POST['safe'] != 360 && $_POST['safe'] != 720 && $_POST['safe'] != 1440 && $_POST['safe'] != 2880){
 echo"Er is een error opgetreden. U bent nu &euro; 1.000.000 kwijt.";

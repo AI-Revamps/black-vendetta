@@ -23,7 +23,7 @@ if ($jisin == 1) { header("Location: jisin.php"); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?
+<?php
 $anum = mysql_query("SELECT `dader` FROM `vermoord` WHERE (UNIX_TIMESTAMP(now())-UNIX_TIMESTAMP(`date`) < 604800) AND `dader`='{$_SESSION['login']}'");
 $anums = mysql_num_rows($anum);
 $time = time();

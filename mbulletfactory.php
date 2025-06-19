@@ -23,7 +23,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?PHP
+<?php
 $time = time();
 $bwtime = ($time + 3600);
 $dbres = mysql_query("SELECT * FROM `casino` WHERE `spel`='kogelfabriek' AND `stad`='$data->stad'") or die (mysql_error());

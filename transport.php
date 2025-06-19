@@ -23,7 +23,7 @@ $ptime = $tran->effect;
 <meta name="language" content="english">
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
-<?PHP
+<?php
  print <<<ENDHTML
 <table align=center width=100%>
   <tr> 

@@ -19,7 +19,7 @@
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?
+<?php
   if(isset($_GET['id'],$_GET['code'])) {
     $id            = $_GET['id'];
     $code          = $_GET['code'];

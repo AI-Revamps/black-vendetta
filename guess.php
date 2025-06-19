@@ -23,7 +23,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?PHP
+<?php
 $dbres = mysql_query("SELECT * FROM `casino` WHERE `spel`='guess' AND `stad`='$data->stad'") or die (mysql_error());
 $casino = mysql_fetch_object($dbres);
 $exi = mysql_num_rows($dbres);

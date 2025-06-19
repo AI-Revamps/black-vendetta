@@ -24,7 +24,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class=mainTxt>
-<?
+<?php
 $kogels = mysql_num_rows(mysql_query("SELECT * FROM `mshop` WHERE `type`='bullet'"))or die(mysql_error());
 $ws = mysql_num_rows(mysql_query("SELECT * FROM `mshop` WHERE `type`='ws'"))or die(mysql_error());
 $car = mysql_num_rows(mysql_query("SELECT * FROM `mshop` WHERE `type`='car'"))or die(mysql_error());

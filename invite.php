@@ -22,7 +22,7 @@ $data    = mysql_fetch_object($dbres);
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?PHP 
+<?php 
 if (isset($_GET['accept'])) {
 $totaal = mysql_num_rows(mysql_query("SELECT * FROM `users` WHERE `famillie`='{$_GET['fam']}'"));
 $totaal = floor($totaal*5);

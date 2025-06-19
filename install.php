@@ -1,8 +1,8 @@
-<?
+<?php
 if($_POST[Submit]){
 	if(isset($_POST[Submit])){
 		$open = fopen("config.php", "w");
-		fputs($open, "<?\n");
+		fputs($open, "<?php\n");
 		fputs($open, '$admin');
 		fputs($open, " = \"$text\";\n");
 		fputs($open, '$paswoord');
@@ -50,7 +50,7 @@ if($_POST[Submit]){
 		fputs($open, ");\n");
 		fputs($open, "\n?>");
 		fclose($open);
-		echo"<b>De berichtenbalk is geïnstalleerd! Je kunt nu install.php verwijderen uit je database!<b>";
+		echo"<b>De berichtenbalk is geÃ¯nstalleerd! Je kunt nu install.php verwijderen uit je database!<b>";
 	}
 	else{
 		echo"<b>Je moet al de velden invullen!</b><br>";
@@ -117,6 +117,6 @@ else{
   </p>
 </form>
 </b>
-<?
+<?php
 }
 ?>

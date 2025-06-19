@@ -1,4 +1,4 @@
-<?PHP
+<?php
 include("config.php");
 $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
 $data = mysql_fetch_object($dbres);
@@ -27,7 +27,7 @@ function showMenu(id) {
 
 }
 </script>
-<?
+<?php
 print <<<ENDHTML
 <table border="0" width="150">
 </head>
