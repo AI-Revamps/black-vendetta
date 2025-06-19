@@ -36,9 +36,13 @@ if(isset($HTTP_GET_VARS['pollid']) && is_numeric($HTTP_GET_VARS['pollid'])) {
 
 
 class wmpoll { 
-    function wmpoll($bezoeker) { 
+    function __construct($bezoeker) { 
         $this->bezoeker = $bezoeker; 
     } 
+    // Backwards compatibility for PHP 4 style constructor
+    function wmpoll($bezoeker) {
+        $this->__construct($bezoeker);
+    }
 
     function htmlparse($string){ 
         return htmlentities(trim($string), ENT_QUOTES); 

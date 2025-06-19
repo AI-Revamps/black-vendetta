@@ -4,11 +4,17 @@ class progress_bar
     var $percent; 
     var $width; 
 
-    function progress_bar($percent = 1, $width = 100) 
-    { 
-        $this->percent = $percent; 
-        $this->width = $width; 
-      } 
+    function __construct($percent = 1, $width = 100)
+    {
+        $this->percent = $percent;
+        $this->width = $width;
+    }
+
+    // Backwards compatibility for PHP 4 style constructor
+    function progress_bar($percent = 1, $width = 100)
+    {
+        $this->__construct($percent, $width);
+    }
 
     function create() 
     { 
@@ -51,7 +57,7 @@ mysql_query("UPDATE `users` SET `online`=NOW() WHERE `login`='{$data->login}'");
 <?php 
 
 if($data->msn == 1) 
-    die('Je hebt deze actie al één keer uitgevoerd, dit mag je maar één keer doen.</td></tr></table>'); 
+    die('Je hebt deze actie al Ã©Ã©n keer uitgevoerd, dit mag je maar Ã©Ã©n keer doen.</td></tr></table>'); 
 
 if(isset($_POST['submit'])) 
 { 
@@ -102,7 +108,7 @@ if(isset($_POST['submit']))
 
         $count = count($adressen); 
 
-        print 'Er is in totaal naar '.$count.' contactpersonen een uitnodiging met daarin jouw referral link verstuurd, je kunt dit maar één keer doen. We hopen dat deze actie jou veel bankgeld oplevert. <b>Let op!</b> Klik dit venster niet weg totdat alle mailtjes verzonden zijn, je moet de pagina ook niet vernieuwen omdat hij dan stopt met verzenden en je kunt niet opnieuw beginnen.'; 
+        print 'Er is in totaal naar '.$count.' contactpersonen een uitnodiging met daarin jouw referral link verstuurd, je kunt dit maar Ã©Ã©n keer doen. We hopen dat deze actie jou veel bankgeld oplevert. <b>Let op!</b> Klik dit venster niet weg totdat alle mailtjes verzonden zijn, je moet de pagina ook niet vernieuwen omdat hij dan stopt met verzenden en je kunt niet opnieuw beginnen.'; 
 
         $headers  = 'From: logd.nl <info@logd.nl>' . "\n"; 
         $headers .= 'MIME-Version: 1.0' . "\n"; 
@@ -148,7 +154,7 @@ mysql_query("UPDATE `users` SET `msn`=`msn`+1 WHERE `login`='$data->login'");
 } 
 else 
 { 
-    print '<form method="post" action="" enctype="multipart/form-data">Via deze pagina kun je je mensen uit je msn lijst een uitnodiging voor vendetta sturen met daarin jou referral link. Zo kun je snel al je vrienden op de hoogte stellen van je link. Je kunt maar één keer aan heel je lijst een bericht sturen, zorg dus voor een gevulde lijst zodat je zoveel mogelijk mensen bereikt. Je krijgt hiervoor zowieso <b>10.000 Bankgeld</b> als er meer als 50 mensen in je lijst stonden.<br><br><img src="images/msn.jpg"><br><br>Je .ctt contactpersonenbestand:<br><input type="file" name="file" id="file"><br><br><input type="submit" name="submit" value="Verstuur"></form>'; 
+    print '<form method="post" action="" enctype="multipart/form-data">Via deze pagina kun je je mensen uit je msn lijst een uitnodiging voor vendetta sturen met daarin jou referral link. Zo kun je snel al je vrienden op de hoogte stellen van je link. Je kunt maar Ã©Ã©n keer aan heel je lijst een bericht sturen, zorg dus voor een gevulde lijst zodat je zoveel mogelijk mensen bereikt. Je krijgt hiervoor zowieso <b>10.000 Bankgeld</b> als er meer als 50 mensen in je lijst stonden.<br><br><img src="images/msn.jpg"><br><br>Je .ctt contactpersonenbestand:<br><input type="file" name="file" id="file"><br><br><input type="submit" name="submit" value="Verstuur"></form>'; 
 } 
 
 ?> 
