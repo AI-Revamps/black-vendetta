@@ -1,8 +1,17 @@
 <?php
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
+if (!$data || $data->level < 200) { exit; }
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -27,31 +36,31 @@ error_reporting(E_ALL);
     <td class="mainTxt">
 <?php
 if($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}
-if(isset($_GET['del']))
-{
-$topics = mysql_query("SELECT id,user FROM forum_topics WHERE `id`='{$_GET['del']}'") or die(mysql_error());
-$object = mysql_fetch_object($topics);
-   mysql_query("DELETE FROM `forum_topics` WHERE `id`='{$_GET['del']}'"); 
-   mysql_query("DELETE FROM `forum_reacties` WHERE ` topic_id `='{$_GET['del']}'"); 
-   echo "<br><br>Topic verwijderd!<br>
+if (isset($_GET['del'])) {
+    $id = $_GET['del'];
+    pdo_query("DELETE FROM `forum_topics` WHERE `id` = ?", [$id]);
+    pdo_query("DELETE FROM `forum_reacties` WHERE `topic_id` = ?", [$id]);
+    echo "<br><br>Topic verwijderd!<br>
                 > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
 }
 elseif(isset($_GET['delr']))
 {
-$reacties = mysql_query("SELECT id,user FROM forum_reacties WHERE `id`='{$_GET['delr']}'") or die(mysql_error());
-$object = mysql_fetch_object($reacties);
-   mysql_query("DELETE FROM `forum_reacties` WHERE `id`='{$_GET['delr']}'"); 
-   echo "<br><br>Reactie verwijderd!<br>
+    $id = $_GET['delr'];
+    pdo_query("DELETE FROM `forum_reacties` WHERE `id` = ?", [$id]);
+    echo "<br><br>Reactie verwijderd!<br>
                 > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
 }
 elseif(isset($_GET['topic']))
 {
 // Voor de topic
-$topic = mysql_query("SELECT id,type,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE id = ".addslashes($_GET['topic'])) or die(mysql_error());
-$aantal_topics = mysql_num_rows($topic);
-    if($aantal_topics == 1)
+$topic = pdo_query(
+    "SELECT id,type,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE id = ?",
+    [$_GET['topic']]
+);
+$aantal_topics = $topic->rowCount();
+    if ($aantal_topics == 1)
     {
-        while($object = mysql_fetch_assoc($topic))
+        while ($object = $topic->fetch(PDO::FETCH_ASSOC))
         {
         $id = $object['id'];
         $subject = stripslashes($object['subject']);
@@ -79,11 +88,14 @@ $aantal_topics = mysql_num_rows($topic);
 <?php
         }
     // Voor de reacties
-    $message = mysql_query("SELECT id,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_reacties WHERE topic_id = ".addslashes($_GET['topic'])) or die(mysql_error());
-    $aantal_messages = mysql_num_rows($message);
-        if($aantal_messages != 0)
+    $message = pdo_query(
+        "SELECT id,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_reacties WHERE topic_id = ?",
+        [$_GET['topic']]
+    );
+    $aantal_messages = $message->rowCount();
+        if ($aantal_messages != 0)
         {
-            while($object = mysql_fetch_assoc($message))
+            while ($object = $message->fetch(PDO::FETCH_ASSOC))
             {
 			$user = $object['user'];
 ?>
@@ -124,9 +136,12 @@ $aantal_topics = mysql_num_rows($topic);
 }
 elseif (isset($_GET['type']))
 {
-$topics = mysql_query("SELECT id,subject,user,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE `type`='{$_GET['type']}' ORDER by id DESC") or die(mysql_error());
-$aantal = mysql_num_rows($topics);
-    if($aantal != 0)
+$topics = pdo_query(
+    "SELECT id,subject,user,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE `type` = ? ORDER by id DESC",
+    [$_GET['type']]
+);
+$aantal = $topics->rowCount();
+    if ($aantal != 0)
     {
 ?>
 <table width="100%">
@@ -138,7 +153,7 @@ $aantal = mysql_num_rows($topics);
     <td align="left">Datum</td>
   </tr>
 <?php
-        while($object = mysql_fetch_assoc($topics))
+        while ($object = $topics->fetch(PDO::FETCH_ASSOC))
         {
 ?>
   <tr>
@@ -173,65 +188,57 @@ else
   <tr>
     <td align="right"><a href=?type=algemeen>Algemeen</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='algemeen'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='algemeen'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=tip>Tip</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='tip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='tip'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=route66>Route66</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='route66'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='route66'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=oc>Georganiseerde Misdaad</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='oc'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='oc'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=race>Race</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='race'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='race'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=familie>Familie</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='familie'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='familie'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=rip>RIP</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='rip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='rip'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
   <tr>
     <td align="right"><a href=?type=varia>Varia</a>&nbsp;&nbsp;&nbsp;</td>
     <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='varia'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
+        $aantal = pdo_query("SELECT COUNT(*) AS c FROM forum_topics WHERE `type`='varia'")->fetch()->c;
+        echo $aantal;
 	?></td>
   </tr>
 <tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
