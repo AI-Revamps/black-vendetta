@@ -131,7 +131,7 @@ mysql_query("UPDATE `users` SET `msn`=`msn`+1 WHERE `login`='$data->login'");
                 usleep(1000000); 
                 flush(); 
                 $pbar->set_percent_adv($i, $num_tasks); 
-                if(preg_match('/^.+@.+\..+$/', $adres) != 0 && !(eregi("\r", $adres) || eregi("\n", $adres))) 
+                if(preg_match('/^.+@.+\..+$/', $adres) != 0 && !(preg_match("/\r/i", $adres) || preg_match("/\n/i", $adres))) 
                 { 
                     $tekst = "Beste,\r\n\r\neen van de spelers van logd.nl - game3, ".$data->login." (".$data->email."), wil jou graag uitnodigen om mee te spelen. vendetta is een online textbased game waar je jezelf zo hoog mogelijk in de ledenlijst moet zien te werken.\r\n\r\n".$data->login." hoopt dat je jezelf wilt aanmelden via zijn referral link, hiervoor krijgt ".$data->login." een beloning:\r\nhttp://www.Crime55.nl/register.php?ref=".$data->login.".\r\n\r\nMet vriendelijke groeten,\r\Crime55.nl Crew (en ".$data->login.")"; 
                     $tekst = wordwrap($tekst, 70); 

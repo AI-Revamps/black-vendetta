@@ -77,9 +77,9 @@ elseif($_GET['p'] == "multi") {
     print "  <table width=100%>\n";
     foreach($ips as $ip => $logins) {
       if($x >= $begin && $x < $begin+10) {
-        foreach(split(',,',$logins) as $logine) {
+        foreach(explode(',,',$logins) as $logine) {
           $logine			= preg_replace('/(^,|,$)/','',$logine);
-          list($logine,$online,$allo)		= split(':',$logine);
+          list($logine,$online,$allo)		= explode(':',$logine);
           print <<<ENDHTML
 	<table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr> 
