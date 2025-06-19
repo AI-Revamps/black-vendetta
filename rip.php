@@ -1,4 +1,4 @@
-<?PHP
+<?php
 include("config.php");
 		if($data->status == dood)  {
 			$dood = mysql_query("SELECT * FROM `vermoord` WHERE `login`='{$data->login}'");

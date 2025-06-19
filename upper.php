@@ -1,4 +1,4 @@
-<?PHP
+<?php
 include("config.php");
 $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
 $data = mysql_fetch_object($dbres);
@@ -29,7 +29,7 @@ function openNewWindow() {
   <tr>
     <td>&nbsp;</td>
     <td>
-	<?
+	<?php
 	if ($data->status != levend) {
 	?>
 	<table border="0" align="center">
@@ -41,7 +41,7 @@ function openNewWindow() {
           <td class="topmenuOffr" onMouseOver="className='topmenuOverr';" onMouseOut="className='topmenuOffr';" onClick="top.frames['hoofd'].location.href='help.php';">&nbsp;&nbsp;&nbsp;&nbsp;FAQ</td>
         </tr>
       </table>
-	  <?
+	  <?php
 	  }
 	  else {
 	?>
@@ -56,7 +56,7 @@ function openNewWindow() {
           <td class="topmenuOffr" onMouseOver="className='topmenuOverr';" onMouseOut="className='topmenuOffr';" onClick="top.frames['hoofd'].location.href='help.php';">&nbsp;&nbsp;&nbsp;&nbsp;FAQ</td>
         </tr>
       </table>
-	  <?
+	  <?php
 	  }
 	  ?>
     </td>

@@ -18,7 +18,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
 <meta name="language" content="english">
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
-<?PHP
+<?php
 echo " 
 <table align=center width=100%> 
    <tr> 

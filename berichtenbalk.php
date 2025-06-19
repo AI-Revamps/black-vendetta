@@ -1,11 +1,11 @@
-<? include("config.php"); // config includen voor al de gegevens ?>
-<iframe src="<? echo "$bar"; ?>" frameborder="0" width="100%" height="*" name="main" scrolling="no"></iframe>
+<?php include("config.php"); // config includen voor al de gegevens ?>
+<iframe src="<?php echo "$bar"; ?>" frameborder="0" width="100%" height="*" name="main" scrolling="no"></iframe>
 <table height="*" width="*" align="center" valign="middle" style="font-family: verdana">
   <tr> 
     <td align="center"> <table style="border: 1px solid black; font-size: 10pt;" cellpadding="2" cellspacing="5">
         <tr> 
           <td align="center">Status:<br><b>Je kan nu een bericht intypen!</b>
-<?
+<?php
 session_start();  
 function htmlparse($string){ 
 	return htmlentities(trim($string), ENT_QUOTES); 
@@ -28,13 +28,13 @@ if ($_POST[Submit]){
 		$tijd = time();  
 		session_register("tijd");  
 		$open = fopen("$file", "a");  
-		fputs($open, "<?\n");  
+		fputs($open, "<?php\n");  
 		fputs($open, '$getal');  
 		fputs($open, "[$hits]");  
 		fputs($open, " = \"<b>$naam:</b> $bericht <b>$tussen</b> \";\n");  
 		fputs($open, "?>\n");  
 		fclose($open);
 		echo("<br>
-            <b>$post</b>"); } } include("$form"); ?> <a href="bar.php" target="main"><img src="<? echo "$dir"; ?>/www.gif" border="0">Vernieuwen</a> 
-            / <a href="admin.php"><img src="<? echo "$dir"; ?>/admin.gif" border="0">Admin</a></TD>
+            <b>$post</b>"); } } include("$form"); ?> <a href="bar.php" target="main"><img src="<?php echo "$dir"; ?>/www.gif" border="0">Vernieuwen</a> 
+            / <a href="admin.php"><img src="<?php echo "$dir"; ?>/admin.gif" border="0">Admin</a></TD>
         </TR></TABLE></TD></TR></TABLE></TD></TR></TABLE></TD></TR></TABLE>

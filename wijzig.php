@@ -1,8 +1,8 @@
-<?
+<?php
 include("admin.php");
 if($wijzig){
 	$open = fopen("config.php", "w");
-	fputs($open, "<?\n");
+	fputs($open, "<?php\n");
 	fputs($open, '$admin');
 	fputs($open, " = \"$text\";\n");
 	fputs($open, '$paswoord');

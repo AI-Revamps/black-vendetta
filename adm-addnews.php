@@ -1,4 +1,4 @@
-<?
+<?php
 include("config.php");
 $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
 $data = mysql_fetch_object($dbres);
@@ -22,7 +22,7 @@ if($data->level == 1){
 
 
 <body>
-<?
+<?php
 if(isset($_POST['addnew'])){
   if(!isset($_POST['title'])){echo"Je hebt geen titel opgegeven.";exit;}
   if(!isset($_POST['text'])){echo"Je hebt geen tekst opgegeven.";exit;}
@@ -68,7 +68,7 @@ if($_GET['page']=="addnews"){
   </tr>  
 </table>
 
-<?
+<?php
 }
 elseif(isset($_GET['d'])){
   $id = $_GET['d'];
@@ -88,14 +88,14 @@ elseif(isset($_GET['d'])){
   <tr>
     <td class="mainTxt"><form method=post>
 	                    Bent u zeker dat u dit nieuws wilt verwijderen?<br>
-						Nr <? echo $id; ?> <i><b><? echo $title; ?></b></i> <? echo $time; ?> <br><br><? echo $text; ?>
-						<input type=hidden name=id value=<? echo $id; ?>><br>
+						Nr <?php echo $id; ?> <i><b><?php echo $title; ?></b></i> <?php echo $time; ?> <br><br><?php echo $text; ?>
+						<input type=hidden name=id value=<?php echo $id; ?>><br>
 						<input type=submit name=del value=Ja>
 						</form>
 	</td>
   </tr>  
 </table>
-<?
+<?php
 }
 elseif($_GET['page']=="delnews" || isset($_GET['p'])){
 ?>
@@ -108,7 +108,7 @@ elseif($_GET['page']=="delnews" || isset($_GET['p'])){
   </tr>
   <tr>
     <td class="mainTxt">**********<br>
-	  <?
+	  <?php
 	  $pp = 10;
 	  $start= ($_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
 	  $sql = mysql_query("SELECT id FROM `news`");
@@ -154,7 +154,7 @@ elseif($_GET['page']=="delnews" || isset($_GET['p'])){
 	</td>
   </tr>
 </table>
-<?
+<?php
 }
 elseif(isset($_GET['x'])){
   $id = $_GET['x'];
@@ -173,16 +173,16 @@ elseif(isset($_GET['x'])){
   </tr>
   <tr>
     <td class="mainTxt"><form method=post>
-	                    Titel: <input type=text name=title value="<? echo $title; ?>"><br>
-						Tekst: <textarea name=text rows=10	cols=50 onkeypress=textCounter(this,this.form.counter,999);><? echo $text; ?></TEXTAREA><br>
+	                    Titel: <input type=text name=title value="<?php echo $title; ?>"><br>
+						Tekst: <textarea name=text rows=10	cols=50 onkeypress=textCounter(this,this.form.counter,999);><?php echo $text; ?></TEXTAREA><br>
 						Tijd updaten: <input type=checkbox name=t value=1><br>
-						<input type=hidden name=id value=<? echo $id; ?>><input type=hidden name=time value=<? echo $time; ?>>
+						<input type=hidden name=id value=<?php echo $id; ?>><input type=hidden name=time value=<?php echo $time; ?>>
 						<input type=submit name=edit value=Ja>
 						</form>
 	</td>
   </tr>  
 </table>
-<?
+<?php
 }
 elseif($_GET['page']=="editnews" || isset($_GET['e'])){
 ?>
@@ -195,7 +195,7 @@ elseif($_GET['page']=="editnews" || isset($_GET['e'])){
   </tr>
   <tr>
     <td class="mainTxt">**********<br>
-	  <?
+	  <?php
 	  $pp = 10;
 	  $start= ($_GET['e'] >= 0) ? $_GET['e']*$pp : 0;
 	  $sql = mysql_query("SELECT id FROM `news`");
@@ -241,7 +241,7 @@ elseif($_GET['page']=="editnews" || isset($_GET['e'])){
 	</td>
   </tr>
 </table>
-<?
+<?php
 }
 else{
 ?>
@@ -256,7 +256,7 @@ else{
     <td class=mainTxt><table width="100%"><tr><td width="50%"><a href=?page=addnews>Nieuws toevoegen</a></td><td><a href=?page=delnews>Nieuws verwijderen</a></td></tr><tr><td><a href=?page=editnews>Nieuws bewerken</a></td><td>&nbsp;</td></tr></table></td>
   </tr>
 </table>
-<?
+<?php
 }
 ?>
 </body>

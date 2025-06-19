@@ -22,7 +22,7 @@
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-  <?
+  <?php
 echo "Bug gevonden? Of wil je iets nieuws? Meld het hier...";
 $ip = $_SERVER['REMOTE_ADDR'];
 print "<table><tr><td width=100% align=center><form method='post'>";

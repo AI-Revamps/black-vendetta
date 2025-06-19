@@ -1,4 +1,4 @@
-<?PHP
+<?php
   session_start();
  include ("config.php");
 $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
@@ -14,7 +14,7 @@ if ($data->status == dood) { header("Location: rip.php"); exit; }
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
 <body>
-<?
+<?php
 if (!$_SESSION['login']) {
   $dbres                                = mysql_query("SELECT `id` FROM `users` WHERE UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(`online`) < 300");
   $online                               = mysql_num_rows($dbres);

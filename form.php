@@ -1,4 +1,4 @@
-<?
+<?php
 include("config.php");
 ?>
 <script language="JavaScript">
@@ -10,12 +10,12 @@ function addEmoticon(emoticon)
 //-->
 </script>
 <form name="form" method="post" action="berichtenbalk.php">
-	<img src="<? echo "$dir"; ?>/new.gif">
-    <input name="naam" type="text" value="Je naam" maxlength="<? echo "$maxn"; ?>">
-    <input name="bericht" type="text" value="Je bericht" maxlength="<? echo "$maxb"; ?>">
+	<img src="<?php echo "$dir"; ?>/new.gif">
+    <input name="naam" type="text" value="Je naam" maxlength="<?php echo "$maxn"; ?>">
+    <input name="bericht" type="text" value="Je bericht" maxlength="<?php echo "$maxb"; ?>">
     <input type="submit" name="Submit" value="toevoegen">
     <br>
-<?
+<?php
 echo"
 <a href=javascript: onclick=addEmoticon('[color=][/color]')><img border=0 src=\"$dir/color.gif\"></a> 
 <a href=javascript: onclick=addEmoticon('[b][/b]')><img border=0 src=\"$dir/bold.gif\"></a> 

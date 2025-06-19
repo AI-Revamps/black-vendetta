@@ -19,7 +19,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
 <meta name="language" content="english">
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
-<?PHP
+<?php
 $kras = mysql_fetch_object(mysql_query("SELECT * FROM `kras` WHERE `login`='$data->login'"));
 if (!$kras) { mysql_query("INSERT INTO `kras`(`login`,`aantal`) values('$data->login','0')"); 
 $kras = mysql_fetch_object(mysql_query("SELECT * FROM `kras` WHERE `login`='$data->login'")); }

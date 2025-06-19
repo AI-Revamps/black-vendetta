@@ -1,4 +1,4 @@
-<?
+<?php
 include("config.php");
 $blah = mysql_query("SELECT * FROM `users` WHERE `status`='dood'");
 while($user = mysql_fetch_object($blah)) {
