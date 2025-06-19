@@ -21,16 +21,16 @@ include("config.php");
 
 
 /* ip van de bezoeker bezoeker */ 
-if(isset($HTTP_SERVER_VARS['HTTP_X_FORWARDED_FOR'])) { 
-    $ip = $HTTP_SERVER_VARS['HTTP_X_FORWARDED_FOR']; 
-} else { 
-    $ip = $HTTP_SERVER_VARS['REMOTE_ADDR']; 
-} 
+if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+} else {
+    $ip = $_SERVER['REMOTE_ADDR'];
+}
 
 /* pollid, als er geen id is opgegeven wordt id 0 gebruikt en dan wordt de nieuwste actieve poll weergegeven */ 
-if(isset($HTTP_GET_VARS['pollid']) && is_numeric($HTTP_GET_VARS['pollid'])) { 
-    $pollid = $HTTP_GET_VARS['pollid']; 
-} else { 
+if(isset($_GET['pollid']) && is_numeric($_GET['pollid'])) {
+    $pollid = $_GET['pollid'];
+} else {
     $pollid = 0; 
 } 
 
@@ -56,14 +56,14 @@ class wmpoll {
     } 
 
     function archief($aantal=0) { 
-        GLOBAL $HTTP_SERVER_VARS; 
+        GLOBAL $_SERVER;
         if($aantal != 0) { 
             $limit = " LIMIT ".$aantal; 
         } else { 
             $limit = ""; 
         } 
         $sql = @mysql_query("SELECT id, vraag FROM poll ORDER BY id DESC".$limit); 
-        echo "<select name=\"pollarchief\" onChange=\"window.location=('".$HTTP_SERVER_VARS['PHP_SELF']."?pollid='+this.options[this.selectedIndex].value)\">\n<option value=\"\">Archief</option>/n"; 
+        echo "<select name=\"pollarchief\" onChange=\"window.location=('".$_SERVER['PHP_SELF']."?pollid='+this.options[this.selectedIndex].value)\">\n<option value=\"\">Archief</option>/n";
         while($list = @mysql_fetch_assoc($sql)) { 
             echo "<option value=\"".$list['id']."\">".$this->htmlparse($list['vraag'])."</option>\n"; 
         } 
@@ -71,7 +71,7 @@ class wmpoll {
     } 
 
     function toon($id=0, $magstemmen=1, $balkje=200, $kleur1="#A9A9A9", $kleur2="#FF9900") { 
-        GLOBAL $HTTP_POST_VARS, $HTTP_SERVER_VARS; 
+        GLOBAL $_POST, $_SERVER;
         if($id == 0) { 
             $sql = @mysql_query("SELECT * FROM poll WHERE actief='1' ORDER BY id DESC LIMIT 1"); 
         } else { 
@@ -105,8 +105,8 @@ class wmpoll {
             } 
 
             // stem opslaan 
-            if($magstemmen == 1 && isset($HTTP_POST_VARS['pollvote']) && isset($HTTP_POST_VARS['pollid']) && $HTTP_POST_VARS['pollid'] == $this->list['id']) { 
-                $this->stem($HTTP_POST_VARS['pollvote']); 
+            if($magstemmen == 1 && isset($_POST['pollvote']) && isset($_POST['pollid']) && $_POST['pollid'] == $this->list['id']) {
+                $this->stem($_POST['pollvote']);
                 $magstemmen = 0; 
             } 
 
@@ -118,7 +118,7 @@ class wmpoll {
 
             // poll weergeven 
             if($magstemmen == 1) { 
-                echo "<form action=\"".$HTTP_SERVER_VARS['REQUEST_URI']."\" method=\"POST\">\n<input type=\"hidden\" name=\"pollid\" value=\"".$this->list['id']."\">\n"; 
+                echo "<form action=\"".$_SERVER['REQUEST_URI']."\" method=\"POST\">\n<input type=\"hidden\" name=\"pollid\" value=\"".$this->list['id']."\">\n";
             } 
             echo "<b>".$this->htmlparse($this->list['vraag'])."</b><br>\nStemmen: ".$totaal."<br>\nDatum: ".date("d-m-Y", $this->list['datum'])."<br>\nType: ".$type."<br><br>\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\">\n"; 
 

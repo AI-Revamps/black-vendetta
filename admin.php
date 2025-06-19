@@ -1,8 +1,8 @@
 <?php 
 session_start();
 include("config.php"); 
-$username = $HTTP_POST_VARS["username"];  
-$password = $HTTP_POST_VARS["password"];  
+$username = $_POST["username"];
+$password = $_POST["password"];
 if($submit){
 	if ($username == "$admin" AND $password == "$paswoord") {  
                 $login = time();
