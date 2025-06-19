@@ -1,4 +1,4 @@
-<?PHP
+<?php
 $rang1 = "Empty-Suit";
 $rang2 = "Deliveryboy";
 $rang2f = "Delivery Girl";

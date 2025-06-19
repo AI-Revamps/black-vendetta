@@ -71,9 +71,9 @@ $i = $data->id;
           <td>3 maal</td>
           <td>4 maal</td>
         </tr>
-      </table><br>Ook krijg je per donatie &euro;50.000 in je zak en 500 kogels.<br><a href=\"#\" onClick="mbetaal('id=2687&parameter[1]=<? echo $i; ?>');return false;"><center>Klik hier Doneer nu!</center></a><br><br>
+      </table><br>Ook krijg je per donatie &euro;50.000 in je zak en 500 kogels.<br><a href=\"#\" onClick="mbetaal('id=2687&parameter[1]=<?php echo $i; ?>');return false;"><center>Klik hier Doneer nu!</center></a><br><br>
 	  <form method='POST'>Code&nbsp;&nbsp;<input type=text name=code><br><br><input type=submit name=submit value=Submit></form>
-  <?
+  <?php
 if (isset($_GET['betaalcode'],$_GET['betaalnummer'])) {
 $code = $_GET['betaalcode'];
 $nummer = $_GET['betaalnummer'];

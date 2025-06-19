@@ -2,7 +2,7 @@
   <tr>
     <td valign="center">
 <marquee>
-<? 
+<?php 
 include("config.php");
 for($i = 0; $i <= $hits; $i++){
 $getal[$i] =  str_replace(":-s", "<img src=\"$dir/smilie1.gif\" border=\"0\">", $getal[$i]); 

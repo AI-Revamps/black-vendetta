@@ -1,4 +1,4 @@
-<?PHP
+<?php
 $crimetijd = (time() + 60);
 $autotijd = (time() + 120);
 $banktijd = (time() + 300);

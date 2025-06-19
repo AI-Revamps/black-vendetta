@@ -19,7 +19,7 @@ if ($data->level < 200) { exit; }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-	<?PHP 
+	<?php 
 
 if(isset($_POST['putin'])) {
 if($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}

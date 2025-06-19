@@ -124,7 +124,7 @@ else { $srtekst = "{$schiet}%"; }
           <td>&nbsp;</td>
         </tr>
         <tr>
-          <td><? $inboxnew = mysql_num_rows(mysql_query("SELECT id FROM `messages` WHERE `read`=0 AND `to`='{$data->login}'"));
+          <td><?php $inboxnew = mysql_num_rows(mysql_query("SELECT id FROM `messages` WHERE `read`=0 AND `to`='{$data->login}'"));
 $new1 = "nieuw";
 $new2 = "nieuwe";
 $iword = ($inboxnew == 1) ? $new1 : $new2;
@@ -163,7 +163,7 @@ if ($inboxnew > 0) { echo "<strong><a href=message.php?p=inbox target=hoofd><b><
   <tr> 
     <td class="mainTxt"><table width="100%" border="0" cellspacing="0" cellpadding="0">
         <tr>
-          <td><? $query = "SELECT * FROM `news` ORDER BY `time` DESC LIMIT 0,5"; 
+          <td><?php $query = "SELECT * FROM `news` ORDER BY `time` DESC LIMIT 0,5"; 
 $info = mysql_query($query) or die(mysql_error()); 
 $count = 0; 
 while ($gegeven = mysql_fetch_array($info)) { 

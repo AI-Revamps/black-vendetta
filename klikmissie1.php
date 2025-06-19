@@ -10,7 +10,7 @@
   mysql_query("UPDATE `users` SET `online`=NOW() WHERE `login`='{$data->login}'");
 
 /* ------------------------- */ ?>
-<?
+<?php
 if (!empty($data) AND $data->topbalk == 1) {    
 include('upper.php');
 }
@@ -32,7 +32,7 @@ include('upper.php');
       echo "Je hebt deze link dit uur al bezocht<br>Probeer het volgende uur weer!";
   }
 else{
-      echo "Je hebt op Criminalzs2 gestemt<br>Er word automatisch €2.500 bij opgeteld, en je hebt 0 belcredits gekregen !! (klik ook op ga door naar de top50)<br><br>bedankt voor het stemmen!!";  
+      echo "Je hebt op Criminalzs2 gestemt<br>Er word automatisch â‚¬2.500 bij opgeteld, en je hebt 0 belcredits gekregen !! (klik ook op ga door naar de top50)<br><br>bedankt voor het stemmen!!";  
 mysql_query("UPDATE `[users]` SET `bank`=`bank`+'2500' WHERE `login`='$data->login'");
 mysql_query("UPDATE `[users]` SET `credits`=`credits`+'0' WHERE `login`='$data->login'");
 mysql_query("UPDATE `[users]` SET `klikmissie`=`klikmissie`+'1' WHERE `login`='$data->login'");

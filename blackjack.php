@@ -23,7 +23,7 @@ if ($jisin == 1) { header('Location: jisin.php'); }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?PHP
+<?php
 $picurl = "http://members.lycos.nl/js6287/images/kaarten/";
 $ext = ".jpg";
 $dbres = mysql_query("SELECT * FROM `casino` WHERE `spel`='blackjack' AND `stad`='$data->stad'") or die (mysql_error());

@@ -1,4 +1,4 @@
-<?PHP
+<?php
 include("config.php");
   $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
   $data	= mysql_fetch_object($dbres);
@@ -19,7 +19,7 @@ if ($data->level < 200) { exit; }
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
-<?PHP
+<?php
 if ($_POST['submit']) {
 $abrussel = rand(1000,6000);
 $aleuven = rand(1000,6000);

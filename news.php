@@ -1,4 +1,4 @@
-<?PHP
+<?php
 include("config.php");
 $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
 $data = mysql_fetch_object($dbres);
@@ -22,7 +22,7 @@ $data = mysql_fetch_object($dbres);
   </tr>
   <tr>
     <td class="mainTxt">**********<br>
-	  <?
+	  <?php
 	  $pp = 10;
 	  $start= ($_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
 	  $sql = mysql_query("SELECT id FROM `news`");

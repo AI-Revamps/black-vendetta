@@ -244,7 +244,7 @@ $aantal_topics = mysql_num_rows($topic);
     <td colspan="2" align="center"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <a href=<?php echo $_SERVER['PHP_SELF']."?type=".$object['type']; ?>><?php echo"{$object['type']}"; ?></a> - <?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
   </tr>  
   <tr> 
-    <td colspan="2" align="center"> <? $begin= ($_GET['p'] >= 0) ? $_GET['p']*$nrpp : 0;
+    <td colspan="2" align="center"> <?php $begin= ($_GET['p'] >= 0) ? $_GET['p']*$nrpp : 0;
 $nr = mysql_query("SELECT id,user,subject,message,date FROM forum_reacties WHERE topic_id = ".addslashes($_GET['topic'])) or die(mysql_error());
      if(mysql_num_rows($nr) <= $nrpp)
     print "&#60; 1 &#62;";
@@ -266,7 +266,7 @@ $nr = mysql_query("SELECT id,user,subject,message,date FROM forum_reacties WHERE
   ?>
      </td>
   </tr> 
-  <? if($_GET['p'] == 0) {
+  <?php if($_GET['p'] == 0) {
     $object['message'] = preg_replace("/\[img](.*?)\[\/img]/","<img src=\"\\1\">",$object['message']);
 	$object['message'] = preg_replace("~\\[url=([^\\[]*)\]([^\\[]*)\\[/url\\]~i","<a href=\"\\1\" target=_blank>\\2</a>",$object['message']); 
 	$object['message'] = preg_replace("~\[b\]~i","<b>",$object['message']);
@@ -551,7 +551,7 @@ $aantal = mysql_num_rows($topics);
         <td colspan="4" align="center"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <?php echo"{$_GET['type']}"; ?></b></td>
   </tr>
   <tr> 
-    <td colspan="4" align="center"> <? 
+    <td colspan="4" align="center"> <?php 
 $nr = mysql_query("SELECT id FROM forum_topics WHERE `type`='{$_GET['type']}'") or die(mysql_error());
      if(mysql_num_rows($nr) <= $nrtpp)
     print "&#60; 1 &#62;";
@@ -588,7 +588,7 @@ $nr = mysql_query("SELECT id FROM forum_topics WHERE `type`='{$_GET['type']}'") 
   <tr>
     <td align="right"><a href="<?php echo $_SERVER['PHP_SELF']."?topic=".$object['id']; ?>"><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></a>&nbsp;&nbsp;&nbsp;</td>
 	<td align="right"><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp;</td> 
-	<td align="right"><? echo $posts ?>&nbsp;&nbsp;&nbsp;</td>
+	<td align="right"><?php echo $posts ?>&nbsp;&nbsp;&nbsp;</td>
 	<td align="left"><?php echo $object['date']; ?> &nbsp;&nbsp;&nbsp;<?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"; if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;&nbsp;<a href=?edit=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?></td>
   </tr>
 <?php
@@ -646,7 +646,7 @@ $nr = mysql_query("SELECT id FROM forum_topics WHERE `type`='{$_GET['type']}'") 
   <option value=oc>Georganiseerde Misdaad</option>
   <option value=race>Race</option>
   <option value=familie>Familie</option>
-<? if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
+<?php if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
   <option value=varia>Varia</option>
 </select></td>
     </tr>
@@ -785,7 +785,7 @@ else
 	echo"$aantal";
 	?></td>
   </tr>
-<? if($data->famillie != ""){echo"
+<?php if($data->famillie != ""){echo"
   <tr>
     <td align=right><a href=?type=$data->famillie>$data->famillie</a>&nbsp;&nbsp;&nbsp;</td>
     <td align=left>"; 
@@ -823,7 +823,7 @@ else
   <option value=oc>Georganiseerde Misdaad</option>
   <option value=race>Race</option>
   <option value=familie>Familie</option>
-<? if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
+<?php if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
   <option value=varia>Varia</option>
 </select></td>
     </tr>
