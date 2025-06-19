@@ -1,63 +1,38 @@
-<?php /* ------------------------- */
-error_reporting(E_PARSE);
-$mysqli = new mysqli("localhost","id027res_game4","marb2726","id027res_game4");
-if($mysqli->connect_errno){
-    print <<<ENDHTML
-<html>
-<head>
-<title>Gangster4Crime</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<META HTTP-EQUIV='refresh' CONTENT='60'; URL='$PHP_SELF'>
-</head>
-  <table width=100%>
-     <tr>
-    <td class="subTitle"><b>MYSQL ERROR</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr>
-    <td class="mainTxt">
-        Er is een fout opgetreden tijdens het verbinding maken met de database. Onze excuses voor het ongemak.    </td></tr>
-  </table>
-</body>
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/pdo.php';
+session_start();
 
-</html>
-ENDHTML;
-    exit;
+// Compatibility layer for old mysql_* functions using PDO
+function mysql_query(string $query) {
+    return db()->query($query);
 }
-  session_start();
+function mysql_fetch_object(PDOStatement $stmt) {
+    return $stmt->fetch(PDO::FETCH_OBJ);
+}
+function mysql_fetch_assoc(PDOStatement $stmt) {
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+function mysql_fetch_array(PDOStatement $stmt) {
+    return $stmt->fetch(PDO::FETCH_BOTH);
+}
+function mysql_num_rows(PDOStatement $stmt) {
+    return $stmt->rowCount();
+}
+function mysql_insert_id() {
+    return db()->lastInsertId();
+}
+function mysql_result(PDOStatement $stmt, int $row = 0, $field = 0) {
+    $rows = $stmt->fetchAll(PDO::FETCH_BOTH);
+    return $rows[$row][$field] ?? null;
+}
+function mysql_real_escape_string(string $str) {
+    return substr(db()->quote($str), 1, -1);
+}
+function db_query(string $sql, array $params = []) {
+    return pdo_query($sql, $params);
+}
   if($data->rijvord > 99) {
-function mysql_query($query){
-    global $mysqli;
-    return $mysqli->query($query);
-}
-function mysql_fetch_object($result){
-    return $result->fetch_object();
-}
-function mysql_num_rows($result){
-    return $result->num_rows;
-}
-function mysql_insert_id(){
-    global $mysqli;
-    return $mysqli->insert_id;
-}
-function mysql_result($result,$row=0,$field=0){
-    $result->data_seek($row);
-    $rowData=$result->fetch_array();
-    return $rowData[$field];
-}
-function db_query($sql, $params = array()){
-    global $mysqli;
-    $stmt = $mysqli->prepare($sql);
-    if($params){
-        $types = '';
-        foreach($params as $p){
-            $types .= (is_int($p) ? 'i' : 's');
-        }
-        $stmt->bind_param($types, ...$params);
-    }
-    $stmt->execute();
-    return $stmt;
-}
 mysql_query("UPDATE `users` SET `rijbewijs`='1'  WHERE `login`='".$data->login."'");
 mysql_query("UPDATE `users` SET `rijvord`='0'  WHERE `login`='".$data->login."'");
   }
