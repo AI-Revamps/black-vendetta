@@ -5,8 +5,8 @@ $username = $HTTP_POST_VARS["username"];
 $password = $HTTP_POST_VARS["password"];  
 if($submit){
 	if ($username == "$admin" AND $password == "$paswoord") {  
-		$login = time();
-		session_register('login') ;
+                $login = time();
+                $_SESSION['login'] = $login;
 	} 
 	else{  
 		echo"<b>Je hebt een verkeerd paswoord of gebruikersnaam ingegeven!</b><br>";
@@ -25,9 +25,9 @@ if($_SESSION[login] + 60*60*24 > time()){
 	<input name="uitloggen" type="submit" value="Uitloggen">
 </form>
 <?
-	if($uitloggen){
-		session_unregister('login');
-	}
+        if($uitloggen){
+                unset($_SESSION['login']);
+        }
 	if($wissen){
 		if(!$bestand){
 			echo"<b>Er zijn nog geen berichten!</b><br>";

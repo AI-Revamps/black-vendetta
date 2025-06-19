@@ -25,8 +25,8 @@ if ($_POST[Submit]){
 		echo("<br><b>$ongeldig</b>");
 	}
 	elseif($_POST[naam] && $_POST[bericht]){
-		$tijd = time();  
-		session_register("tijd");  
+                $tijd = time();
+                $_SESSION['tijd'] = $tijd;
 		$open = fopen("$file", "a");  
 		fputs($open, "<?\n");  
 		fputs($open, '$getal');  

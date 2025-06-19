@@ -17,10 +17,8 @@
 <table align="center" width=100%>
 <?php /* ------------------------- */
   if($_GET['x'] == "logout"){
-    session_unset($_SESSION['pass']);
-    session_destroy($_SESSION['login']);
-	session_unset($_SESSION['pass']);
-    session_destroy($_SESSION['login']);
+    unset($_SESSION['pass'], $_SESSION['login']);
+    session_destroy();
     echo"<table width=100% align=center>
 		   <tr><td class=subTitle><b>Uitloggen</b></td></tr>
 		   <tr><td>&nbsp;</td></tr>
