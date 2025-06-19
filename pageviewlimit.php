@@ -1,5 +1,6 @@
-<?php  
-Function PageViewLimit(){ 
+<?php
+require_once 'config.php';
+Function PageViewLimit(){
    $dbres = mysql_query("SELECT paid FROM `users` WHERE `login`='{$_SESSION['login']}'");
    $data = mysql_fetch_object($dbres); 
    $paid = $data->paid;
