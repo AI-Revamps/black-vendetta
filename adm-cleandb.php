@@ -1,11 +1,13 @@
 <?
 include("config.php");
-$blah = mysql_query("SELECT * FROM `users` WHERE `status`='dood'");
-while($user = mysql_fetch_object($blah)) {
-mysql_query("DELETE FROM `garage` WHERE `login`='{$user->login}'");
-mysql_query("DELETE FROM `iplog` WHERE `login`='{$user->login}'");
-mysql_query("DELETE FROM `friends` WHERE `login`='{$user->login}'");
-mysql_query("DELETE FROM `friends` WHERE `friend`='{$user->login}'");
-mysql_query("DELETE FROM `hitlist` WHERE `login`='{$user->login}'");
+
+$stmt = db_query("SELECT `login` FROM `users` WHERE `status`='dood'");
+$res  = $stmt->get_result();
+while ($user = $res->fetch_object()) {
+    db_query("DELETE FROM `garage` WHERE `login`=?", array($user->login));
+    db_query("DELETE FROM `iplog` WHERE `login`=?", array($user->login));
+    db_query("DELETE FROM `friends` WHERE `login`=?", array($user->login));
+    db_query("DELETE FROM `friends` WHERE `friend`=?", array($user->login));
+    db_query("DELETE FROM `hitlist` WHERE `login`=?", array($user->login));
 }
 ?>
