@@ -1,8 +1,20 @@
 <?php
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) {exit; }
+
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,".
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,".
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,".
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
+if (!$data || $data->level < 200) {
+    exit;
+}
 ?>
 <html>
 <head>
@@ -13,29 +25,43 @@ if ($data->level < 200) {exit; }
 <META name="description" lang="nl" content="Vendetta crimegame met pit.">
 </head>
 <table width=100% border="0">
-<tr> 
+<tr>
     <td class="subTitle"><b>Multiple Accounts</b></td>
   </tr>
   <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
+  <tr>
     <td class="mainTxt"><a href=adm-search.php?p=multi>Multi Account Scan</a><br><br>
 <?php
 if (isset($_GET['del'])) {
-$ip = mysql_fetch_object(mysql_query("SELECT * FROM `multiple` WHERE `ip`='{$_GET['del']}'"));
-if ($ip->ip != $_GET['del']) { echo "Dit ip adres staat niet in de lijst."; }
-else { mysql_query("UPDATE `iplog` SET `allo`='0' WHERE `ip`='{$_GET['del']}'"); mysql_query("DELETE FROM `multiple` WHERE `ip`='{$_GET['del']}'"); }
-}
-elseif ($_POST['submit']) {
-$ip = mysql_fetch_object(mysql_query("SELECT * FROM `multiple` WHERE `ip`='{$_POST['ip']}'"));
-if (!$_POST['ip']) { echo "Je moet een ip opgeven."; }
-elseif ($ip->ip == $_POST['ip']) { echo "Dit ip adres staat al in de lijst."; }
-else { mysql_query("INSERT INTO `multiple`(`ip`,`allo`) values('{$_POST['ip']}','1')"); mysql_query("DELETE FROM `iplog` WHERE `ip`='{$_POST['ip']}'"); echo "Toegevoegd"; }
+    $delIp = $_GET['del'];
+    $stmt = pdo_query("SELECT * FROM `multiple` WHERE `ip` = ?", [$delIp]);
+    $ip = $stmt->fetch();
+    if (!$ip) {
+        echo "Dit ip adres staat niet in de lijst.";
+    } else {
+        pdo_query("UPDATE `iplog` SET `allo`='0' WHERE `ip` = ?", [$delIp]);
+        pdo_query("DELETE FROM `multiple` WHERE `ip` = ?", [$delIp]);
+    }
+} elseif (isset($_POST['submit'])) {
+    $newIp = $_POST['ip'] ?? '';
+    $stmt = pdo_query("SELECT * FROM `multiple` WHERE `ip` = ?", [$newIp]);
+    $ip = $stmt->fetch();
+    if (!$newIp) {
+        echo "Je moet een ip opgeven.";
+    } elseif ($ip) {
+        echo "Dit ip adres staat al in de lijst.";
+    } else {
+        pdo_query("INSERT INTO `multiple`(`ip`,`allo`) values(?, '1')", [$newIp]);
+        pdo_query("DELETE FROM `iplog` WHERE `ip` = ?", [$newIp]);
+        echo "Toegevoegd";
+    }
 }
 print "<form method='post'>IP: <input type=text name=ip><br><br><input type=submit name=submit value='Voeg toe'></form>";
 echo "De volgende ip addressen mogen meerdere accounts hebben:<br><br>";
-$dbres = mysql_query("SELECT * FROM `multiple`");
-while ($multi = mysql_fetch_object($dbres)) {
-echo "<a href=adm-addmulti.php?del=$multi->ip>[Delete]</a> $multi->ip<br>";
+$stmta = pdo_query("SELECT * FROM `multiple`");
+while ($multi = $stmta->fetch()) {
+    $ip = htmlspecialchars($multi->ip);
+    echo "<a href=adm-addmulti.php?del=$ip>[Delete]</a> $ip<br>";
 }
 ?>
 </td></tr></table>

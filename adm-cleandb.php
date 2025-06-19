@@ -1,13 +1,13 @@
 <?php
-include("config.php");
+declare(strict_types=1);
+require 'config.php';
 
-$stmt = db_query("SELECT `login` FROM `users` WHERE `status`='dood'");
-$res  = $stmt->get_result();
-while ($user = $res->fetch_object()) {
-    db_query("DELETE FROM `garage` WHERE `login`=?", array($user->login));
-    db_query("DELETE FROM `iplog` WHERE `login`=?", array($user->login));
-    db_query("DELETE FROM `friends` WHERE `login`=?", array($user->login));
-    db_query("DELETE FROM `friends` WHERE `friend`=?", array($user->login));
-    db_query("DELETE FROM `hitlist` WHERE `login`=?", array($user->login));
+$stmt = pdo_query("SELECT `login` FROM `users` WHERE `status`='dood'");
+while ($user = $stmt->fetch()) {
+    pdo_query("DELETE FROM `garage` WHERE `login`=?", [$user->login]);
+    pdo_query("DELETE FROM `iplog` WHERE `login`=?", [$user->login]);
+    pdo_query("DELETE FROM `friends` WHERE `login`=?", [$user->login]);
+    pdo_query("DELETE FROM `friends` WHERE `friend`=?", [$user->login]);
+    pdo_query("DELETE FROM `hitlist` WHERE `login`=?", [$user->login]);
 }
 ?>

@@ -1,8 +1,10 @@
 <?php /* ------------------------- */
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-if ($data->level < 200) { exit; }
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login` = ?", [$_SESSION['login']]);
+$data = $stmt->fetch();
+if (!$data || $data->level < 200) { exit; }
 ?>
 <html>
 <head>
@@ -19,58 +21,58 @@ if ($data->level < 200) { exit; }
   <tr> 
     <td class="mainTxt">
 <?php
-if ($_GET['x'] == xp) { if ($data->level < 1000) { print "Je hebt niet genoeg rechten.";exit; } else {mysql_query("UPDATE `users` SET `xp`=`xp`+10 WHERE `login`='{$_GET['u']}'");} }
+if ($_GET['x'] == 'xp') {
+    if ($data->level < 1000) { print "Je hebt niet genoeg rechten."; exit; }
+    else { pdo_query("UPDATE `users` SET `xp`=`xp`+10 WHERE `login` = ?", [$_GET['u']]); }
+}
 if ($_GET['x'] == query) { 
 if ($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}
 if ($_POST['submit']) {
 if ($data->level < 1000) { print "Je hebt niet genoeg rechten.";exit; }
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `id`='{$_POST['id']}'");
-$user = mysql_fetch_object($dbres); 
-mysql_query("
-UPDATE `users` SET 
-`email`='{$_POST['email']}',
-`login`='{$_POST['login']}',
-`ip`='{$_POST['ip']}',
-`level`='{$_POST['level']}',
-`stad`='{$_POST['stad']}',
-`geslacht`='{$_POST['geslacht']}',
-`activated`='{$_POST['activated']}',
-`health`='{$_POST['health']}',
-`xp`='{$_POST['xp']}',
-`respect`='{$_POST['respect']}',
-`bo`='{$_POST['bo']}',
-`testament`='{$_POST['testament']}',
-`huwelijk`='{$_POST['huwelijk']}',
-`zak`='{$_POST['zak']}',
-`bank`='{$_POST['bank']}',
-`trans`='{$_POST['trans']}',
-`kogels`='{$_POST['kogels']}',
-`wapon`='{$_POST['wapon']}',
-`guard`='{$_POST['guard']}',
-`defence`='{$_POST['defence']}',
-`drugs`='{$_POST['drugs']}',
-`drank`='{$_POST['drank']}',
-`Brussel`='{$_POST['brussel']}',
-`Hasselt`='{$_POST['hasselt']}',
-`Gent`='{$_POST['gent']}',
-`Leuven`='{$_POST['leuven']}',
-`Antwerpen`='{$_POST['antwerpen']}',
-`Amsterdam`='{$_POST['amsterdam']}',
-`Enschede`='{$_POST['enschede']}',
-`Brugge`='{$_POST['brugge']}',
-`se`='{$_POST['se']}',
-`rp`='{$_POST['rp']}',
-`bf`='{$_POST['bf']}',
-`famillie`='{$_POST['famillie']}',
-`famrang`='{$_POST['famrang']}' 
- WHERE `login`='{$_POST['login']}' ; ") or die(mysql_error());
-mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','JanuS','Webmasters actions','Volgende gebruiker: {$_POST['login']}<br>Geld op zak: {$user->zak} naar {$_POST['zak']} <br>Geld op bank: {$user->bank} naar {$_POST['bank']} <br>Level: {$user->level} naar {$_POST['level']} <br>KS van: {$user->se} naar {$_POST['se']} <br>Guards van: {$user->guard} naar {$_POST['guard']} <br>XP van: {$user->xp} naar {$_POST['xp']} <br><br>Uitgevoerd door: {$data->login}')");
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `id` = ?",
+    [$_POST['id']]
+);
+$user = $stmt->fetch();
+pdo_query(
+    "UPDATE `users` SET `email`=?,`login`=?,`ip`=?,`level`=?,`stad`=?,`geslacht`=?," .
+    "`activated`=?,`health`=?,`xp`=?,`respect`=?,`bo`=?,`testament`=?,`huwelijk`=?," .
+    "`zak`=?,`bank`=?,`trans`=?,`kogels`=?,`wapon`=?,`guard`=?,`defence`=?," .
+    "`drugs`=?,`drank`=?,`Brussel`=?,`Hasselt`=?,`Gent`=?,`Leuven`=?," .
+    "`Antwerpen`=?,`Amsterdam`=?,`Enschede`=?,`Brugge`=?,`se`=?,`rp`=?," .
+    "`bf`=?,`famillie`=?,`famrang`=? WHERE `login`=?",
+    [
+        $_POST['email'], $_POST['login'], $_POST['ip'], $_POST['level'],
+        $_POST['stad'], $_POST['geslacht'], $_POST['activated'], $_POST['health'],
+        $_POST['xp'], $_POST['respect'], $_POST['bo'], $_POST['testament'],
+        $_POST['huwelijk'], $_POST['zak'], $_POST['bank'], $_POST['trans'],
+        $_POST['kogels'], $_POST['wapon'], $_POST['guard'], $_POST['defence'],
+        $_POST['drugs'], $_POST['drank'], $_POST['brussel'], $_POST['hasselt'],
+        $_POST['gent'], $_POST['leuven'], $_POST['antwerpen'], $_POST['amsterdam'],
+        $_POST['enschede'], $_POST['brugge'], $_POST['se'], $_POST['rp'],
+        $_POST['bf'], $_POST['famillie'], $_POST['famrang'], $_POST['login']
+    ]
+);
+pdo_query(
+    "INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','JanuS','Webmasters actions','Volgende gebruiker: {$_POST['login']}<br>Geld op zak: {$user->zak} naar {$_POST['zak']} <br>Geld op bank: {$user->bank} naar {$_POST['bank']} <br>Level: {$user->level} naar {$_POST['level']} <br>KS van: {$user->se} naar {$_POST['se']} <br>Guards van: {$user->guard} naar {$_POST['guard']} <br>XP van: {$user->xp} naar {$_POST['xp']} <br><br>Uitgevoerd door: {$data->login}')"
+);
 
 echo "Opdracht uitgevoerd.";
 }
 else {
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_GET['u']}'");
-$user = mysql_fetch_object($dbres); 
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_GET['u']]
+);
+$user = $stmt->fetch();
 print "<form method=post>
 ID: <input type=text name=id value='$user->id' readonly=\"true\"><br>
 Login: <input type=text name=login value='$user->login'><br>
@@ -115,14 +117,17 @@ Famrang: <input type=text name=famrang value='$user->famrang'><br>
 }
 }
 if ($_GET['x'] == info) { 
-$user = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='{$_GET['u']}'")); 
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$user->famillie}'"));
-if ($_GET['v']) { $van = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='{$_GET['v']}'")); }
-else { $van = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='$data->login'")); }
+$stmt = pdo_query("SELECT * FROM `users` WHERE `login` = ?", [$_GET['u']]);
+$user = $stmt->fetch();
+$stmt = pdo_query("SELECT * FROM `famillie` WHERE `name` = ?", [$user->famillie]);
+$famillie = $stmt->fetch();
+if ($_GET['v']) { $stmt = pdo_query("SELECT * FROM `users` WHERE `login` = ?", [$_GET['v']]); $van = $stmt->fetch(); }
+else { $stmt = pdo_query("SELECT * FROM `users` WHERE `login` = ?", [$data->login]); $van = $stmt->fetch(); }
 if (!$van->login) { echo "Deze gebruiker bestaat niet"; exit; }
 elseif (!$user->login) { echo "Deze gebruiker bestaat niet"; exit; }
 elseif ($user->status == dood) { echo "Deze gebruiker is al dood"; exit; }
-$famillievan = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$van->famillie}'"));
+$stmt = pdo_query("SELECT * FROM `famillie` WHERE `name` = ?", [$van->famillie]);
+$famillievan = $stmt->fetch();
 $huis = ($user->{$user->stad} > 0) ? Ja : Nee; 
 $fam = ($user->stad == $famillie->stad) ? Ja : Nee;
 if ($user->bf == 0) { $bf = Geen; }
@@ -152,8 +157,8 @@ $fampro = ($fam == Ja) ? 0.05 : 0;
 $fampros = $fampro*100;
 echo "<br>Famillie Bescherming: $fampros%";
 $protection = (1 - ($home + $fampro + $lijfwachten));
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' AND `nr`='{$van->wapon}'");
-$wapen = mysql_fetch_object($dbres);		
+$stmt = pdo_query("SELECT * FROM `items` WHERE `type`='att' AND `nr` = ?", [$van->wapon]);
+$wapen = $stmt->fetch();
 $wapon = ($wapen->effect);
 if ($wapon == 0) {$wapon == 1;}
 $protections = $protection*100/$wapon;
@@ -172,8 +177,8 @@ $home = ($huis == Ja)  ? 0.4 : 0;
 $fam = ($van->stad == $famillievan->stad) ? Ja : Nee;
 $fampro = ($fam == Ja) ? 0.05 : 0; 
 $protection = (1 - ($home + $fampro + $lijfwachten));
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' AND `nr`='{$user->wapon}'");
-$wapen = mysql_fetch_object($dbres);		
+$stmt = pdo_query("SELECT * FROM `items` WHERE `type`='att' AND `nr` = ?", [$user->wapon]);
+$wapen = $stmt->fetch();
 $wapon = ($wapen->effect);
 if ($wapon == 0) {$wapon == 1;}
 if ($van->xp < 50) { $rangkvan = 1; }
@@ -206,12 +211,15 @@ $begin= ($_GET['p'] >= 0) ? $_GET['p']*20 : 0;
 $q = $_GET['q'];
 $_GET['q'] = "*{$q}*";
 $_GET['q']	= preg_replace('/\*/','%',$_GET['q']);
-$dbres = mysql_query("SELECT * FROM `users` ORDER BY `xp` DESC LIMIT $begin,20");
-if ($_GET['q'] != "") {$dbres = mysql_query("SELECT * FROM `users` WHERE `login` LIKE '{$_GET['q']}' ORDER BY `xp` DESC LIMIT $begin,20");}
-$total = mysql_num_rows($dbres);
-$x                    = 0;
+$stmt = pdo_query("SELECT * FROM `users` ORDER BY `xp` DESC LIMIT $begin,20");
+if ($_GET['q'] != "") {
+    $search = $_GET['q'];
+    $stmt = pdo_query("SELECT * FROM `users` WHERE `login` LIKE ? ORDER BY `xp` DESC LIMIT $begin,20", [$search]);
+}
+$total = $stmt->rowCount();
+$x = 0;
 $page = $_GET['p'];
-for($j=$begin+1; $info = mysql_fetch_object($dbres); $j++) {
+for($j=$begin+1; $info = $stmt->fetch(); $j++) {
 if ($info->xp < 10) { $rang = "$rang1"; }
 elseif ($info->xp < 20) { $rang = "$rang2";}
 elseif ($info->xp < 50) { $rang = "$rang3"; }
@@ -234,9 +242,10 @@ echo "<table width=100%><tr>
     <td width='45%'><center>$rang</td>
   </tr>";
 }
-$dbres = mysql_query("SELECT id FROM `users`");
-if ($_GET['q'] != "") {$dbres = mysql_query("SELECT id FROM `users` WHERE `login` LIKE '{$_GET['q']}'");}
-print "</table><br><center><tr><td>&nbsp;&nbsp;</td></tr><tr> 
+$rowsStmt = pdo_query("SELECT COUNT(id) AS c FROM `users`");
+if ($_GET['q'] != "") { $rowsStmt = pdo_query("SELECT COUNT(id) AS c FROM `users` WHERE `login` LIKE ?", [$search]); }
+$rows = $rowsStmt->fetch()->c;
+print "</table><br><center><tr><td>&nbsp;&nbsp;</td></tr><tr>
     <td class=subTitle><b>Zoeken</b></td>
   </tr>
   <tr><td>&nbsp;&nbsp;</td></tr>
@@ -246,7 +255,7 @@ print "</table><br><center><tr><td>&nbsp;&nbsp;</td></tr><tr>
 	<br><input type=text name=q value={$_REQUEST['q']}> <input type=submit value=Zoek!>
 	</form></td></tr>";
     print "  <tr><td align=\"center\">";
-     if(mysql_num_rows($dbres) <= 20)
+    if($rows <= 20)
     print "&#60; 1 &#62;</td></tr></table>\n";
   else {
     if($begin/20 == 0)
@@ -254,11 +263,11 @@ print "</table><br><center><tr><td>&nbsp;&nbsp;</td></tr><tr>
     else
       print "<a href=\"?s=$sort&q=$q&o=$order&p=". ($begin/20-1) ."\">&#60;&#60;</a> ";
 
-    for($i=0; $i<mysql_num_rows($dbres)/20; $i++) {
+    for($i=0; $i<$rows/20; $i++) {
       print "<a href=\"?s=$sort&q=$q&o=$order&p=$i\">". ($i+1) ."</a> ";
     }
 
-    if($begin+20 >= mysql_num_rows($dbres))
+    if($begin+20 >= $rows)
       print "&#62;&#62; ";
     else
       print "<a href=\"?s=$sort&q=$q&o=$order&p=". ($begin/20+1) ."\">&#62;&#62;</a>";

@@ -1,8 +1,18 @@
 <?php
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION["login"]]
+);
+$data = $stmt->fetch();
+if (!$data || $data->level < 200) { exit; }
+
 ?>
 <html>
 <head>
@@ -28,10 +38,11 @@ if ($data->level < 200) { exit; }
 
 
 if ($data->level < 200) { exit; }
-$dbres = mysql_query("SELECT * FROM `users` WHERE  UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(`online`) < 300 ORDER BY `xp` DESC");
-$aantal = mysql_num_rows($dbres);
-$i = 0; 
-while ($info = mysql_fetch_object($dbres)) { 
+$stmt = pdo_query(
+    "SELECT * FROM `users` WHERE UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(`online`) < 300 ORDER BY `xp` DESC"
+);
+$count = 0;
+while ($info = $stmt->fetch()) {
 if ($info->xp < 10) { $rang = "$rang1"; }
 elseif ($info->xp < 20) { $rang = "$rang2";}
 elseif ($info->xp < 50) { $rang = "$rang3"; }
