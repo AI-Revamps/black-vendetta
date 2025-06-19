@@ -4,11 +4,17 @@ class progress_bar
     var $percent; 
     var $width; 
 
-    function progress_bar($percent = 1, $width = 100) 
-    { 
-        $this->percent = $percent; 
-        $this->width = $width; 
-      } 
+    function __construct($percent = 1, $width = 100)
+    {
+        $this->percent = $percent;
+        $this->width = $width;
+    }
+
+    // Backwards compatibility for PHP 4 style constructor
+    function progress_bar($percent = 1, $width = 100)
+    {
+        $this->__construct($percent, $width);
+    }
 
     function create() 
     { 
