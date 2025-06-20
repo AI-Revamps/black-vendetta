@@ -12,24 +12,24 @@
 | adm-online.php     | Done  |          |         |        |
 | adm-poll.php       | Done  |          |         |        |
 | adm-prison.php     | Done  |          |         |        |
-| adm-search.php     | Done  |          |         |        |
-| adm-shame.php      |       |          |         |        |
-| adm-warn.php       |       |          |         |        |
-| admin.php          |       |          |         |        |
-| ban.php            |       |          |         |        |
-| bank.php           |       |          |         |        |
-| bar.php            |       |          |         |        |
-| berichtenbalk.php  |       |          |         |        |
-| blackjack.php      |       |          |         |        |
-| blackmarket.php    |       |          |         |        |
-| bloodbank.php      |       |          |         |        |
-| bulletfactory.php  |       |          |         |        |
-| carrace.php        |       |          |         |        |
-| chat.php           |       |          |         |        |
-| clock.php          |       |          |         |        |
-| config.php         |       |          |         |        |
-| copy.php           |       |          |         |        |
-| crime.php          |       |          |         |        |
+| adm-search.php     | FAIL  |          |         |        |
+| adm-shame.php      | Done  |          |         |        |
+| adm-warn.php       | Done  |          |         |        |
+| admin.php          | Done  |          |         |        |
+| ban.php            | Done  |          |         |        |
+| bank.php           | Done  |          |         |        |
+| bar.php            | Done  |          |         |        |
+| berichtenbalk.php  | Done  |          |         |        |
+| blackjack.php      | Done  |          |         |        |
+| blackmarket.php    | Done  |          |         |        |
+| bloodbank.php      | Done  |          |         |        |
+| bulletfactory.php  | Done  |          |         |        |
+| carrace.php        | FAIL  |          |         |        |
+| chat.php           | Done  |          |         |        |
+| clock.php          | Done  |          |         |        |
+| config.php         | Done  |          |         |        |
+| copy.php           | Done  |          |         |        |
+| crime.php          | Done  |          |         |        |
 | detectives.php     |       |          |         |        |
 | donate.php         |       |          |         |        |
 | drank.php          |       |          |         |        |
