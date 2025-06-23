@@ -30,13 +30,13 @@
 | config.php         | Done  |          |         |        |
 | copy.php           | Done  |          |         |        |
 | crime.php          | Done  |          |         |        |
-| detectives.php     |       |          |         |        |
-| donate.php         |       |          |         |        |
-| drank.php          |       |          |         |        |
-| drugs.php          |       |          |         |        |
-| fam.php            |       |          |         |        |
-| famman.php         |       |          |         |        |
-| fampromotie.php    |       |          |         |        |
+| detectives.php     | Done  |          |         |        |
+| donate.php         | Done  |          |         |        |
+| drank.php          | Done  |          |         |        |
+| drugs.php          | Done  |          |         |        |
+| fam.php            | Done  |          |         |        |
+| famman.php         | Done  |          |         |        |
+| fampromotie.php    | Fail  |          |         |        |
 | form.php           |       |          |         |        |
 | forum.php          |       |          |         |        |
 | garage.php         |       |          |         |        |
