@@ -1,7 +1,16 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`drugst`) AS `drugst`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`drugst`) AS `drugst`," .
+    "UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`," .
+    "UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`," .
+    "UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`," .
+    "UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
   if(! check_login()) {
     header("Location: login.php");
     exit;
@@ -24,8 +33,8 @@ if ($jisin == 1) { header("Location: jisin.php"); }
   <tr> 
     <td class="mainTxt">
 <?php
-$query = mysql_query("SELECT * FROM stad WHERE `stad`='{$data->stad}'") or die (mysql_error());
-$drugs = mysql_fetch_object($query);
+$stmt = pdo_query("SELECT * FROM `stad` WHERE `stad` = ?", [$data->stad]);
+$drugs = $stmt->fetch();
 $aantal = $_POST['aantal'];
 $time = time();
 $drugstijd = (time() + 3600);
@@ -66,27 +75,48 @@ elseif ($winst > $data->zak) {
 elseif ($totaal > $units) {
 	    echo "Je mag maar $units units dragen.";
 }
-elseif ($kans == 1) { 
-echo "Je bent gearresteerd.";
-mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))");
-exit;
+elseif ($kans == 1) {
+    echo "Je bent gearresteerd.";
+    pdo_query(
+        "INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES(?, ?, ?, ?, FROM_UNIXTIME(?))",
+        [$data->login, $boete, $data->stad, $famillie, $jailtime]
+    );
+    exit;
 }
-	elseif (!Empty($aantal)) {
-		mysql_connect("localhost","vendettaga_root","wwWOnPk12"); 
-		mysql_select_db("vendettaga_main"); 
-	    echo "Je hebt $aantal units gekocht voor &euro; $winst."; 
-if ($data->drugst - time() > 0) {
-mysql_query("UPDATE `users` SET `drugs`=`drugs`+$aantal WHERE `login`='{$data->login}'") or die (mysql_error());
-mysql_query("UPDATE `users` SET `zak`=`zak`-$winst WHERE `login`='{$data->login}'") or die (mysql_error());
-mysql_query("UPDATE `stad` SET `drugs`=`drugs`-$aantal WHERE `stad`='{$data->stad}'") or die (mysql_error());
-}
-else{
-mysql_query("UPDATE `users` SET `xp`=`xp`+3 WHERE `login`='{$data->login}'") or die (mysql_error());
-mysql_query("UPDATE `users` SET `drugs`=`drugs`+$aantal,`drugst`=FROM_UNIXTIME($drugstijd) WHERE `login`='{$data->login}'") or die (mysql_error());
-mysql_query("UPDATE `users` SET `zak`=`zak`-$winst WHERE `login`='{$data->login}'") or die (mysql_error());
-mysql_query("UPDATE `stad` SET `drugs`=`drugs`-$aantal WHERE `stad`='{$data->stad}'") or die (mysql_error());
-}
-} 
+        elseif (!Empty($aantal)) {
+            echo "Je hebt $aantal units gekocht voor &euro; $winst.";
+            if ($data->drugst - time() > 0) {
+                pdo_query(
+                    "UPDATE `users` SET `drugs`=`drugs`+? WHERE `login` = ?",
+                    [$aantal, $data->login]
+                );
+                pdo_query(
+                    "UPDATE `users` SET `zak`=`zak`-? WHERE `login` = ?",
+                    [$winst, $data->login]
+                );
+                pdo_query(
+                    "UPDATE `stad` SET `drugs`=`drugs`-? WHERE `stad` = ?",
+                    [$aantal, $data->stad]
+                );
+            } else {
+                pdo_query(
+                    "UPDATE `users` SET `xp`=`xp`+3 WHERE `login` = ?",
+                    [$data->login]
+                );
+                pdo_query(
+                    "UPDATE `users` SET `drugs`=`drugs`+?,`drugst`=FROM_UNIXTIME(?) WHERE `login` = ?",
+                    [$aantal, $drugstijd, $data->login]
+                );
+                pdo_query(
+                    "UPDATE `users` SET `zak`=`zak`-? WHERE `login` = ?",
+                    [$winst, $data->login]
+                );
+                pdo_query(
+                    "UPDATE `stad` SET `drugs`=`drugs`-? WHERE `stad` = ?",
+                    [$aantal, $data->stad]
+                );
+            }
+        }
 	}
 elseif(isset($_POST['verkoop'])) {
 if (!$_POST['verify']){echo"Je moet een code opgeven.";}
@@ -97,19 +127,29 @@ elseif ($aantal < 1) {
 elseif ($data->drugs < $aantal) {
 	    echo "Zoveel units heb je niet."; 
 }
-elseif ($kans == 0) { 
-echo "Je bent gearresteerd";
-mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))");
-exit;
+elseif ($kans == 0) {
+    echo "Je bent gearresteerd";
+    pdo_query(
+        "INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES(?, ?, ?, ?, FROM_UNIXTIME(?))",
+        [$data->login, $boete, $data->stad, $famillie, $jailtime]
+    );
+    exit;
 }
-	elseif (!Empty($aantal)) {
-		mysql_connect("localhost","vendettaga_root","wwWOnPk12"); 
-		mysql_select_db("vendettaga_main"); 
-			mysql_query("UPDATE `stad` SET `drugs`=`drugs`+$aantal WHERE `stad`='{$data->stad}'") or die (mysql_error());
-			mysql_query("UPDATE `users` SET `drugs`=`drugs`-$aantal WHERE `login`='{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `users` SET `zak`=`zak`+$winst WHERE `login`='{$data->login}'") or die (mysql_error());
-	    echo "Je hebt $aantal units verkocht voor &euro;$winst.";
-			} 
+        elseif (!Empty($aantal)) {
+            pdo_query(
+                "UPDATE `stad` SET `drugs`=`drugs`+? WHERE `stad` = ?",
+                [$aantal, $data->stad]
+            );
+            pdo_query(
+                "UPDATE `users` SET `drugs`=`drugs`-? WHERE `login` = ?",
+                [$aantal, $data->login]
+            );
+            pdo_query(
+                "UPDATE `users` SET `zak`=`zak`+? WHERE `login` = ?",
+                [$winst, $data->login]
+            );
+            echo "Je hebt $aantal units verkocht voor &euro;$winst.";
+                        }
 	}
 
 print <<<ENDHTML
