@@ -4,32 +4,34 @@ require_once __DIR__.'/pdo.php';
 session_start();
 
 // Compatibility layer for old mysql_* functions using PDO
-function mysql_query(string $query) {
+function mysql_query(string $query): PDOStatement {
     return db()->query($query);
 }
-function mysql_fetch_object(PDOStatement $stmt) {
-    return $stmt->fetch(PDO::FETCH_OBJ);
+function mysql_fetch_object(PDOStatement $stmt): ?object {
+    return $stmt->fetch(PDO::FETCH_OBJ) ?: null;
 }
-function mysql_fetch_assoc(PDOStatement $stmt) {
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+function mysql_fetch_assoc(PDOStatement $stmt): ?array {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row === false ? null : $row;
 }
-function mysql_fetch_array(PDOStatement $stmt) {
-    return $stmt->fetch(PDO::FETCH_BOTH);
+function mysql_fetch_array(PDOStatement $stmt): ?array {
+    $row = $stmt->fetch(PDO::FETCH_BOTH);
+    return $row === false ? null : $row;
 }
-function mysql_num_rows(PDOStatement $stmt) {
+function mysql_num_rows(PDOStatement $stmt): int {
     return $stmt->rowCount();
 }
-function mysql_insert_id() {
+function mysql_insert_id(): string {
     return db()->lastInsertId();
 }
-function mysql_result(PDOStatement $stmt, int $row = 0, $field = 0) {
+function mysql_result(PDOStatement $stmt, int $row = 0, $field = 0): mixed {
     $rows = $stmt->fetchAll(PDO::FETCH_BOTH);
     return $rows[$row][$field] ?? null;
 }
 function mysql_real_escape_string(string $str) {
     return substr(db()->quote($str), 1, -1);
 }
-function db_query(string $sql, array $params = []) {
+function db_query(string $sql, array $params = []): PDOStatement {
     return pdo_query($sql, $params);
 }
   if($data->rijvord > 99) {
