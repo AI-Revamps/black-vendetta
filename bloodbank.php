@@ -1,7 +1,9 @@
-<?php /* ------------------------- */
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
+<?php
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login` = ?", [$_SESSION['login']]);
+$data = $stmt->fetch();
   if(! check_login()) {
     header("Location: login.php");
     exit;
@@ -46,12 +48,14 @@ if ($prijs > $data->zak) {
 echo "Je hebt niet genoeg geld op zak.";
 return;
 }
-	if (!Empty($aantal)) {
-			mysql_query("UPDATE `users` SET `zak`=`zak`-{$prijs} WHERE `login`= '{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `users` SET `health`=`health` +{$aantal} WHERE `login` = '{$data->login}'") or die (mysql_error());
-			echo "Je hebt $aantal bloedzakjes gekocht voor &euro; {$prijs}. Je hebt nu {$nhealth}% health"; exit;
-			} 
-	else { echo "Je moet een aantal bloedzakjes invullen."; exit; }
+        if (!empty($aantal)) {
+            pdo_query(
+                "UPDATE `users` SET `zak`=`zak`-?, `health`=`health`+? WHERE `login` = ?",
+                [$prijs, $aantal, $data->login]
+            );
+            echo "Je hebt $aantal bloedzakjes gekocht voor &euro; {$prijs}. Je hebt nu {$nhealth}% health"; exit;
+        }
+        else { echo "Je moet een aantal bloedzakjes invullen."; exit; }
 	}
 print <<<ENDHTML
 <br><br><br>

@@ -1,7 +1,15 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
   if(! check_login()) {
     header('Location: login.php');
     exit;
@@ -9,40 +17,40 @@ $data    = mysql_fetch_object($dbres);
   $_GET['_clan']			= $data->famillie;
     if($data->famrang == 5) {
     if(isset($_POST['change_owner'])) {
-      $dbres			= mysql_query("SELECT `login`,`famillie` FROM `users` WHERE `login`='{$_POST['owner']}'");
-      $owner = mysql_fetch_object($dbres);
+      $dbres			= pdo_query("SELECT `login`,`famillie` FROM `users` WHERE `login`='{$_POST['owner']}'");
+      $owner = $dbres->fetch();
 	  if (! $dbres){echo"Je familie moet een don hebben.";exit;}
-        mysql_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$data->login}'");
-        mysql_query("UPDATE `users` SET `famrang`='5' WHERE `login`='{$owner->login}'");
-        mysql_query("UPDATE `famillie` SET `owner`='{$owner->login}' WHERE `name`='{$data->famillie}'");
+        pdo_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$data->login}'");
+        pdo_query("UPDATE `users` SET `famrang`='5' WHERE `login`='{$owner->login}'");
+        pdo_query("UPDATE `famillie` SET `owner`='{$owner->login}' WHERE `name`='{$data->famillie}'");
 /*        header("Location: /fam.php?x={$data->famillie}\n"); */
        }
   elseif(isset($_POST['change_halfdon'])) {
-      $dbres			= mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['halfdon']}'");
-      $halfdon = mysql_fetch_object($dbres);
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
-$exist = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='4' AND `famillie`='{$famillie->name}'"));
-        mysql_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$exist->login}'");
-        mysql_query("UPDATE `users` SET `famrang`='4' WHERE `login`='{$halfdon->login}'");
-        mysql_query("UPDATE `famillie` SET `halfdon`='{$halfdon->login}' WHERE `name`='{$data->famillie}'");
+      $dbres			= pdo_query("SELECT * FROM `users` WHERE `login`='{$_POST['halfdon']}'");
+      $halfdon = $dbres->fetch();
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
+$exist = pdo_query("SELECT * FROM `users` WHERE `famrang`='4' AND `famillie`='{$famillie->name}'")->fetch();
+        pdo_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$exist->login}'");
+        pdo_query("UPDATE `users` SET `famrang`='4' WHERE `login`='{$halfdon->login}'");
+        pdo_query("UPDATE `famillie` SET `halfdon`='{$halfdon->login}' WHERE `name`='{$data->famillie}'");
 /*        header("Location: /fam.php?x={$data->famillie}\n"); */
        }
 elseif(isset($_POST['change_consiglieri'])) {
-      $dbres			= mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['consiglieri']}'");
-      $consiglieri = mysql_fetch_object($dbres);
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
-$exist = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='3' AND `famillie`='{$famillie->name}'"));
-        mysql_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$exist->login}'");
-        mysql_query("UPDATE `users` SET `famrang`='3' WHERE `login`='{$consiglieri->login}'");
-        mysql_query("UPDATE `famillie` SET `consiglieri`='{$consiglieri->login}' WHERE `name`='{$data->famillie}'");
+      $dbres			= pdo_query("SELECT * FROM `users` WHERE `login`='{$_POST['consiglieri']}'");
+      $consiglieri = $dbres->fetch();
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
+$exist = pdo_query("SELECT * FROM `users` WHERE `famrang`='3' AND `famillie`='{$famillie->name}'")->fetch();
+        pdo_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$exist->login}'");
+        pdo_query("UPDATE `users` SET `famrang`='3' WHERE `login`='{$consiglieri->login}'");
+        pdo_query("UPDATE `famillie` SET `consiglieri`='{$consiglieri->login}' WHERE `name`='{$data->famillie}'");
 /*        header("Location: /fam.php?x={$data->famillie}\n"); */
        }
        }
 if ($_POST['donate'] && $_POST['waar'] == persoon && $data->famrang >=3 && $data->famrang != 4) {
 $_POST['obedrag']= str_replace(",","",$_POST['obedrag']);
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
-$query = mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['naar']}'");
-$res = mysql_fetch_object($query);
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
+$query = pdo_query("SELECT * FROM `users` WHERE `login`='{$_POST['naar']}'");
+$res = $query->fetch();
 $naar = strtolower($_POST['naar']);
 $van = strtolower($famillie->name);
 if(!preg_match('/^[0-9]+$/',$_POST['obedrag'])){echo"Ongeldig bedrag.";}
@@ -52,29 +60,29 @@ elseif (!$res->login) { print "Deze gebruiker bestaat niet.\n"; }
 elseif ($res->status == dood) { print "Deze gebruiker is dood.\n"; } 
 elseif ($van == $naar) { print "Je kan niet aan je eigen familie doneren.\n"; } 
 else {
-mysql_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$_POST['naar']}','{$van}','-{$_POST['obedrag']}','cdonate','{$_POST['com']}')");
-mysql_query("UPDATE `famillie` SET `bank`=`bank`-{$_POST['obedrag']} WHERE `name`='{$data->famillie}'");
-mysql_query("UPDATE `users` SET `zak`=`zak`+{$_POST['obedrag']} WHERE `login`='{$res->login}'");
+pdo_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$_POST['naar']}','{$van}','-{$_POST['obedrag']}','cdonate','{$_POST['com']}')");
+pdo_query("UPDATE `famillie` SET `bank`=`bank`-{$_POST['obedrag']} WHERE `name`='{$data->famillie}'");
+pdo_query("UPDATE `users` SET `zak`=`zak`+{$_POST['obedrag']} WHERE `login`='{$res->login}'");
 print"Het geld is verzonden.";
 }
 }
 elseif ($_POST['donate'] && $_POST['waar'] == fam) {
 $_POST['obedrag']= str_replace(",","",$_POST['obedrag']);
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
 $bedrag = $_POST['obedrag'];
 $naar = $_POST['naar'];
 $van = strtolower($famillie->name);
-$query = mysql_query("SELECT * FROM `famillie` WHERE `name`='$naar'");
-$res = mysql_fetch_object($query);
+$query = pdo_query("SELECT * FROM `famillie` WHERE `name`='$naar'");
+$res = $query->fetch();
 if(!preg_match('/^[0-9]+$/',$_POST['obedrag'])){echo"Ongeldig bedrag.";}
 elseif ($famillie->bank < $_POST['obedrag']) { print "Zoveel geld staat niet op de familiebank.\n"; }
 elseif ($_POST['obedrag'] <= 0) { print "Zoveel geld staat niet op de familiebank.\n"; } 
 elseif (!$res->name) { print "Deze familie bestaat niet.\n"; } 
 else {
-mysql_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$famillie->name}','{$res->name}','{$bedrag}','cdonate','{$_POST['com']}')");
-mysql_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$naar}','{$famillie->name}','-{$_POST['obedrag']}','cdonate','{$_POST['com']}')");
-mysql_query("UPDATE `famillie` SET `bank`=`bank`+$bedrag WHERE `name`='{$naar}'");
-mysql_query("UPDATE `famillie` SET `bank`=`bank`-{$_POST['obedrag']} WHERE `name`='{$van}'");
+pdo_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$famillie->name}','{$res->name}','{$bedrag}','cdonate','{$_POST['com']}')");
+pdo_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$naar}','{$famillie->name}','-{$_POST['obedrag']}','cdonate','{$_POST['com']}')");
+pdo_query("UPDATE `famillie` SET `bank`=`bank`+$bedrag WHERE `name`='{$naar}'");
+pdo_query("UPDATE `famillie` SET `bank`=`bank`-{$_POST['obedrag']} WHERE `name`='{$van}'");
 print"Het geld is verzonden.";
   } 
   }
@@ -89,24 +97,24 @@ print"Het geld is verzonden.";
 </head>
 <table width=100%>
 <?php
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
 if ($data->famrang < 2) { exit; }
 if($_GET['p'] == members && $data->famrang > 2) {
     if(isset($_POST['members'])) {
-      $dbres				= mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}'");
-      while($member = mysql_fetch_object($dbres)) {
+      $dbres				= pdo_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}'");
+      while($member = $dbres->fetch()) {
         if(isset($_POST[$member->login])) {
           if($_POST[$member->login] == 1)
-            mysql_query("UPDATE `users` SET `famillie`='',`famrang`='0' WHERE `login`='{$member->login}'");
+            pdo_query("UPDATE `users` SET `famillie`='',`famrang`='0' WHERE `login`='{$member->login}'");
           elseif($_POST[$member->login] == 2)
-            mysql_query("UPDATE `users` SET `famrang`='2' WHERE `login`='{$member->login}'");
+            pdo_query("UPDATE `users` SET `famrang`='2' WHERE `login`='{$member->login}'");
           elseif($_POST[$member->login] == 3)
-            mysql_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$member->login}'");
+            pdo_query("UPDATE `users` SET `famrang`='1' WHERE `login`='{$member->login}'");
         }
       }
     }
-$half = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='4' AND `famillie`='{$data->famillie}'"));
-$cons = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='3' AND `famillie`='{$data->famillie}'"));
+$half = pdo_query("SELECT * FROM `users` WHERE `famrang`='4' AND `famillie`='{$data->famillie}'")->fetch();
+$cons = pdo_query("SELECT * FROM `users` WHERE `famrang`='3' AND `famillie`='{$data->famillie}'")->fetch();
     print "  <tr> 
     <td class=subTitle><b>Familie Leden</b></td>
   </tr>
@@ -115,9 +123,9 @@ $cons = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='3
     <td class=mainTxt>";
 	if($data->famrang == 5) {
       print " <form method=\"post\">Don: <select name=\"owner\">\n";
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
-      $dbres				= mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' ORDER BY `login`");
-      while($member = mysql_fetch_object($dbres)) {
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
+      $dbres				= pdo_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' ORDER BY `login`");
+      while($member = $dbres->fetch()) {
         if($member->login == $data->login)
           print "	<option value=\"{$member->login}\" selected>{$member->login}</option>\n";
         else
@@ -125,8 +133,8 @@ $famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name
       }
       print "  </select> <input type=\"submit\" name=\"change_owner\" value=\"Update\"></form>";
       print "  <form method=\"post\">Underboss: <select name=\"halfdon\">\n";
-      $dbres				= mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' ORDER BY `login`");
-      while($member = mysql_fetch_object($dbres)) {
+      $dbres				= pdo_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' ORDER BY `login`");
+      while($member = $dbres->fetch()) {
         if($member->login == $data->login)
           print "	<option value=\"{$member->login}\" selected>{$member->login}</option>\n";
         else
@@ -134,8 +142,8 @@ $famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name
       }
       print "  </select> <input type=\"submit\" name=\"change_halfdon\" value=\"Update\"></form>\n\n";
       print "  <form method=\"post\">Consiglieri: <select name=\"consiglieri\">\n";
-      $dbres				= mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' ORDER BY `login`");
-      while($member = mysql_fetch_object($dbres)) {
+      $dbres				= pdo_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' ORDER BY `login`");
+      while($member = $dbres->fetch()) {
         if($member->login == $data->login)
           print "	<option value=\"{$member->login}\" selected>{$member->login}</option>\n";
         else
@@ -150,8 +158,8 @@ $famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name
 	<td style="letter-spacing: normal;" align="center" width=25%><b>Status</b></td>
 	<td style="letter-spacing: normal;" align="center" width=25%><b>Rang</b></td></tr>
 ENDHTML;
-      $dbres				= mysql_query("SELECT * FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' AND `famrang`!='5' ORDER BY `famrang` DESC,`login` ASC");
-    for($j=1; $member = mysql_fetch_object($dbres); $j++) {
+      $dbres				= pdo_query("SELECT * FROM `users` WHERE `famillie`='{$data->famillie}' AND `login`!='$data->login' AND `famrang`!='5' ORDER BY `famrang` DESC,`login` ASC");
+    for($j=1; $member = $dbres->fetch(); $j++) {
       $rank				= Array("","Member","Recruiter","Consiglieri","Underboss","Don");
       $rank = $rank[$member->famrang];
 if ($member->xp < 10) { $rang = "$rang1"; }
@@ -199,37 +207,37 @@ if ($data->famrang < 3) {exit;}
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class=mainTxt>";
-echo "Je hebt grond nodig om members toe te laten. Met 5 m² grond kan je 1 member toelaten.<br><br>";
-$famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
-$stad = mysql_fetch_object(mysql_query("SELECT * FROM `stad` WHERE `stad`='{$famillie->stad}'"));
-$fami = mysql_query("SELECT * FROM `famillie` WHERE `stad`='{$famillie->stad}'");
+echo "Je hebt grond nodig om members toe te laten. Met 5 mÃ‚Â² grond kan je 1 member toelaten.<br><br>";
+$famillie = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'")->fetch();
+$stad = pdo_query("SELECT * FROM `stad` WHERE `stad`='{$famillie->stad}'")->fetch();
+$fami = pdo_query("SELECT * FROM `famillie` WHERE `stad`='{$famillie->stad}'");
 $grond = 0;
-while($famillies = mysql_fetch_object($fami)) {
+while($famillies = $fami->fetch()) {
 $grond = ($grond + $famillies->grond);
 }
 $overige = $stad->grond-$grond;
 if ($overige < 0) { echo "Er is geen grond meer in deze stad. Probeer andere families uit te moorden."; }
 else {
 $kopen = floor($famillie->bank / 50000);
-$totaal = mysql_num_rows(mysql_query("SELECT * FROM `users` WHERE `famillie`='$data->famillie'"));
+$totaal = pdo_query("SELECT * FROM `users` WHERE `famillie`='$data->famillie'")->rowCount();
 $totaal = floor($totaal * 5);
 $bla = floor(($famillie->grond - $totaal) / 5);
 if ($bla < 0) { $bla = 0; }
-print "Er is nog {$overige}m² grond in $famillie->stad<br>1m² kost &euro;50.000<br>Er staat &euro;$famillie->bank op de familiebank. Daarmee kun je {$kopen}m² kopen<br><br>Je kan nog $bla leden toelaten met de grond die $data->famillie bezit.<br><br><form method=post><input type=text name=grond size=5>m²<br><input type=submit name=koop value=Koop></form>";
+print "Er is nog {$overige}mÃ‚Â² grond in $famillie->stad<br>1mÃ‚Â² kost &euro;50.000<br>Er staat &euro;$famillie->bank op de familiebank. Daarmee kun je {$kopen}mÃ‚Â² kopen<br><br>Je kan nog $bla leden toelaten met de grond die $data->famillie bezit.<br><br><form method=post><input type=text name=grond size=5>mÃ‚Â²<br><input type=submit name=koop value=Koop></form>";
 }
 if ($_POST['koop']) {
 $prijs = ($_POST['grond'] * 50000);
 if ($overige - $_POST['grond'] < 0) { echo "Er is niet zoveel grond meer."; }
 elseif ($famillie->bank < $prijs) { echo "Er staat niet genoeg geld op de famillie bank."; }
 else {
-mysql_query("UPDATE `famillie` SET `bank`=`bank`-$prijs,`grond`=`grond`+{$_POST['grond']} WHERE `name`='{$data->famillie}'");
-echo "Je hebt {$_POST['grond']}m² gekocht in $famillie->stad voor &euro;$prijs.";
+pdo_query("UPDATE `famillie` SET `bank`=`bank`-$prijs,`grond`=`grond`+{$_POST['grond']} WHERE `name`='{$data->famillie}'");
+echo "Je hebt {$_POST['grond']}mÃ‚Â² gekocht in $famillie->stad voor &euro;$prijs.";
 }
 }
 }
   else if($_GET['p'] == "info" && $data->famrang >= 4) {
-    $dbres				= mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-    $famillie				= mysql_fetch_object($dbres);
+    $dbres				= pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
+    $famillie				= $dbres->fetch();
 
     print "  <tr> 
     <td class=subTitle><b>Familie Info</b></td>
@@ -240,7 +248,7 @@ echo "Je hebt {$_POST['grond']}m² gekocht in $famillie->stad voor &euro;$prijs."
 
     if(isset($_POST['info'])) {
       $famillie->info			= preg_replace('/</','&#60;',substr($_POST['info'],0,500));
-      mysql_query("UPDATE `famillie` SET `info`='{$famillie->info}' WHERE `name`='{$data->famillie}'");
+      pdo_query("UPDATE `famillie` SET `info`='{$famillie->info}' WHERE `name`='{$data->famillie}'");
       print "Familie info is veranderd.";
     }
 
@@ -289,16 +297,16 @@ if ($data->famrang < 3) {exit;}
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class=mainTxt>";
-	$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-	$famillie = mysql_fetch_object($dbres);
-	$exist = mysql_num_rows($dbres);
+	$dbres = pdo_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
+	$famillie = $dbres->fetch();
+	$exist = $dbres->rowCount();
 	if(isset($_POST['huur'])) {
 		$aantal = $_POST['aantal'];
 		$prijs = ($aantal * 1000);
 		if ($prijs > $famillie->bank) { echo "Er staat niet genoeg geld op de familiebank."; exit; }
 		elseif ($famillie->crusher == 1) { echo "Er is al een crusher gehuurd vandaag."; exit; }
 		else {
-			mysql_query("UPDATE `famillie` SET `crusher`='1',`aantal`='$aantal',`bank`=`bank`-$prijs WHERE `name`='{$famillie->name}'");
+			pdo_query("UPDATE `famillie` SET `crusher`='1',`aantal`='$aantal',`bank`=`bank`-$prijs WHERE `name`='{$famillie->name}'");
 			echo "Je hebt een crusher gehuurd voor $aantal auto's.";
 		}
 	}
@@ -327,11 +335,11 @@ if ($data->famrang < 3) {exit;}
   <tr> 
     <td class=mainTxt>";
     if(isset($_POST['message'])) {
-        $dbres                = mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}'");
-        while($member = mysql_fetch_object($dbres)) {
+        $dbres                = pdo_query("SELECT `login` FROM `users` WHERE `famillie`='{$data->famillie}'");
+        while($member = $dbres->fetch()) {
           $_POST['subject']        = preg_replace('/</','&#60;',$_POST['subject']);
           $_POST['message']        = preg_replace('/</','&#60;',$_POST['message']);
-          mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Famillie Bericht','{$member->login}','{$_POST['subject']}','{$_POST['message']}')") or die(mysql_error());
+          pdo_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Famillie Bericht','{$member->login}','{$_POST['subject']}','{$_POST['message']}')") or die(mysql_error());
         }
            print "Familie Bericht verzonden.";
     }
@@ -354,8 +362,8 @@ elseif ($_GET['p'] == log && $data->famrang >= 3) {
 	<td ><b>Gebruiker</td>
 	<td width=100 align=\"center\"><b>Bedrag</td>
 	<td width=100 align=\"center\"><b>Omschrijving</td></tr>";
-    $dbres				= mysql_query("SELECT *,DATE_FORMAT(`time`,'%d-%m-%Y %H:%i') AS `donatetime` FROM `logs` WHERE `person`='{$data->famillie}' AND `time` >= '{$data->signup}' AND `area`='cdonate' ORDER BY `time` DESC LIMIT 0,25");
-    while($info = mysql_fetch_object($dbres)) {
+    $dbres				= pdo_query("SELECT *,DATE_FORMAT(`time`,'%d-%m-%Y %H:%i') AS `donatetime` FROM `logs` WHERE `person`='{$data->famillie}' AND `time` >= '{$data->signup}' AND `area`='cdonate' ORDER BY `time` DESC LIMIT 0,25");
+    while($info = $dbres->fetch()) {
       $money				= $info->code;
       print <<<ENDHTML
       <tr><td width=125>{$info->donatetime}</td>
@@ -375,11 +383,11 @@ elseif ($_GET['p'] == invite) {
     <td class=mainTxt>";
 echo "<form method=post>Gebruiker:<input type=text name=user maxlength=16><br><br><input type=submit name=submit value='Zend uitnodiging'></form>";
 if ($_POST['submit']) {
-$query = mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['user']}'");
-$user = mysql_fetch_object($query);
+$query = pdo_query("SELECT * FROM `users` WHERE `login`='{$_POST['user']}'");
+$user = $query->fetch();
 if (!$query || $user->status == dood) { echo "Ongeldige gebruikersnaam, of deze gebruiker is dood."; }
 elseif ($user->famillie) { echo "Deze gebruiker heeft al een familie."; }
-else { mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$user->login}','Invite','Je bent uitgenodigd om de famillie $data->famillie te joinen. Klik hier op de accepteren of te weigeren: [invite]{$data->famillie}[/invite] ')"); mysql_query("INSERT INTO `invite`(`login`,`famillie`) values('$user->login','$data->famillie')"); 
+else { pdo_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$user->login}','Invite','Je bent uitgenodigd om de famillie $data->famillie te joinen. Klik hier op de accepteren of te weigeren: [invite]{$data->famillie}[/invite] ')"); pdo_query("INSERT INTO `invite`(`login`,`famillie`) values('$user->login','$data->famillie')"); 
 echo "$user->login is uitgenodigd om $data->famillie te joinen.";
 }
 }
@@ -388,4 +396,3 @@ echo "$user->login is uitgenodigd om $data->famillie te joinen.";
 </table>
 </body>
 </html>
-</table>

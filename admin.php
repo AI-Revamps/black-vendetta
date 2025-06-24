@@ -1,20 +1,23 @@
-<?php 
+<?php
+declare(strict_types=1);
+
 session_start();
-include("config.php"); 
-$username = $_POST["username"];
-$password = $_POST["password"];
-if($submit){
-	if ($username == "$admin" AND $password == "$paswoord") {  
-                $login = time();
-                $_SESSION['login'] = $login;
-	} 
-	else{  
-		echo"<b>Je hebt een verkeerd paswoord of gebruikersnaam ingegeven!</b><br>";
-	}
+require 'config.php';
+
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
+
+if (isset($_POST['submit'])) {
+    if ($username === $admin && $password === $paswoord) {
+        $_SESSION['login'] = time();
+    } else {
+        echo '<b>Je hebt een verkeerd paswoord of gebruikersnaam ingegeven!</b><br>';
+    }
 }
-if($_SESSION[login] + 60*60*24 > time()){
+
+if (isset($_SESSION['login']) && $_SESSION['login'] + 86400 > time()) {
 ?>
-<form name="form2" method="post" action="<?php echo"$PHP_SELF"; ?>">Al de berichten wissen:<br>
+<form name="form2" method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">Al de berichten wissen:<br>
     <input name="wissen" type="submit" value="Berichten Wissen"><br>Je instellingen wijzigen:<br>
 	<input name="wijzigen" type="submit" value="Instellingen Wijzigen">
   <br>
@@ -24,13 +27,13 @@ if($_SESSION[login] + 60*60*24 > time()){
   Je uitloggen (anders blijf je 1 dag ingelogd!):<br>
 	<input name="uitloggen" type="submit" value="Uitloggen">
 </form>
-<?
-        if($uitloggen){
+<?php
+        if (isset($_POST['uitloggen'])) {
                 unset($_SESSION['login']);
         }
 
-	if($wissen){
-		if(!$bestand){
+        if (isset($_POST['wissen'])) {
+                if (!$bestand) {
 			echo"<b>Er zijn nog geen berichten!</b><br>";
 		}
 		else{
@@ -39,7 +42,7 @@ if($_SESSION[login] + 60*60*24 > time()){
 			echo"<b>De berichten zijn verwijderd!</b><br>";
 		}
 	}
-	if($veranderen){
+        if (isset($_POST['veranderen'])) {
 ?>
 <form name="form3" method="post" action="verander.php">
 <?php
@@ -55,8 +58,8 @@ echo"<input name=verander type=submit value=Wijzigen>";
 ?>
 </form>
 <?php
-	}
-	if($wijzigen){
+        }
+        if (isset($_POST['wijzigen'])) {
 ?>
 <b><form name="form3" method="post" action="wijzig.php">
   <p>Je gebruikersnaam: <br>
@@ -121,7 +124,7 @@ echo"<input name=verander type=submit value=Wijzigen>";
 }
 else{
 ?>  
-<form name="form1" method="post" action="<?php echo"$PHP_SELF"; ?>"><p>Gebruikersnaam: 
+<form name="form1" method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>"><p>Gebruikersnaam:
     <input name="username" type="text" id="username">Paswoord: 
     <input name="password" type="password" id="password">      
     <input name="submit" type="submit" id="submit" value="Login"> 

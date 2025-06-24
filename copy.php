@@ -1,4 +1,8 @@
-<html>
+<?php
+declare(strict_types=1);
+?>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

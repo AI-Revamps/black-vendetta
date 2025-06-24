@@ -1,13 +1,22 @@
-  <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-  if(! check_login()) {
-    header("Location: login.php");
+<?php
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
+if (!check_login()) {
+    header('Location: login.php');
     exit;
-  }
-if ($jisin == 1) { include("jisin.php");exit; }  
-  ?>
+}
+if ($jisin == 1) { include 'jisin.php'; exit; }
+?>
 <html>
 <head>
 <title>Vendetta</title>
@@ -22,17 +31,17 @@ if ($jisin == 1) { include("jisin.php");exit; }
     if($_POST['amount'] <= $data->bank) {
       $data->zak            += $_POST['amount'];
       $data->bank            -= $_POST['amount'];
-      mysql_query("UPDATE `users` SET `bank`={$data->bank},`zak`={$data->zak} WHERE `login`='{$data->login}'");
+      pdo_query("UPDATE `users` SET `bank`=?,`zak`=? WHERE `login`=?", [$data->bank,$data->zak,$data->login]);
     }
     else
       print "  <tr><td class=\"mainTxt\">Zoveel geld staat er niet op de bank</td></tr>\n";
   }
-  else if(isset($_POST['in']) && preg_match('/^[0-9]+$/',$_POST['amount'])) {
+  elseif(isset($_POST['in']) && preg_match('/^[0-9]+$/',$_POST['amount'])) {
     if($_POST['amount'] <= $data->zak) {
           $data->zak            -= $_POST['amount'];
           $data->bank            += $_POST['amount'];
           $data->bankleft--;
-          mysql_query("UPDATE `users` SET `bank`={$data->bank},`zak`={$data->zak} WHERE `login`='{$data->login}'");
+          pdo_query("UPDATE `users` SET `bank`=?,`zak`=? WHERE `login`=?", [$data->bank,$data->zak,$data->login]);
     }
     else
       print "  <tr><td class=\"mainTxt\">Zoveel geld heb je niet</td></tr>\n";
@@ -53,3 +62,4 @@ if ($jisin == 1) { include("jisin.php");exit; }
 ENDHTML;
 ?>
 </table></body></html>
+
