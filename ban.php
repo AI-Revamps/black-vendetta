@@ -1,7 +1,14 @@
 <?php
-$host = gethostbyaddr($_SERVER['REMOTE_ADDR']);  
+declare(strict_types=1);
+
+$remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+$host = gethostbyaddr($remoteAddr);
 $parts = explode('.', $host);
-if ($parts[count($parts)-1] != "be" && $parts[count($parts)-1] != "nl"){
-echo"Proxys zijn niet toegelaten.";exit;
+$tld = strtolower(end($parts));
+
+if (!in_array($tld, ['be', 'nl'], true)) {
+    echo 'Proxys zijn niet toegelaten.';
+    exit;
 }
+
 ?>
