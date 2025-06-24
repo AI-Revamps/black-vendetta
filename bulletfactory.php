@@ -1,7 +1,15 @@
 <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
+declare(strict_types=1);
+require 'config.php';
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
   if(! check_login()) {
     header("Location: login.php");
     exit;
@@ -32,7 +40,7 @@ $time = time();
 $bwtime = ($time + 3600);
 $btime = gmdate('i:s',($data->slaap - $time));
 if ($data->slaap - $time > 0) { echo "Je moet nog $btime wachten voordat je weer kogels kan kopen."; exit; } 
-$fabriek = mysql_fetch_object(mysql_query("SELECT * FROM `stad` WHERE `stad`='{$data->stad}'"));
+$fabriek = pdo_query("SELECT * FROM `stad` WHERE `stad`=?", [$data->stad])->fetch();
 $koop = floor($data->zak / $fabriek->prijs);
 $akogels = ($data->paid == 1) ? ($fabriek->kogels*2) : $fabriek->kogels;
 if($_SERVER['REQUEST_METHOD']=='POST' && preg_match('/^[0-9]+$/',$_POST['aantal'])) {
@@ -49,8 +57,8 @@ if ($aantal > $akogels) {
 echo "Zoveel kogels zijn er niet."; exit;
 }
 	if (!Empty($aantal)) {
-			mysql_query("UPDATE `users` SET `zak`=`zak`-{$prijs},`kogels`=`kogels`+{$antal},`slaap`=FROM_UNIXTIME($bwtime) WHERE `login`= '{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `stad` SET `kogels`=`kogels`-{$aantal} WHERE `stad`='{$data->stad}'") or die (mysql_error());
+        pdo_query("UPDATE `users` SET `zak`=`zak`-?,`kogels`=`kogels`+?,`slaap`=FROM_UNIXTIME(?) WHERE `login`=?", [$prijs, $aantal, $bwtime, $data->login]);
+        pdo_query("UPDATE `stad` SET `kogels`=`kogels`-? WHERE `stad`=?", [$aantal, $data->stad]);
 			
 			echo "Je hebt $antal kogels gekocht voor &euro; {$prijs}."; exit;
 			} 
