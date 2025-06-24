@@ -1,40 +1,39 @@
-<?php include("config.php"); // config includen voor al de gegevens ?>
-<iframe src="<?php echo "$bar"; ?>" frameborder="0" width="100%" height="*" name="main" scrolling="no"></iframe>
-<table height="*" width="*" align="center" valign="middle" style="font-family: verdana">
-  <tr> 
-    <td align="center"> <table style="border: 1px solid black; font-size: 10pt;" cellpadding="2" cellspacing="5">
-        <tr> 
-          <td align="center">Status:<br><b>Je kan nu een bericht intypen!</b>
 <?php
-session_start();  
-function htmlparse($string){ 
-	return htmlentities(trim($string), ENT_QUOTES); 
+declare(strict_types=1);
+require 'config.php';
+session_start();
+
+function htmlparse(string $string): string {
+    return htmlspecialchars(trim($string), ENT_QUOTES);
 }
-$bericht = htmlparse($bericht); // html uitzetten in het bericht
-$naam    = htmlparse($naam);    // html uitzetten in de naam
-$bericht = addslashes($bericht);// van een " een \" maken in het bericht
-$naam    = addslashes($naam);   // van een " een \" maken in de naam
-if ($_POST[Submit]){
-	if($_SESSION[tijd] + $verlooptijd > time()){  
-		echo "<br><b>$flood</b>";  
-	}  
-	elseif($_POST[naam] == "" or $_POST[bericht] == ""){ 
-			echo("<br><b>$ongeldig</b>");
-	}
-	elseif($_POST[naam] == "Je naam" or $_POST[bericht] =="Je bericht"){
-		echo("<br><b>$ongeldig</b>");
-	}
-	elseif($_POST[naam] && $_POST[bericht]){
-                $tijd = time();
-                $_SESSION['tijd'] = $tijd;
-		$open = fopen("$file", "a");  
-		fputs($open, "<?php\n");  
-		fputs($open, '$getal');  
-		fputs($open, "[$hits]");  
-		fputs($open, " = \"<b>$naam:</b> $bericht <b>$tussen</b> \";\n");  
-		fputs($open, "?>\n");  
-		fclose($open);
-		echo("<br>
-            <b>$post</b>"); } } include("$form"); ?> <a href="bar.php" target="main"><img src="<?php echo "$dir"; ?>/www.gif" border="0">Vernieuwen</a> 
-            / <a href="admin.php"><img src="<?php echo "$dir"; ?>/admin.gif" border="0">Admin</a></TD>
+
+$status = 'Je kan nu een bericht intypen!';
+
+if (isset($_POST['Submit'])) {
+    $naam = $_POST['naam'] ?? '';
+    $bericht = $_POST['bericht'] ?? '';
+
+    if (($_SESSION['tijd'] ?? 0) + $verlooptijd > time()) {
+        $status = $flood;
+    } elseif ($naam === '' || $bericht === '' || $naam === 'Je naam' || $bericht === 'Je bericht') {
+        $status = $ongeldig;
+    } else {
+        $_SESSION['tijd'] = time();
+        $naam = htmlparse($naam);
+        $bericht = htmlparse($bericht);
+        $open = fopen($file, 'a');
+        fwrite($open, "<?php\n\$getal[\$hits] = \"<b>$naam:</b> $bericht <b>$tussen</b> \";\n?>\n");
+        fclose($open);
+        $status = $post;
+    }
+}
+?>
+<iframe src="<?php echo htmlspecialchars($bar, ENT_QUOTES); ?>" frameborder="0" width="100%" height="*" name="main" scrolling="no"></iframe>
+<table height="*" width="*" align="center" valign="middle" style="font-family: verdana">
+  <tr>
+    <td align="center"> <table style="border: 1px solid black; font-size: 10pt;" cellpadding="2" cellspacing="5">
+        <tr>
+          <td align="center">Status:<br><b><?php echo htmlspecialchars($status, ENT_QUOTES); ?></b>
+<?php include $form; ?> <a href="bar.php" target="main"><img src="<?php echo htmlspecialchars($dir, ENT_QUOTES); ?>/www.gif" border="0">Vernieuwen</a>
+            / <a href="admin.php"><img src="<?php echo htmlspecialchars($dir, ENT_QUOTES); ?>/admin.gif" border="0">Admin</a></TD>
         </TR></TABLE></TD></TR></TABLE></TD></TR></TABLE></TD></TR></TABLE>
