@@ -1,7 +1,12 @@
 <?php
-  include('config.php');
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
 $i = $data->id;
 ?>
 <html>
@@ -82,8 +87,8 @@ $ip = $_SERVER['REMOTE_ADDR'];
 $time = (time()+(14*24*60*60));
 if($ip != "82.94.255.118" && $ip != "82.94.255.119"){echo"Er is een hack poging onderschept.";}
 else{
-$dbres = mysql_query("SELECT * FROM `users` WHERE `id`='{$id}'");
-$data = mysql_fetch_object($dbres);
+  $stmt = pdo_query("SELECT * FROM `users` WHERE `id` = ?", [$id]);
+  $data = $stmt->fetch();
 $keychars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   $length = 10;
 
@@ -93,50 +98,47 @@ $keychars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   for ($i=0;$i<=$length;$i++) {
     $code .= substr($keychars, rand(0, $max), 1);
   }
-while(mysql_num_rows(mysql_query("SELECT * FROM `donate` WHERE `code`='{$code}'")) == 1){
-//parameters
+while (pdo_query("SELECT COUNT(*) FROM `donate` WHERE `code` = ?", [$code])->fetchColumn() > 0) {
   $keychars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   $length = 10;
-
-  // genereren
   $code = "";
-  $max=strlen($keychars)-1;
-  for ($i=0;$i<=$length;$i++) {
+  $max = strlen($keychars) - 1;
+  for ($i = 0; $i <= $length; $i++) {
     $code .= substr($keychars, rand(0, $max), 1);
   }
 }
-mysql_query("INSERT INTO `donate`(`door`,`code`) values('{$data->login}','{$code}')"); 
+pdo_query("INSERT INTO `donate`(`door`,`code`) VALUES(?, ?)", [$data->login, $code]);
 
-mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$data->login}','Donatie','Je donatiecode is: $code')"); 
+pdo_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) VALUES(NOW(),'Notificatie',?,?,?)", [$data->login, 'Donatie', "Je donatiecode is: $code"]);
 
 echo"Het Vendetta team dankt je voor je donatie. Je donatiecode is: &nbsp;$code";
 }
 }
 elseif(isset($_POST['code'],$_POST['submit'])){
-  $dbres = mysql_query("SELECT * FROM `donate` WHERE `code`='{$_POST['code']}'");
-  $don	= mysql_fetch_object($dbres);
-  $nr = mysql_num_rows($dbres);
+    $stmt = pdo_query("SELECT * FROM `donate` WHERE `code` = ?", [$_POST['code']]);
+    $don  = $stmt->fetch();
+    $nr = $stmt->rowCount();
   $time = (time()+(14*24*60*60));
   if($nr != 1){echo"Deze donatie code is ongeldig.";}
   elseif($don->status != 0){echo"Deze donatie code is te koop gesteld op de veiling.";}
   else{
-    mysql_query("UPDATE `users` SET `zak`=`zak`+50000 WHERE `login`='{$data->login}'");
-    mysql_query("UPDATE `users` SET `kogels`=`kogels`+500 WHERE `login`='{$data->login}'");
-    mysql_query("UPDATE `users` SET `paid`=`paid`+1 WHERE `login`='{$data->login}'");
+      pdo_query("UPDATE `users` SET `zak`=`zak`+50000 WHERE `login`=?", [$data->login]);
+      pdo_query("UPDATE `users` SET `kogels`=`kogels`+500 WHERE `login`=?", [$data->login]);
+      pdo_query("UPDATE `users` SET `paid`=`paid`+1 WHERE `login`=?", [$data->login]);
     if($data->paid > 3){
-      mysql_query("UPDATE `users` SET `paid`='3' WHERE `login`='{$data->login}'");
+        pdo_query("UPDATE `users` SET `paid`='3' WHERE `login`=?", [$data->login]);
     }
     if($data->paidtime1 <= $data->paidtime2 && $data->paidtime1 <= $data->paidtime3){
-      mysql_query("UPDATE `users` SET `paidtime1`='{$time}' WHERE `login`='{$data->login}'");
+        pdo_query("UPDATE `users` SET `paidtime1`=FROM_UNIXTIME(?) WHERE `login`=?", [$time, $data->login]);
     }
     elseif($data->paidtime2 <= $data->paidtime1 && $data->paidtime2 <= $data->paidtime3){
-      mysql_query("UPDATE `users` SET `paidtime2`='{$time}' WHERE `login`='{$data->login}'");
+        pdo_query("UPDATE `users` SET `paidtime2`=FROM_UNIXTIME(?) WHERE `login`=?", [$time, $data->login]);
     }
     elseif($data->paidtime3 <= $data->paidtime1 && $data->paidtime3 <= $data->paidtime2){
-      mysql_query("UPDATE `users` SET `paidtime3`='{$time}' WHERE `login`='{$data->login}'");
+        pdo_query("UPDATE `users` SET `paidtime3`=FROM_UNIXTIME(?) WHERE `login`=?", [$time, $data->login]);
     }
-	echo "De donatie code is correct. Bedankt voor het doneren.";
-	mysql_query("DELETE FROM `donate` WHERE `code`='{$_POST['code']}'"); 
+        echo "De donatie code is correct. Bedankt voor het doneren.";
+        pdo_query("DELETE FROM `donate` WHERE `code`=?", [$_POST['code']]);
   }
 }
 ?>
