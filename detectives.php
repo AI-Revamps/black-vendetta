@@ -1,11 +1,20 @@
 <?php
-  include('config.php');
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
+declare(strict_types=1);
+require 'config.php';
+
+$stmt = pdo_query(
+    "SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`," .
+    "UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`," .
+    "UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`," .
+    "UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` " .
+    "FROM `users` WHERE `login` = ?",
+    [$_SESSION['login']]
+);
+$data = $stmt->fetch();
+if (!check_login()) {
     header('Location: login.php');
     exit;
-  }
+}
 if ($jisin == 1) { header('Location: jisin.php'); }
 ?>
 <html>
@@ -19,46 +28,47 @@ if ($jisin == 1) { header('Location: jisin.php'); }
 <?php
 print <<<ENDHTML
 <table width=100% align=center>
-  <tr> 
+  <tr>
     <td class="subTitle"><b>Detectives</b></td>
   </tr>
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class="mainTxt">
 ENDHTML;
-if ($_POST['rall']) {
-mysql_query("DELETE FROM `detectives` WHERE `van`='{$data->login}'");
+if (isset($_POST['rall'])) {
+    pdo_query("DELETE FROM `detectives` WHERE `van` = ?", [$data->login]);
 }
-$user = mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['naar']}'");
-$exist = mysql_fetch_object($user);
-if (isset($_POST['submit'])) { 
-	if (!$exist->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($exist->status == dood) { echo "Deze gebruiker is dood."; exit; }
-	elseif (strtolower($data->login == $_POST['naar'])) { echo "Je kan jezelf niet laten zoeken."; exit; }
-	elseif ($_POST['stad'] != Alle) { 
-		if ($data->zak < 10000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-		else {
-mysql_query("INSERT INTO `log`(`wat`,`aantal`,`code`,`van`) values('Detective','1','{$_POST['stad']}','$data->login')");
-mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','{$_POST['stad']}',FROM_UNIXTIME($zoektijd))");
-			echo "Je detective is op pad gestuurd."; 
-			mysql_query("UPDATE `users` SET `zak`=`zak`-10000 WHERE `login`='{$data->login}'");
-		}
-	}
-	elseif ($_POST['stad'] == Alle) {
-		if ($data->zak < 60000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-		else {
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Brussel',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Leuven',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Gent',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Brugge',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Antwerpen',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Hasselt',FROM_UNIXTIME($zoektijd))");
-        mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Amsterdam',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Enschede',FROM_UNIXTIME($zoektijd))");
-        mysql_query("UPDATE `users` SET `zak`=`zak`-70000 WHERE `login`='{$data->login}'");
-		echo "Je detectives zijn op pad gestuurd.";
-		}
-	}
+$userStmt = pdo_query("SELECT * FROM `users` WHERE `login` = ?", [$_POST['naar'] ?? '']);
+$exist = $userStmt->fetch();
+if (isset($_POST['submit'])) {
+    if (!$exist->login) { echo "Deze gebruiker bestaat niet."; exit; }
+    elseif ($exist->status == 'dood') { echo "Deze gebruiker is dood."; exit; }
+    elseif (strtolower($data->login) == strtolower($_POST['naar'])) { echo "Je kan jezelf niet laten zoeken."; exit; }
+    elseif ($_POST['stad'] != 'Alle') {
+        if ($data->zak < 10000) { echo "Je hebt niet genoeg geld op zak."; exit; }
+        pdo_query(
+            "INSERT INTO `log`(`wat`,`aantal`,`code`,`van`) values('Detective','1',?,?)",
+            [$_POST['stad'], $data->login]
+        );
+        pdo_query(
+            "INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values(?,?,?,FROM_UNIXTIME(?))",
+            [$data->login, $_POST['naar'], $_POST['stad'], $zoektijd]
+        );
+        echo "Je detective is op pad gestuurd.";
+        pdo_query("UPDATE `users` SET `zak`=`zak`-10000 WHERE `login` = ?", [$data->login]);
+    }
+    elseif ($_POST['stad'] == 'Alle') {
+        if ($data->zak < 60000) { echo "Je hebt niet genoeg geld op zak."; exit; }
+        $steden = ['Brussel','Leuven','Gent','Brugge','Antwerpen','Hasselt','Amsterdam','Enschede'];
+        foreach ($steden as $stad) {
+            pdo_query(
+                "INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values(?,?,?,FROM_UNIXTIME(?))",
+                [$data->login, $_POST['naar'], $stad, $zoektijd]
+            );
+        }
+        pdo_query("UPDATE `users` SET `zak`=`zak`-70000 WHERE `login` = ?", [$data->login]);
+        echo "Je detectives zijn op pad gestuurd.";
+    }
 }
 print "
 	<form method='post'>
@@ -75,12 +85,12 @@ Huur een detective in om iemand te zoeken. 1 detective kost &euro;10.000.<br><br
 <tr><td width=100><input type='radio' name='stad' value='Alle' checked>Alle steden<br></td></tr>
 <tr><td width=100><br><input type='submit' name='submit' value='Zoek'></form></td></tr></html>";
 /// Einde uitvoer van query 
-$query = "SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `detectives` WHERE `van`='{$data->login}' ORDER BY `time` ASC"; 
-$huren = mysql_query("SELECT * FROM `detectives` WHERE `van`='{$data->login}'"); 
-$huur = mysql_num_rows($huren);
+$query = "SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `detectives` WHERE `van` = ? ORDER BY `time` ASC";
+$info = pdo_query($query, [$data->login]);
+$huren = pdo_query("SELECT * FROM `detectives` WHERE `van` = ?", [$data->login]);
+$huur = $huren->rowCount();
 $huur = 1;
-$info = mysql_query($query) or die(mysql_error()); 
-$count = 0; 
+$count = 0;
 if ($huur == 1) {
 echo "<tr><td width=5%> 
         #</td> 
@@ -93,7 +103,7 @@ echo "<tr><td width=5%>
                       <td width=24%> 
         <b>Verwijder</b></td></tr> 
       "; 
-while ($gegeven = mysql_fetch_array($info)) { 
+while ($gegeven = $info->fetch()) {
 $stad= $gegeven["stad"]; 
 $time = $gegeven["time"]; 
 $name = $gegeven["naar"]; 
@@ -112,5 +122,8 @@ echo "<tr>
 }
 }
 print "<tr><td><br><form method=POST><input type=submit name=rall value='Verwijder alles'></form></td></tr>";
-if (isset($_GET['x'])) { mysql_query("DELETE FROM `detectives` WHERE `id`='{$_GET['x']}' AND `van`='{$data->login}'"); echo "Je hebt je detective ontslagen.<br><br>"; }
+if (isset($_GET['x'])) {
+    pdo_query("DELETE FROM `detectives` WHERE `id` = ? AND `van` = ?", [$_GET['x'], $data->login]);
+    echo "Je hebt je detective ontslagen.<br><br>";
+}
 ?>
