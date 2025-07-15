@@ -79,7 +79,8 @@ print"Het geld is verzonden.";
   } 
   }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">
@@ -199,7 +200,7 @@ if ($data->famrang < 3) {exit;}
   <tr><td>&nbsp;&nbsp;</td></tr>
   <tr> 
     <td class=mainTxt>";
-echo "Je hebt grond nodig om members toe te laten. Met 5 m² grond kan je 1 member toelaten.<br><br>";
+echo "Je hebt grond nodig om members toe te laten. Met 5 mÂ² grond kan je 1 member toelaten.<br><br>";
 $famillie = mysql_fetch_object(mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'"));
 $stad = mysql_fetch_object(mysql_query("SELECT * FROM `stad` WHERE `stad`='{$famillie->stad}'"));
 $fami = mysql_query("SELECT * FROM `famillie` WHERE `stad`='{$famillie->stad}'");
@@ -215,7 +216,7 @@ $totaal = mysql_num_rows(mysql_query("SELECT * FROM `users` WHERE `famillie`='$d
 $totaal = floor($totaal * 5);
 $bla = floor(($famillie->grond - $totaal) / 5);
 if ($bla < 0) { $bla = 0; }
-print "Er is nog {$overige}m² grond in $famillie->stad<br>1m² kost &euro;50.000<br>Er staat &euro;$famillie->bank op de familiebank. Daarmee kun je {$kopen}m² kopen<br><br>Je kan nog $bla leden toelaten met de grond die $data->famillie bezit.<br><br><form method=post><input type=text name=grond size=5>m²<br><input type=submit name=koop value=Koop></form>";
+print "Er is nog {$overige}mÂ² grond in $famillie->stad<br>1mÂ² kost &euro;50.000<br>Er staat &euro;$famillie->bank op de familiebank. Daarmee kun je {$kopen}mÂ² kopen<br><br>Je kan nog $bla leden toelaten met de grond die $data->famillie bezit.<br><br><form method=post><input type=text name=grond size=5>mÂ²<br><input type=submit name=koop value=Koop></form>";
 }
 if ($_POST['koop']) {
 $prijs = ($_POST['grond'] * 50000);
@@ -223,7 +224,7 @@ if ($overige - $_POST['grond'] < 0) { echo "Er is niet zoveel grond meer."; }
 elseif ($famillie->bank < $prijs) { echo "Er staat niet genoeg geld op de famillie bank."; }
 else {
 mysql_query("UPDATE `famillie` SET `bank`=`bank`-$prijs,`grond`=`grond`+{$_POST['grond']} WHERE `name`='{$data->famillie}'");
-echo "Je hebt {$_POST['grond']}m² gekocht in $famillie->stad voor &euro;$prijs.";
+echo "Je hebt {$_POST['grond']}mÂ² gekocht in $famillie->stad voor &euro;$prijs.";
 }
 }
 }
