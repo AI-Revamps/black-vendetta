@@ -8,7 +8,8 @@
   }
 if ($jisin == 1) { header('Location: jisin.php'); }
 ?> 
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

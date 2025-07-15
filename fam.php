@@ -7,7 +7,8 @@ $data    = mysql_fetch_object($dbres);
     exit;
   }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

@@ -2,70 +2,53 @@
 include("config.php");
 $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
 $data = mysql_fetch_object($dbres);
+$pp = 10;
+$start = (isset($_GET['p']) && $_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
+$total = mysql_num_rows(mysql_query("SELECT id FROM `news`"));
+if ($start > $total) $start = 0;
+$rows = mysql_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
-<title>Vendetta</title>
-<link href="style.css" rel="stylesheet" type="text/css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
+    <meta charset="utf-8">
+    <title>Vendetta Nieuws</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-<body>
-<table width="100%">
-  <tr>
-    <td class="subTitle"><b>Nieuws</b></td>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
-  </tr>
-  <tr>
-    <td class="mainTxt">**********<br>
-	  <?php
-	  $pp = 10;
-	  $start= ($_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
-	  $sql = mysql_query("SELECT id FROM `news`");
-	  $rows = mysql_num_rows($sql);	  
-	  if($start > $rows){
-	    $start = 0;
-	  }
-	  $sql = mysql_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
-	  while($news = mysql_fetch_object($sql)){
-	    $time = date('d/m/Y', $news->time);
-	    $title = $news->title;
-		$text = $news->text;
-	    echo"<i><b>$title</b></i> $time<br><br>$text<br><br>**********<br><br>";
-	  }
-	  print "  <tr><td align=\"center\">";
-      if($rows <= $pp){
-        print "&#60;&#60; &#60; 1 &#62; &#62;&#62;";
-	  }
-      else {
-        if($start/$pp == 0){
-          print "&#60;&#60; &#60; ";
-		}
-        else{
-          print "<a href=\"?p=0\">&#60;&#60;</a> <a href=\"?p=". ($start/$pp-1) ."\">&#60;</a> ";
-		}
-        for($i=0; $i<$rows/$pp; $i++) {
-		  if($i == $start/$pp){
-		    print "<u>". ($i+1) ."</u> ";
-		  }
-		  else{
-            print "<a href=\"?p=$i\">". ($i+1) ."</a> ";
-		  }
+<body class="container py-3">
+    <h1 class="mb-3">Nieuws</h1>
+    <div class="mb-4">
+        <?php
+        while ($news = mysql_fetch_object($rows)) {
+            $time = date('d/m/Y', $news->time);
+            echo '<div class="mb-3"><strong>' . $news->title . '</strong> <span class="text-muted">' . $time . '</span><p>' . $news->text . '</p></div>';
         }
-        if($start+$pp >= $rows){
-          print " &#62; &#62;&#62; ";
-		}
-        else{
-          print "<a href=\"?p=". ($start/$pp+1) ."\">&#62;</a> <a href=\"?p=". (ceil($rows/$pp)-1) ."\">&#62;&#62;</a>";
-		}
-      }
-	  ?>
-	</td>
-  </tr>  
-</table>
+        ?>
+    </div>
+    <div class="text-center">
+        <?php
+        if ($total <= $pp) {
+            echo "&laquo; &lt; 1 &gt; &raquo;";
+        } else {
+            if ($start/$pp == 0) {
+                echo "&laquo; &lt; ";
+            } else {
+                echo '<a href="?p=0">&laquo;</a> <a href="?p=' . ($start/$pp-1) . '">&lt;</a> ';
+            }
+            for ($i=0; $i<$total/$pp; $i++) {
+                if ($i == $start/$pp) {
+                    echo '<u>' . ($i+1) . '</u> ';
+                } else {
+                    echo '<a href="?p=' . $i . '">' . ($i+1) . '</a> ';
+                }
+            }
+            if ($start+$pp >= $total) {
+                echo ' &gt; &raquo; ';
+            } else {
+                echo '<a href="?p=' . ($start/$pp+1) . '">&gt;</a> <a href="?p=' . (ceil($total/$pp)-1) . '">&raquo;</a>';
+            }
+        }
+        ?>
+    </div>
 </body>
 </html>

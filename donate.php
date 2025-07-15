@@ -4,7 +4,8 @@
   $data	= mysql_fetch_object($dbres);
 $i = $data->id;
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

@@ -6,7 +6,8 @@ include("config.php");
 			if ($dinfo->msg == NULL) { $kmsg = "<i>Geen</i>"; }
 			else { $kmsg = $dinfo->msg; }
 print <<<ENDHTML
-			<html>
+			<!DOCTYPE html>
+<html lang="nl">
 			<head>
 			<title>Vendetta</title>
 			<link rel="stylesheet" type="text/css" href="style.css">

@@ -3,7 +3,8 @@
 include("config.php"); 
 
 ?> 
-<html> 
+<!DOCTYPE html>
+<html lang="nl"> 
 
 <head> 
 <title>Vendetta</title> 

@@ -10,7 +10,8 @@ $data = $stmt->get_result()->fetch_object();
 $stmt = db_query("SELECT * FROM `famillie` WHERE `name`=?", array($data->famillie));
 $famillie = $stmt->get_result()->fetch_object();
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

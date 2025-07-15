@@ -11,7 +11,8 @@ if($data->level == 1){
   exit;
 }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link href="style.css" rel="stylesheet" type="text/css">

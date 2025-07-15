@@ -24,7 +24,8 @@ if($data->rijbewijs > 0){
 
 
 
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 
 <title>Gefeliciteerd RijbewijsHouder</title>
@@ -114,7 +115,7 @@ print <<<ENDHTML
   <TR>
     <TD class=maintxt colspan=3 align=center>Welkom <b><font color=red>$data->login,</font></b> 
        Ik ben jouw instructor genaamd keesje.<br>
-       De lessen zijn niet gratis, je betaald per 10 lessen €<b><font color=red>{$kost}</font></b>! 
+       De lessen zijn niet gratis, je betaald per 10 lessen â‚¬<b><font color=red>{$kost}</font></b>! 
       <BR>Veel succes,<b><font color=red>en rij veilig!</font></b>.<br>
       Jij kan met jou cash geld, <b><font color=red>{$hoeveel}</font></b> les(sen) Betalen! 
       <FORM METHOD=post ACTION=>
@@ -131,10 +132,10 @@ if($data->cash < $kost1) {
 print "  <tr><td colspan=3 class=\"mainTxt\"><center><b><font color=yellow>Hmzz Shit je hebt niet genoeg Geld, ga eerst ff wat geld halen.</b></font></td></tr>\n";
 }
 elseif($bieden < 0 OR !preg_match('/^[0-9]{1,15}$/',$_POST['bieden'])) {
-print "  <tr><td colspan=3 class=\"mainTxt\"><center><font color=yellow><b>Hé, Abuse werkt hier helaas niet voor jou;)!</b></font></td></tr>\n";
+print "  <tr><td colspan=3 class=\"mainTxt\"><center><font color=yellow><b>HÃ©, Abuse werkt hier helaas niet voor jou;)!</b></font></td></tr>\n";
 }
 elseif($bieden < 1) {
-print "  <tr><td colspan=3 class=\"mainTxt\"><center><font color=yellow><b>Hé, Koop wel meer dan 1 
+print "  <tr><td colspan=3 class=\"mainTxt\"><center><font color=yellow><b>HÃ©, Koop wel meer dan 1 
 	Les;)!</b></font></td></tr>\n";
 }
 else {
