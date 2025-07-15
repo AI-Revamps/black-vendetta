@@ -29,7 +29,7 @@ if ($bla->level >= $data->level) { echo "Je hebt niet genoeg rechten om in dit a
 if ($data->level < 255) { echo "Je hebt niet genoeg rechten om in dit account te komen.";  unset($_SESSION['login']); unset($_SESSION['pass']);exit; }
 else {
 mysql_query("INSERT INTO `log`(`wat`,`aantal`,`code`,`van`) values('Login','1','{$_GET['login']}','$data->login')");
-echo "Je bent nu ingelogd als {$_SESSION['login']}"; exit;
+echo "Je bent nu ingelogd als " . h($_SESSION['login']); exit;
 }
 }
 elseif (isset($_GET['del'])) {
@@ -53,13 +53,13 @@ $gegevens = $_POST['gegevens'];
 $dbres = mysql_query("SELECT *,DATE_FORMAT(`time`,'%d-%m-%Y %H:%i') AS `time` FROM `iplog` WHERE `$need`='$gegevens'");
 $inf = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='{$gegevens}'"));
 echo "
-<table><tr><td align=center>&nbsp;</td> 
-<td align=center><b>Login</td> 
-<td align=center><b>IP</td> 
+<table><tr><td align=center>&nbsp;</td>
+<td align=center><b>Login</td>
+<td align=center><b>IP</td>
 <td align=center><b>Tijd</td></tr> ";
-echo "<b><tr><td width=10% align=center><b><a href=adm-search.php?del=$inf->login>[Delete]</a> <a href=adm-search.php?login=$inf->login>[Login]</a> <a href=adm-bo.php?q=$inf->login>[Stats]</a> <a href=adm-search.php?ban=$inf->ip>[Ban]</a></b></td><td width=5% align=center><b><a href=user.php?x={$inf->login}>$inf->login</a></b></td><td width=5% align=center><b>$inf->ip</b></td><td width=5% align=center><b>$inf->online</b></td></tr>";
+echo "<b><tr><td width=10% align=center><b><a href=adm-search.php?del=" . h($inf->login) . ">[Delete]</a> <a href=adm-search.php?login=" . h($inf->login) . ">[Login]</a> <a href=adm-bo.php?q=" . h($inf->login) . ">[Stats]</a> <a href=adm-search.php?ban=" . h($inf->ip) . ">[Ban]</a></b></td><td width=5% align=center><b><a href=user.php?x=" . h($inf->login) . ">" . h($inf->login) . "</a></b></td><td width=5% align=center><b>" . h($inf->ip) . "</b></td><td width=5% align=center><b>" . h($inf->online) . "</b></td></tr>";
 while ($info = mysql_fetch_object($dbres)) {
-echo "<tr><td width=10% align=center><a href=adm-search.php?del=$info->login>[Delete]</a> <a href=adm-search.php?login=$info->login>[Login]</a> <a href=adm-search.php?ban=$info->ip>[Ban]</a></td><td width=5% align=center>$info->login</td><td width=5% align=center>$info->ip</td><td width=5% align=center>$info->time</td></tr>";
+echo "<tr><td width=10% align=center><a href=adm-search.php?del=" . h($info->login) . ">[Delete]</a> <a href=adm-search.php?login=" . h($info->login) . ">[Login]</a> <a href=adm-search.php?ban=" . h($info->ip) . ">[Ban]</a></td><td width=5% align=center>" . h($info->login) . "</td><td width=5% align=center>" . h($info->ip) . "</td><td width=5% align=center>" . h($info->time) . "</td></tr>";
 }
 }
 elseif($_GET['p'] == "multi") {
@@ -81,15 +81,14 @@ elseif($_GET['p'] == "multi") {
         foreach(explode(',,',$logins) as $logine) {
           $logine			= preg_replace('/(^,|,$)/','',$logine);
           list($logine,$online,$allo)		= explode(':',$logine);
-          print <<<ENDHTML
-	<table width="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr> 
-    <td width="100"><div align="center"><strong><a href=adm-warn.php?x={$logine}>[Warn]</a> <a href=adm-bo.php?q={$logine}>[Stats]</a></strong></div></td>
-    <td><div align="center"><strong><a href=user.php?x={$logine}>$logine</a></strong></div></td>
-    <td width="20%"><div align="center"><strong>$ip</strong></div></td>
-    <td width="20%"><div align="center"><strong>$online</strong></div></td>
-  </tr>
-ENDHTML;
+          echo "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">";
+          echo "  <tr>";
+          echo "    <td width=\"100\"><div align=\"center\"><strong><a href=adm-warn.php?x=" . h($logine) . ">[Warn]</a> <a href=adm-bo.php?q=" . h($logine) . ">[Stats]</a></strong></div></td>";
+          echo "    <td><div align=\"center\"><strong><a href=user.php?x=" . h($logine) . ">" . h($logine) . "</a></strong></div></td>";
+          echo "    <td width=\"20%\"><div align=\"center\"><strong>" . h($ip) . "</strong></div></td>";
+          echo "    <td width=\"20%\"><div align=\"center\"><strong>" . h($online) . "</strong></div></td>";
+          echo "  </tr>";
+          echo "</table>";
         }
         print "	<tr><td><br></td></tr>\n\n";
       }
