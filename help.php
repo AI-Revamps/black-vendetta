@@ -252,20 +252,20 @@ beter je bent beschermd tegen moorden.<br><br>
   <tr> 
     <td class="mainTxt"><table width="100%" border="0" cellspacing="0" cellpadding="0" align="center">
         <tr> 
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/biere.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/sourire.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/content.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-2.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-1.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/langue.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/triste.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-3.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pleure.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/cool.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/enerve1.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/enerve2.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/roll-eyes.gif"></div></td>
+          <td><div align="center"><img src="images/img/biere.gif"></div></td>
+          <td><div align="center"><img src="images/img/sourire.gif"></div></td>
+          <td><div align="center"><img src="images/img/content.gif"></div></td>
+          <td><div align="center"><img src="images/img/OH-2.gif"></div></td>
+          <td><div align="center"><img src="images/img/OH-1.gif"></div></td>
+          <td><div align="center"><img src="images/img/langue.gif"></div></td>
+          <td><div align="center"><img src="images/img/clin-oeuil.gif"></div></td>
+          <td><div align="center"><img src="images/img/triste.gif"></div></td>
+          <td><div align="center"><img src="images/img/OH-3.gif"></div></td>
+          <td><div align="center"><img src="images/img/pleure.gif"></div></td>
+          <td><div align="center"><img src="images/img/cool.gif"></div></td>
+          <td><div align="center"><img src="images/img/enerve1.gif"></div></td>
+          <td><div align="center"><img src="images/img/enerve2.gif"></div></td>
+          <td><div align="center"><img src="images/img/roll-eyes.gif"></div></td>
         </tr>
         <tr> 
           <td><div align="center">(b) of (B)</div></td>
@@ -300,17 +300,17 @@ beter je bent beschermd tegen moorden.<br><br>
           <td><div align="center"></div></td>
         </tr>
         <tr> 
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/bouche.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/coeur.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/coeur-brise.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pouce-oui.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pouce-non.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/diable.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/drink.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/worship.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/gun.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/guns.gif"></div></td>
+          <td><div align="center"><img src="images/img/bouche.gif"></div></td>
+          <td><div align="center"><img src="images/img/coeur.gif"></div></td>
+          <td><div align="center"><img src="images/img/coeur-brise.gif"></div></td>
+          <td><div align="center"><img src="images/img/clin-oeuil-langue.gif"></div></td>
+          <td><div align="center"><img src="images/img/pouce-oui.gif"></div></td>
+          <td><div align="center"><img src="images/img/pouce-non.gif"></div></td>
+          <td><div align="center"><img src="images/img/diable.gif"></div></td>
+          <td><div align="center"><img src="images/img/drink.gif"></div></td>
+          <td><div align="center"><img src="images/img/worship.gif"></div></td>
+          <td><div align="center"><img src="images/img/gun.gif"></div></td>
+          <td><div align="center"><img src="images/img/guns.gif"></div></td>
           <td><div align="center"></div></td>
           <td><div align="center"></div></td>
           <td><div align="center"></div></td>
