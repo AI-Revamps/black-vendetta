@@ -4,15 +4,16 @@ require "config.php";
 
 $error = '';
 
-if (isset($_GET['x']) && $_GET['x'] === 'logout') {
+$action = filter_input(INPUT_GET, 'x', FILTER_SANITIZE_STRING);
+if ($action === 'logout') {
     session_destroy();
     header('Location: login.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login = $_POST['login'] ?? '';
-    $password = $_POST['password'] ?? '';
+    $login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING) ?? '';
+    $password = filter_input(INPUT_POST, 'password') ?? '';
 
     $stmt = pdo_query('SELECT * FROM users WHERE login = ?', [$login]);
     $user = $stmt->fetch();

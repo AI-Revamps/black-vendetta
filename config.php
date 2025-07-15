@@ -3,6 +3,10 @@ declare(strict_types=1);
 require_once __DIR__.'/pdo.php';
 session_start();
 
+function h(string $value): string {
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
 // Compatibility layer for old mysql_* functions using PDO
 function mysql_query(string $query) {
     return db()->query($query);
