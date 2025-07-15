@@ -150,8 +150,8 @@ if (!$user) { echo "Deze gebruiker bestaat niet."; exit; }
 	$info = preg_replace("~\(G\)~i","<img src=images/img/guns.gif>",$info);
 /* $info = str_replace("\'", "'", $info); */
 $rank = ($user->famrang == 5) ? "Don van" : "Famillie";
-$famillie = ($user->famillie) ? "<a href=\"fam.php?x=$famillie\">$user->famillie</a>" : "Geen";
-$pic = ($user->pic) ? "<img src=\"{$user->pic}\">" : "";
+$famillie = ($user->famillie) ? "<a href=\"fam.php?x=" . h($user->famillie) . "\">" . h($user->famillie) . "</a>" : "Geen";
+$pic = ($user->pic) ? "<img src=\"" . h($user->pic) . "\">" : "";
 if ($user->xp < 10) { $rang = "$rang1"; }
 elseif ($user->xp < 20) { $rang = "$rang2"; }
 elseif ($user->xp < 50) { $rang = "$rang3"; }
@@ -168,7 +168,7 @@ elseif ($user->xp < 15000) { $rang = "$rang13"; }
 elseif ($user->xp < 20000) { $rang = "$rang14"; }
 elseif ($user->xp >= 20000) { $rang = "$rang15"; }
 $status = ($user->status == levend) ? "<b><font color=009900>Levend</font></b>" : "<b><font color=red>Dood</font></b>";
-$huwelijk = (!$user->huwelijk) ? "<i>Niet getrouwd</i>" : "$user->login & $user->huwelijk";
+$huwelijk = (!$user->huwelijk) ? "<i>Niet getrouwd</i>" : h($user->login) . " & " . h($user->huwelijk);
 $respect = round($user->respect);
 if ($user->zak < 1) { $zak = "Blut"; }
 elseif ($user->zak < 10000) { $zak = "Arm"; }
