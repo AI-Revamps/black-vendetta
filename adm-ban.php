@@ -4,7 +4,8 @@ include("config.php");
   $data	= mysql_fetch_object($dbres);
   if ($data->level < 200) { exit; }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

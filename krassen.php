@@ -11,7 +11,8 @@ if ($jisin == 1) { header('Location: jisin.php'); }
 //if ($data->sl == 1) { header('Location: eisin.php'); }
 //if ($spisin == 1) { header("Location: spisin.php"); }
 ?> 
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

@@ -4,7 +4,8 @@ $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`tran
 $data	= mysql_fetch_object($dbres);
 if ($data->status == dood) { header("Location: rip.php"); exit; }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

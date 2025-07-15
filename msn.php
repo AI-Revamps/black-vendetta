@@ -48,7 +48,8 @@ function mv($value)
 mysql_query("UPDATE `users` SET `online`=NOW() WHERE `login`='{$data->login}'"); 
 
 ?> 
-<html> 
+<!DOCTYPE html>
+<html lang="nl"> 
 <link rel="stylesheet" type="text/css" href="style.css"> 
 <title>Crime55</title><table width="100%"> 
 <tr><td class="subTitle"><b>Uitnodigen</b></td></tr> 
