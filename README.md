@@ -34,9 +34,15 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 PHPUnit tests live in the `tests/` directory. Install the development dependencies using Composer:
 
+
 ```bash
 composer install
 ```
+
+Composer downloads the development dependencies from Packagist. This step
+requires internet access unless you include the `vendor/` directory in the
+repository. Alternatively, you can pre-download the packages and commit the
+generated `composer.lock` file for reproducible installations.
 
 Run the tests with:
 
