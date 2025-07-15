@@ -58,6 +58,7 @@ if (isset($_GET['id'], $_GET['code'])) {
         $message = "Je bent geregistreerd, er is een e-mail gestuurd naar $email met een activatie-code...";
     }
 }
+
 $refer = $_GET['refer'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -92,6 +93,7 @@ $refer = $_GET['refer'] ?? '';
         <div class="col-md-6 offset-md-3">
             <label for="geslacht" class="form-label">Geslacht</label>
             <select name="geslacht" id="geslacht" class="form-select">
+
                 <option value="Man">Man</option>
                 <option value="Vrouw">Vrouw</option>
             </select>
