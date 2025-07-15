@@ -1,8 +1,7 @@
-<?php 
-session_start();
-include("config.php"); 
-$username = $_POST["username"];
-$password = $_POST["password"];
+<?php
+require 'config.php';
+$username = $_POST["username"] ?? '';
+$password = $_POST["password"] ?? '';
 if($submit){
 	if ($username == "$admin" AND $password == "$paswoord") {  
                 $login = time();
@@ -121,8 +120,9 @@ echo"<input name=verander type=submit value=Wijzigen>";
 }
 else{
 ?>  
-<form name="form1" method="post" action="<?php echo"$PHP_SELF"; ?>"><p>Gebruikersnaam: 
-    <input name="username" type="text" id="username">Paswoord: 
+<form name="form1" method="post" action="<?php echo"$PHP_SELF"; ?>"><p>Gebruikersnaam:
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+    <input name="username" type="text" id="username">Paswoord:
     <input name="password" type="password" id="password">      
     <input name="submit" type="submit" id="submit" value="Login"> 
 </form> 

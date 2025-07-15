@@ -80,6 +80,7 @@ elseif(isset($_POST['submit'])) {
 $refer = $_GET['refer'];
  print <<<ENDHTML
    <form method="post">
+        <input type="hidden" name="csrf_token" value="{$_SESSION['csrf_token']}">
         <table width="100%">
           <tr> 
             <td width="49%"><div align="right">Login:</div></td>
