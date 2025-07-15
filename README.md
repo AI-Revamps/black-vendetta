@@ -24,3 +24,17 @@ Set the following environment variables to configure the database connection:
 3. Open `login.php` to log in or register.
 
 The main page `index.php` now uses Bootstrap and `<iframe>` elements instead of the old frameset layout.
+
+## Tests
+
+PHPUnit tests live in the `tests/` directory. Install the development dependencies using Composer:
+
+```bash
+composer install
+```
+
+Run the tests with:
+
+```bash
+composer test
+```
