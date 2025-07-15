@@ -1,7 +1,7 @@
 <?php
 include("config.php");
-$dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
-$data = mysql_fetch_object($dbres);
+$dbres = pdo_query("SELECT * FROM `users` WHERE `login`=?", [$_SESSION['login']]);
+$data = $dbres->fetch();
 if(! check_login()) {
     header("Location: login.php");
     exit;
@@ -28,7 +28,10 @@ if(isset($_POST['addnew'])){
   if(!isset($_POST['title'])){echo"Je hebt geen titel opgegeven.";exit;}
   if(!isset($_POST['text'])){echo"Je hebt geen tekst opgegeven.";exit;}
   $time = time();
-  mysql_query("INSERT INTO `news`(`title`,`text`,`time`) values('{$_POST['title']}','{$_POST['text']}','{$time}')")or die("Nieuws toevoegen mislukt."); 
+  pdo_query(
+      "INSERT INTO `news`(`title`,`text`,`time`) values(?,?,?)",
+      [$_POST['title'], $_POST['text'], $time]
+  );
   echo "Nieuws toegevoegd.";
   exit;
 }
@@ -40,13 +43,16 @@ if(isset($_POST['edit'])){
   $id = $_POST['id'];
   $title = $_POST['title'];
   $text = $_POST['text'];
-  mysql_query("UPDATE `news` SET `title`='{$title}',`text`='{$text}',`time`='{$time}' WHERE `id`='{$id}'")or die("Het nieuws kon niet worden bewerkt."); 
+  pdo_query(
+      "UPDATE `news` SET `title`=?,`text`=?,`time`=? WHERE `id`=?",
+      [$title, $text, $time, $id]
+  );
   echo "Het nieuws is bewerkt.";
   exit;
 }
 if(isset($_POST['del'])){
   $id = $_POST['id'];
-  mysql_query("DELETE FROM `news` WHERE `id`='{$id}'")or die("Het nieuws kon niet worden verwijderd."); 
+  pdo_query("DELETE FROM `news` WHERE `id`=?", [$id]);
   echo "Het nieuws is verwijderd.";
   exit;
 }
@@ -73,8 +79,8 @@ if($_GET['page']=="addnews"){
 }
 elseif(isset($_GET['d'])){
   $id = $_GET['d'];
-  $sql = mysql_query("SELECT * FROM `news` WHERE `id`='$id'");
-  $news = mysql_fetch_object($sql);
+  $sql = pdo_query("SELECT * FROM `news` WHERE `id`=?", [$id]);
+  $news = $sql->fetch();
   $time = date('d/m/Y', $news->time);
   $title = $news->title;
   $text = $news->text;
@@ -112,13 +118,13 @@ elseif($_GET['page']=="delnews" || isset($_GET['p'])){
 	  <?php
 	  $pp = 10;
 	  $start= ($_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
-	  $sql = mysql_query("SELECT id FROM `news`");
-	  $rows = mysql_num_rows($sql);	  
+          $sql = pdo_query("SELECT id FROM `news`");
+          $rows = $sql->rowCount();
 	  if($start > $rows){
 	    $start = 0;
 	  }
-	  $sql = mysql_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
-	  while($news = mysql_fetch_object($sql)){
+          $sql = pdo_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
+          while($news = $sql->fetch()){
 	    $id = $news->id;
 	    $time = date('d/m/Y', $news->time);
 	    $title = $news->title;
@@ -159,8 +165,8 @@ elseif($_GET['page']=="delnews" || isset($_GET['p'])){
 }
 elseif(isset($_GET['x'])){
   $id = $_GET['x'];
-  $sql = mysql_query("SELECT * FROM `news` WHERE `id`='$id'");
-  $news = mysql_fetch_object($sql);
+  $sql = pdo_query("SELECT * FROM `news` WHERE `id`=?", [$id]);
+  $news = $sql->fetch();
   $time = $news->time;
   $title = $news->title;
   $text = $news->text;
@@ -199,13 +205,13 @@ elseif($_GET['page']=="editnews" || isset($_GET['e'])){
 	  <?php
 	  $pp = 10;
 	  $start= ($_GET['e'] >= 0) ? $_GET['e']*$pp : 0;
-	  $sql = mysql_query("SELECT id FROM `news`");
-	  $rows = mysql_num_rows($sql);	  
+          $sql = pdo_query("SELECT id FROM `news`");
+          $rows = $sql->rowCount();
 	  if($start > $rows){
 	    $start = 0;
 	  }
-	  $sql = mysql_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
-	  while($news = mysql_fetch_object($sql)){
+          $sql = pdo_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
+          while($news = $sql->fetch()){
 	    $id = $news->id;
 	    $time = date('d/m/Y', $news->time);
 	    $title = $news->title;
