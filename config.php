@@ -1,7 +1,23 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/pdo.php';
+// Configure secure session cookies
+$secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+session_set_cookie_params(['httponly' => true, 'secure' => $secure]);
 session_start();
+
+// Generate a CSRF token for the session
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Validate CSRF token on POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedToken = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $postedToken)) {
+        die('Invalid CSRF token');
+    }
+}
 
 // Compatibility layer for old mysql_* functions using PDO
 function mysql_query(string $query) {
