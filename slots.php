@@ -132,7 +132,7 @@ elseif($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['inzet'])) {
                 $cc = $cc*10;
                 $i++;
                 }
-$url = "http://members.lycos.nl/js6287/images/slots/";
+$url = "images/slots/";
 $ext = ".gif";
 $pica = $url.$a.$ext;
 $picb = $url.$b.$ext;
@@ -192,31 +192,31 @@ $winst = $times*$inzet;
 ?></font>
 <br><br><br><table width="100%">
   <tr>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/5.gif><img src=http://members.lycos.nl/js6287/images/slots/5.gif><img src=http://members.lycos.nl/js6287/images/slots/5.gif></div></td>
+    <td><div align="right"><img src=images/slots/5.gif><img src=images/slots/5.gif><img src=images/slots/5.gif></div></td>
     <td width="100">50 x</td>
     <td width="2%">&nbsp;</td>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/1.gif><img src=http://members.lycos.nl/js6287/images/slots/1.gif><img src=http://members.lycos.nl/js6287/images/slots/1.gif></div></td>
+    <td><div align="right"><img src=images/slots/1.gif><img src=images/slots/1.gif><img src=images/slots/1.gif></div></td>
     <td width="100">15 x</td>
   </tr>
   <tr>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/4.gif><img src=http://members.lycos.nl/js6287/images/slots/4.gif><img src=http://members.lycos.nl/js6287/images/slots/4.gif></div></td>
+    <td><div align="right"><img src=images/slots/4.gif><img src=images/slots/4.gif><img src=images/slots/4.gif></div></td>
     <td>30 x</td>
     <td>&nbsp;</td>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/0.gif><img src=http://members.lycos.nl/js6287/images/slots/0.gif><img src=http://members.lycos.nl/js6287/images/slots/0.gif></div></td>
+    <td><div align="right"><img src=images/slots/0.gif><img src=images/slots/0.gif><img src=images/slots/0.gif></div></td>
     <td>10 x</td>
   </tr>
   <tr>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/3.gif><img src=http://members.lycos.nl/js6287/images/slots/3.gif><img src=http://members.lycos.nl/js6287/images/slots/3.gif></div></td>
+    <td><div align="right"><img src=images/slots/3.gif><img src=images/slots/3.gif><img src=images/slots/3.gif></div></td>
     <td>25 x</td>
     <td>&nbsp;</td>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/5.gif><img src=http://members.lycos.nl/js6287/images/slots/5.gif></div></td>
+    <td><div align="right"><img src=images/slots/5.gif><img src=images/slots/5.gif></div></td>
     <td>5 x</td>
   </tr>
   <tr>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/2.gif><img src=http://members.lycos.nl/js6287/images/slots/2.gif><img src=http://members.lycos.nl/js6287/images/slots/2.gif></div></td>
+    <td><div align="right"><img src=images/slots/2.gif><img src=images/slots/2.gif><img src=images/slots/2.gif></div></td>
     <td>20 x</td>
     <td>&nbsp;</td>
-    <td><div align="right"><img src=http://members.lycos.nl/js6287/images/slots/5.gif></div></td>
+    <td><div align="right"><img src=images/slots/5.gif></div></td>
     <td>2 x</td>
   </tr>
 </table></center></body></html>

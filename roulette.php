@@ -222,7 +222,7 @@ print <<<ENDHTML
     <table border="0" id="table1"> 
         <tr> 
             <td align="middle" width="260"> 
-            <img src="http://members.lycos.nl/js6287/images/roulettetable.gif" border="0"></td> 
+            <img src="images/roulettetable.gif" border="0"></td> 
             <td align="middle"><input type="hidden" name="casino"> 
             <input type="hidden" size="2" value="1" name="x"> 
             <table class="sub2" width="85%" border="0" id="table2"> 

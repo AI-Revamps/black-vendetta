@@ -207,16 +207,16 @@ echo "
 		<td width=10% align=center>{$schade}%</td>
 		<td width=10% align=center>{$stad}</td>
 		<td width=20% align=center>";
-if ($estad == $stad) { echo "<a href=\"garage.php?x={$verkoop}\"><img alt=verkoop border=0 src=http://members.lycos.nl/js6287/images/sell.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=verkoop src=http://members.lycos.nl/js6287/images/sell2.gif width=32 height=32>"; }
-if ($estad == $stad) { echo "<a href=\"garage.php?repair={$verkoop}\"><img alt=repair border=0 src=http://members.lycos.nl/js6287/images/repair.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=repair src=http://members.lycos.nl/js6287/images/repair2.gif width=32 height=32>"; }
-if ($famillie->crusher == 1 && $famillie->aantal > 0 && $estad == $stad) { echo "<a href=\"garage.php?crush={$verkoop}\"><img alt=crush border=0 src=http://members.lycos.nl/js6287/images/crush.gif width=32 height=32></a>"; }
-else { echo "<img alt=crush src=http://members.lycos.nl/js6287/images/crush2.gif width=32 height=32>"; }
-if ($estad == $stad) { echo "<a href=\"garage.php?trans={$verkoop}\"><img alt=transporteer border=0 src=http://members.lycos.nl/js6287/images/trans.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=transporteer src=http://members.lycos.nl/js6287/images/trans2.gif width=32 height=32>"; }
-if ($safe == 0) { echo "<a href=\"garage.php?safe={$verkoop}\"><img alt=safehouse border=0 src=http://members.lycos.nl/js6287/images/safe.gif width=32 height=32></a>"; }
-if ($safe != 0) { echo "<img alt=safehouse src=http://members.lycos.nl/js6287/images/safe2.gif width=32 height=32>"; }
+if ($estad == $stad) { echo "<a href=\"garage.php?x={$verkoop}\"><img alt=verkoop border=0 src=images/sell.gif width=32 height=32></a>"; }
+if ($estad != $stad) { echo "<img alt=verkoop src=images/sell2.gif width=32 height=32>"; }
+if ($estad == $stad) { echo "<a href=\"garage.php?repair={$verkoop}\"><img alt=repair border=0 src=images/repair.gif width=32 height=32></a>"; }
+if ($estad != $stad) { echo "<img alt=repair src=images/repair2.gif width=32 height=32>"; }
+if ($famillie->crusher == 1 && $famillie->aantal > 0 && $estad == $stad) { echo "<a href=\"garage.php?crush={$verkoop}\"><img alt=crush border=0 src=images/crush.gif width=32 height=32></a>"; }
+else { echo "<img alt=crush src=images/crush2.gif width=32 height=32>"; }
+if ($estad == $stad) { echo "<a href=\"garage.php?trans={$verkoop}\"><img alt=transporteer border=0 src=images/trans.gif width=32 height=32></a>"; }
+if ($estad != $stad) { echo "<img alt=transporteer src=images/trans2.gif width=32 height=32>"; }
+if ($safe == 0) { echo "<a href=\"garage.php?safe={$verkoop}\"><img alt=safehouse border=0 src=images/safe.gif width=32 height=32></a>"; }
+if ($safe != 0) { echo "<img alt=safehouse src=images/safe2.gif width=32 height=32>"; }
 
 }
 
