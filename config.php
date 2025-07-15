@@ -82,7 +82,8 @@ $lban = mysql_fetch_object(mysql_query("SELECT * FROM `bans` WHERE `IP`='$ip' OR
 $ban = ($data->login) ? $lban : $iban;
  if ($ban) {
     print <<<ENDHTML
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Gangster4Crime</title>
 <link rel="stylesheet" type="text/css" href="style.css">

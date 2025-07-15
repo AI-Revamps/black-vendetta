@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">
@@ -371,7 +372,7 @@ beter je bent beschermd tegen moorden.<br><br>
       of e-mail ontvangen als u hier niet om gevraagd heeft. Wanneer u inzage 
       wenst in gegevens die eventueel door ons zijn vastgelegd kunt u deze eenvoudig 
       opvragen door een e-mail te sturen naar info@vendettagame.nl met als onderwerp 
-      “privacy”. Formuleer duidelijk welke informatie u wilt hebben en waar deze 
+      Â“privacyÂ”. Formuleer duidelijk welke informatie u wilt hebben en waar deze 
       informatie vastgelegd zou moeten zijn. </td>
   </tr>
 </table>

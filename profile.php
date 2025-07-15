@@ -12,7 +12,8 @@ elseif ($data->bf == 2) { $hbf = "Zelfde Aantal"; }
 elseif ($data->bf == 3) { $hbf = "Dubbele Aantal"; }
 else { $hbf = $data->bf; }
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">

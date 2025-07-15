@@ -8,7 +8,8 @@
   }
 if ($jisin == 1) { header('Location: jisin.php'); }
 ?> 
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
 <title>Vendetta</title>
 <link rel="stylesheet" type="text/css" href="style.css">
@@ -327,7 +328,7 @@ $jtime = (time() + 600);
 				mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='$be->login'");
 			}
 			elseif ($msgnum == 7) { 
-				if ($geluk == 1) { echo "<br><br>Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine privékluis..."; $msg = "$msg Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine privékluis...";
+				if ($geluk == 1) { echo "<br><br>Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine privÃ©kluis..."; $msg = "$msg Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine privÃ©kluis...";
 				if ($antal != 0) { echo "<br>Er lagen $antal units $item in de kluis."; mysql_query("UPDATE `users` SET `$item`=`$item`+$antal WHERE `login`='$leider->login'"); $msg = "$msg Er lagen $antal units $item in de kluis."; }
 				echo "Er lag ook nog &euro; {$ammountp} cash in. Jullie moeten zelf het geld verdelen"; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammountp WHERE `login`='{$leider->login}'"); $msg = "$msg Er lag ook nog &euro; {$ammountp} cash in.";
 								}					
