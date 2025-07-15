@@ -287,54 +287,54 @@ $nr = mysql_query("SELECT id,user,subject,message,date FROM forum_reacties WHERE
     $object['message'] = preg_replace("~\[/small\]~i","</font>",$object['message']); 
     $object['message'] = preg_replace("~\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]~i","<font color=\\1>\\2</font>",$object['message']); 
 	    $object['message'] = preg_replace("~\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]~i","<font size=\\1>\\2</font>",$object['message']);
-$object['message'] = preg_replace("~\(b\)~i","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(B\)~i","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\)~i","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\)~i","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = preg_replace("~:d~i","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-D~i","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-O~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$object['message']);
-	$object['message'] = preg_replace("~:o~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$object['message']);
-	$object['message'] = preg_replace("~:p~i","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-P~i","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;\)~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;-\)~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\(~i","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\(~i","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\|~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\|~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\'\(~i","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(h\)~i","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(H\)~i","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-@~i","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$object['message']);
-	$object['message'] = preg_replace("~:@~i","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$object['message']);
-	$object['message'] = preg_replace("~:s~i","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-S~i","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(k\)~i","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(K\)~i","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(l\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(L\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(u\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(U\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;-P~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;p~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(y\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(Y\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(n\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(N\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(6\)~i","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(d\)~i","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(D\)~i","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = preg_replace("~_o_~i","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(g\)~i","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(G\)~i","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$object['message']);
+$object['message'] = preg_replace("~\(b\)~i","<img src=images/img/biere.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(B\)~i","<img src=images/img/biere.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\)~i","<img src=images/img/sourire.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\)~i","<img src=images/img/sourire.gif>",$object['message']);
+	$object['message'] = preg_replace("~:d~i","<img src=images/img/content.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-D~i","<img src=images/img/content.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-O~i","<img src=images/img/OH-2.gif>",$object['message']);
+	$object['message'] = preg_replace("~:o~i","<img src=images/img/OH-1.gif>",$object['message']);
+	$object['message'] = preg_replace("~:p~i","<img src=images/img/langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-P~i","<img src=images/img/langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;\)~i","<img src=images/img/clin-oeuil.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;-\)~i","<img src=images/img/clin-oeuil.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\(~i","<img src=images/img/triste.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\(~i","<img src=images/img/triste.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\|~i","<img src=images/img/OH-3.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\|~i","<img src=images/img/OH-3.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\'\(~i","<img src=images/img/pleure.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(h\)~i","<img src=images/img/cool.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(H\)~i","<img src=images/img/cool.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-@~i","<img src=images/img/enerve1.gif>",$object['message']);
+	$object['message'] = preg_replace("~:@~i","<img src=images/img/enerve2.gif>",$object['message']);
+	$object['message'] = preg_replace("~:s~i","<img src=images/img/roll-eyes.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-S~i","<img src=images/img/roll-eyes.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(k\)~i","<img src=images/img/bouche.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(K\)~i","<img src=images/img/bouche.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(l\)~i","<img src=images/img/coeur.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(L\)~i","<img src=images/img/coeur.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(u\)~i","<img src=images/img/coeur-brise.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(U\)~i","<img src=images/img/coeur-brise.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;-P~i","<img src=images/img/clin-oeuil-langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;p~i","<img src=images/img/clin-oeuil-langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(y\)~i","<img src=images/img/pouce-oui.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(Y\)~i","<img src=images/img/pouce-oui.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(n\)~i","<img src=images/img/pouce-non.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(N\)~i","<img src=images/img/pouce-non.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(6\)~i","<img src=images/img/diable.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(d\)~i","<img src=images/img/drink.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(D\)~i","<img src=images/img/drink.gif>",$object['message']);
+	$object['message'] = preg_replace("~_o_~i","<img src=images/img/worship.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(g\)~i","<img src=images/img/gun.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(G\)~i","<img src=images/img/guns.gif>",$object['message']);
   ?>
   <tr> 
     <td colspan="2" class="forumTitle"><table width="100%">
         <tr> 
           <td width="20%">Door: </td>
-          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"?>
-            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;<a href=?edit=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?>
+          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=images/mail.gif height=11 width=11></a>&nbsp;"?>
+            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=images/del.png height=11 width=11></a>&nbsp;<a href=?edit=".$object['id']."><img border=0 src=images/edit.png height=11 width=11></a>";}?>
           </td>
         </tr>
         <tr> 
@@ -383,47 +383,47 @@ $object['message'] = preg_replace("~\(b\)~i","<img src=http://members.lycos.nl/j
     $object['message'] = preg_replace("~\[/small\]~i","</font>",$object['message']); 
     $object['message'] = preg_replace("~\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]~i","<font color=\\1>\\2</font>",$object['message']); 
 		    $object['message'] = preg_replace("~\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]~i","<font size=\\1>\\2</font>",$object['message']);
-$object['message'] = preg_replace("~\(b\)~i","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(B\)~i","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\)~i","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\)~i","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = preg_replace("~:d~i","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-D~i","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-O~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$object['message']);
-	$object['message'] = preg_replace("~:o~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$object['message']);
-	$object['message'] = preg_replace("~:p~i","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-P~i","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;\)~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;-\)~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\(~i","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\(~i","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\|~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-\|~i","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = preg_replace("~:\'\(~i","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(h\)~i","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(H\)~i","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-@~i","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$object['message']);
-	$object['message'] = preg_replace("~:@~i","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$object['message']);
-	$object['message'] = preg_replace("~:s~i","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = preg_replace("~:-S~i","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(k\)~i","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(K\)~i","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(l\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(L\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(u\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(U\)~i","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;-P~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\;p~i","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(y\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(Y\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(n\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(N\)~i","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(6\)~i","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(d\)~i","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(D\)~i","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = preg_replace("~_o_~i","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(g\)~i","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$object['message']);
-	$object['message'] = preg_replace("~\(G\)~i","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$object['message']);
+$object['message'] = preg_replace("~\(b\)~i","<img src=images/img/biere.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(B\)~i","<img src=images/img/biere.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\)~i","<img src=images/img/sourire.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\)~i","<img src=images/img/sourire.gif>",$object['message']);
+	$object['message'] = preg_replace("~:d~i","<img src=images/img/content.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-D~i","<img src=images/img/content.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-O~i","<img src=images/img/OH-2.gif>",$object['message']);
+	$object['message'] = preg_replace("~:o~i","<img src=images/img/OH-1.gif>",$object['message']);
+	$object['message'] = preg_replace("~:p~i","<img src=images/img/langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-P~i","<img src=images/img/langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;\)~i","<img src=images/img/clin-oeuil.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;-\)~i","<img src=images/img/clin-oeuil.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\(~i","<img src=images/img/triste.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\(~i","<img src=images/img/triste.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\|~i","<img src=images/img/OH-3.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-\|~i","<img src=images/img/OH-3.gif>",$object['message']);
+	$object['message'] = preg_replace("~:\'\(~i","<img src=images/img/pleure.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(h\)~i","<img src=images/img/cool.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(H\)~i","<img src=images/img/cool.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-@~i","<img src=images/img/enerve1.gif>",$object['message']);
+	$object['message'] = preg_replace("~:@~i","<img src=images/img/enerve2.gif>",$object['message']);
+	$object['message'] = preg_replace("~:s~i","<img src=images/img/roll-eyes.gif>",$object['message']);
+	$object['message'] = preg_replace("~:-S~i","<img src=images/img/roll-eyes.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(k\)~i","<img src=images/img/bouche.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(K\)~i","<img src=images/img/bouche.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(l\)~i","<img src=images/img/coeur.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(L\)~i","<img src=images/img/coeur.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(u\)~i","<img src=images/img/coeur-brise.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(U\)~i","<img src=images/img/coeur-brise.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;-P~i","<img src=images/img/clin-oeuil-langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\;p~i","<img src=images/img/clin-oeuil-langue.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(y\)~i","<img src=images/img/pouce-oui.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(Y\)~i","<img src=images/img/pouce-oui.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(n\)~i","<img src=images/img/pouce-non.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(N\)~i","<img src=images/img/pouce-non.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(6\)~i","<img src=images/img/diable.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(d\)~i","<img src=images/img/drink.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(D\)~i","<img src=images/img/drink.gif>",$object['message']);
+	$object['message'] = preg_replace("~_o_~i","<img src=images/img/worship.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(g\)~i","<img src=images/img/gun.gif>",$object['message']);
+	$object['message'] = preg_replace("~\(G\)~i","<img src=images/img/guns.gif>",$object['message']);
 ?>
 <br>
 <table width="75%" align="center">
@@ -431,8 +431,8 @@ $object['message'] = preg_replace("~\(b\)~i","<img src=http://members.lycos.nl/j
     <td colspan="2" class="forumTitle"><table width="100%">
         <tr> 
           <td width="20%">Door: </td>
-          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"?>
-            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?delr=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;<a href=?editr=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?>
+          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=images/mail.gif height=11 width=11></a>&nbsp;"?>
+            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?delr=".$object['id']."><img border=0 src=images/del.png height=11 width=11></a>&nbsp;<a href=?editr=".$object['id']."><img border=0 src=images/edit.png height=11 width=11></a>";}?>
           </td>
         </tr>
         <tr> 
@@ -590,7 +590,7 @@ $nr = mysql_query("SELECT id FROM forum_topics WHERE `type`='{$_GET['type']}'") 
     <td align="right"><a href="<?php echo $_SERVER['PHP_SELF']."?topic=".$object['id']; ?>"><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></a>&nbsp;&nbsp;&nbsp;</td>
 	<td align="right"><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp;</td> 
 	<td align="right"><?php echo $posts ?>&nbsp;&nbsp;&nbsp;</td>
-	<td align="left"><?php echo $object['date']; ?> &nbsp;&nbsp;&nbsp;<?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"; if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;&nbsp;<a href=?edit=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?></td>
+	<td align="left"><?php echo $object['date']; ?> &nbsp;&nbsp;&nbsp;<?php echo"<a href=message.php?p=new&to=$user><img border=0 src=images/mail.gif height=11 width=11></a>&nbsp;"; if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=images/del.png height=11 width=11></a>&nbsp;&nbsp;<a href=?edit=".$object['id']."><img border=0 src=images/edit.png height=11 width=11></a>";}?></td>
   </tr>
 <?php
         }

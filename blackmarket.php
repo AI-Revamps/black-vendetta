@@ -34,9 +34,9 @@ $object = mysql_num_rows(mysql_query("SELECT * FROM `mshop` WHERE `type`='obj'")
 echo"<table width=100%><tr><td width=50%>Ooggetuigen&nbsp;&nbsp;$ws</td><td>Auto's&nbsp;&nbsp;$car</td></tr><tr><td>Kogels&nbsp;&nbsp;$kogels</td><td>Objecten&nbsp;&nbsp;$object</td></tr></table>";
 
 if($_GET['p'] == ws){
-  echo"<table width=100%><tr><td width=50% colspan=5>Ooggetuige verkopen</td>/tr><tr><td colspan=5>&nbsp;</td></tr>";
+  echo"<table width=100%><tr><td width=50% colspan=5>Ooggetuige verkopen</td></tr><tr><td colspan=5>&nbsp;</td></tr>";
   if($_GET['sell']){
-    if ($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['prijs'] && preg_match('/^[0-9]+$/',$_POST['time'])) {
+    if ($_POST['submit'] && preg_match('/^[0-9]+$/', $_POST['prijs']) && preg_match('/^[0-9]+$/', $_POST['time'])) {
 	  $s = mysql_fetch_object(mysql_query("SELECT *,DATE_FORMAT(`time`,'%H:%i') AS `time` FROM `ws` WHERE `id`='{$_POST['id']}' AND `status`='0'"))or die(mysql_error());
 	  if (!$s) { echo "Er is geen ooggetuige met dit ID nummer."; }
 	  elseif ($s->status == 1) { echo "Deze ooggetuige verklaring is al te koop."; }
@@ -57,7 +57,7 @@ if($_GET['p'] == ws){
 	  echo "<form method='POST'><input type=text name=id>&nbsp;&nbsp;ID van de ooggetuige<br>
 	  <input type=text name=prijs maxlength=10>&nbsp;&nbsp;Prijs<br>
 	  <input type=text name=time maxlength=3>&nbsp;&nbsp;Duur (in minuten)<br><br>
-	  input type=submit name=submit value=Verkoop></form></td></tr></table>";
+          <input type=submit name=submit value=Verkoop></form></td></tr></table>";
     }
   }
   else{

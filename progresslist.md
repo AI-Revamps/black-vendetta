@@ -55,7 +55,7 @@
 | kill.php           |       |          |         |        |
 | klikmissie.php     |       |          |         |        |
 | klikmissie1.php    |       |          |         |        |
-| krassen.php        |       |          |         |        |
+| krassen.php        | Done  |          |         |        |
 | login.php          |       |          |         |        |
 | loterij.php        |       |          |         |        |
 | mbulletfactory.php |       |          |         |        |
