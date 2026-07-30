@@ -194,7 +194,8 @@ Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
 |---|---|---|
 | ✅ | **Geld** | `bank.php`, `hitlist.php`, `mshop.php`, `donate.php` |
 | ✅ | **Gevechten** | `kill.php`, `oc.php`, `inc/combat.php` |
-| ⬜ | Misdaad en bezit | `nickacar.php`, `heist.php`, `carrace.php`, `garage.php`, `shop.php`, `transport.php`, `drank.php`, `drugs.php` |
+| ✅ | **Bezit en handel** | `garage.php`, `transport.php`, `drank.php`, `drugs.php`, `inc/handel.php` |
+| ⬜ | Misdaad | `nickacar.php`, `heist.php`, `carrace.php`, `shop.php` |
 | ⬜ | Casino | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
 | ⬜ | Sociaal | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
 | ⬜ | Beheer | de vijftien `adm-*.php` bestanden plus de herbouw van `admin.php` |
@@ -230,6 +231,28 @@ In `inc/game.php` staan nu de bouwstenen die elke module gebruikt:
 
 ### Getest
 
+### Wat Fase 3b t/m 3d repareerde
+
+| Bestand | Probleem |
+|---|---|
+| `kill.php` | **Achterdeurtje:** speler `JanuS` mocht moorden ongeacht niveau |
+| `kill.php` | **Achterdeurtje:** `pitbullgirl` kon niet gewond raken |
+| `kill.php` | Slachtoffer hield zijn zakgeld terwijl de moordenaar hetzelfde bedrag kreeg |
+| `kill.php` | Dubbele backtick maakte de kogel-query ongeldig; die draaide nooit |
+| `kill.php` | Premie bij backfire werd uitbetaald uit een niet-bestaande variabele |
+| `kill.php` | Gevechtsformule deelde door nul bij `se = 0` — op PHP 5 instant kill, op PHP 8 fataal |
+| `oc.php` | **Geldpers:** negatief aantal bommen maakte de kosten negatief |
+| `oc.php` | Overval starten via GET-link (`oc.php?go=1`) |
+| `garage.php` | Verkopen en crushen via GET-link |
+| `garage.php` | "Alles crushen" omzeilde de familielimiet volledig |
+| `garage.php` | Repareren kon geld opleveren bij negatieve prijs |
+| `transport.php` | `if ($data->rijbewijs = 0)` — toewijzing i.p.v. vergelijking, controle deed niets |
+| `transport.php` | Enschede toonde €4.500, schreef €3.500 af |
+| `drugs.php`/`drank.php` | **Tweede databaseverbinding met andere hardcoded credentials** |
+| `drugs.php`/`drank.php` | Arrestatie bij verkoop testte op `kans == 0`, wat nooit voorkwam |
+
+### Getest
+
 | Test | Resultaat |
 |---|---|
 | Storten en opnemen | klopt tot op de euro |
@@ -238,6 +261,11 @@ In `inc/game.php` staan nu de bouwstenen die elke module gebruikt:
 | Eigen aanbod kopen | geweigerd |
 | Andermans ooggetuige verkopen | geweigerd; eigen verkoop lukt wel |
 | **8 gelijktijdige opnames van €100.000 bij saldo €100.000** | precies 1 geslaagd, 7 geweigerd, totaal onveranderd |
+| Moord op speler met €777.777 op zak | geld ging naar de dader, slachtoffer op nul — geen duplicatie |
+| Erfenis, premie, casino, familieopvolging | alle vier correct afgehandeld |
+| Volledige OC met 4 spelers | balans klopt: €20.000.000 − €465.000 + €2.568.260 = €22.103.260 |
+| −100.000 kogels / −50 bommen | geweigerd met duidelijke melding |
+| Reis, reparatie, verscheping, drugshandel | balans klopt: €100.000 − €1.500 + €10.000 − €28.464 = €80.036 |
 
 ---
 
