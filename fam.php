@@ -1,221 +1,317 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-<?php
-  if(isset($_GET['x'])) {
-    $dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$_GET['x']}'");
-    if($famillie = mysql_fetch_object($dbres)) {
-    $info = preg_replace("/\n/","<br>\n",$famillie->info);
-    $info = preg_replace("/\[img](.*?)\[\/img]/","<img src=\"\\1\">",$info);
-	$info = eregi_replace("\\[url=([^\\[]*)\]([^\\[]*)\\[/url\\]","<a href=\"\\1\" target=_blank>\\2</a>",$info); 
-	$info = eregi_replace("\[b\]","<b>",$info);
-    $info = eregi_replace("\[/b\]","</b>",$info);
-    $info = eregi_replace("\[i\]","<i>",$info);
-    $info = eregi_replace("\[/i\]","</i>",$info);
-    $info = eregi_replace("\[s\]","<s>",$info);
-    $info = eregi_replace("\[/s\]","</s>",$info);
-    $info = eregi_replace("\[move\]","<marquee>",$info);
-    $info = eregi_replace("\[/move\]","</marquee>",$info);
-    $info = eregi_replace("\[u\]","<u>",$info);
-    $info = eregi_replace("\[/u\]","</u>",$info);
-    $info = eregi_replace("\[list\]","<UL>",$info);
-    $info = eregi_replace("\[/list\]","</UL>",$info);
-    $info = eregi_replace("\[\*\]","<LI>",$info);
-    $info = eregi_replace("\[small\]","<font size=1>",$info);
-    $info = eregi_replace("\[/small\]","</font>",$info); 
-    $info = eregi_replace("\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]","<font color=\\1>\\2</font>",$info); 
-    $info = eregi_replace("\\[face=([^\\[]*)\]([^\\[]*)\\[/face\\]","<font face=\\1>\\2</font>",$info);	
-    $info = eregi_replace("\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]","<font size=\\1>\\2</font>",$info);
-        $info = eregi_replace("\(b\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$info);
-	$info = eregi_replace("\(B\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$info);
-	$info = eregi_replace(":\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$info);
-	$info = eregi_replace(":-\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$info);
-	$info = eregi_replace(":d","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$info);
-	$info = eregi_replace(":-D","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$info);
-	$info = eregi_replace(":-O","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$info);
-	$info = eregi_replace(":o","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$info);
-	$info = eregi_replace(":p","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$info);
-	$info = eregi_replace(":-P","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$info);
-	$info = eregi_replace("\;\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$info);
-	$info = eregi_replace("\;-\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$info);
-	$info = eregi_replace(":\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$info);
-	$info = eregi_replace(":-\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$info);
-	$info = eregi_replace(":\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$info);
-	$info = eregi_replace(":-\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$info);
-	$info = eregi_replace(":\'\(","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$info);
-	$info = eregi_replace("\(h\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$info);
-	$info = eregi_replace("\(H\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$info);
-	$info = eregi_replace(":-@","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$info);
-	$info = eregi_replace(":@","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$info);
-	$info = eregi_replace(":s","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$info);
-	$info = eregi_replace(":-S","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$info);
-	$info = eregi_replace("\(k\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$info);
-	$info = eregi_replace("\(K\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$info);
-	$info = eregi_replace("\(l\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$info);
-	$info = eregi_replace("\(L\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$info);
-	$info = eregi_replace("\(u\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$info);
-	$info = eregi_replace("\(U\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$info);
-	$info = eregi_replace("\;-P","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$info);
-	$info = eregi_replace("\;p","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$info);
-	$info = eregi_replace("\(y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$info);
-	$info = eregi_replace("\(Y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$info);
-	$info = eregi_replace("\(n\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$info);
-	$info = eregi_replace("\(N\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$info);
-	$info = eregi_replace("\(6\)","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$info);
-	$info = eregi_replace("\(d\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$info);
-	$info = eregi_replace("\(D\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$info);
-	$info = eregi_replace("_o_","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$info);
-	$info = eregi_replace("\(g\)","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$info);
-	$info = eregi_replace("\(G\)","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$info);
-$owner = mysql_fetch_object(mysql_query("SELECT `login` FROM `users`  WHERE `famrang`='5' AND `famillie`='{$famillie->name}'"));
-$halfdon = mysql_fetch_object(mysql_query("SELECT `login` FROM `users`  WHERE `famrang`='4' AND `famillie`='{$famillie->name}'"));
-$consiglieri = mysql_fetch_object(mysql_query("SELECT `login` FROM `users`  WHERE `famrang`='3' AND `famillie`='{$famillie->name}'"));
-$fambank = number_format($famillie->bank, 0, ',' , ','); 
-if($info == ''){$info = "Geen info";}
-      print "  <tr> 
-    <td class=subTitle><b>Familie {$famillie->name}</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-      print "  <table width=100%>\n";
-      print "	<tr><td width=100>Don:</td>  <td><a href=\"user.php?x={$owner->login}\">{$owner->login}</a></td></tr>\n";
-      print "	<tr><td width=100>Onderbaas:</td>  <td><a href=\"user.php?x={$halfdon->login}\">{$halfdon->login}</a></td></tr>\n";
-      print "	<tr><td width=100>Consiglieri:</td>  <td><a href=\"user.php?x={$consiglieri->login}\">{$consiglieri->login}</a></td></tr>\n";
-      print "	<tr><td width=100>Stad:</td>  <td>{$famillie->stad}</td></tr>\n";
-      print "	<tr><td width=100>Grond:</td>  <td>{$famillie->grond}m²</td></tr>\n";
-      print "	<tr><td width=100>Familiebank:</td>  <td>&euro; {$fambank}</td></tr></td></tr></table>\n";
-      print "<tr>
-          <td>&nbsp;</td>
-        </tr><tr> 
-    <td class=subTitle><b>Info</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>$info</td></tr>\n";
-      print "<tr>
-          <td>&nbsp;</td>
-        </tr><tr> 
-    <td class=subTitle><b>Members</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-      $us = mysql_query("SELECT `login` FROM `users` WHERE `famillie`='{$_GET['x']}' ORDER BY `xp` DESC");
-      while($usr = mysql_fetch_object($us)) {
-		print "\n<a href=user.php?x=$usr->login>$usr->login</a>";
-      }
-      print "  <tr><td><table width=100%>\n";
+/**
+ * Families: overzicht, familiepagina, oprichten en opheffen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De familienaam ging ongefilterd in de query. Er stond wel een
+ *    preg_match-controle, maar die kwam nÃ¡ de query die op de naam zocht.
+ *  - Oprichten gebeurde in drie losse queries zonder transactie: als er iets
+ *    tussendoor misging, stond je wel in een familie die niet bestond of
+ *    andersom.
+ *  - Familie-informatie werd ongeÃ«scaped weergegeven.
+ *  - Opheffen liet de familiebank en de openstaande uitnodigingen staan.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/familie.php';
+require BV_INC . '/opmaak.php';
+
+$user = require_login();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
     }
- }
-  elseif ($_GET['p'] == "list") {
-    print "  <tr><td><table align=center width=75%><tr> 
-    <td class=subTitle><b>Familie Lijst</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-    print "	<table width=100%><tr><td style=\"letter-spacing: normal;\"><b>Familie</b></td>  <td style=\"letter-spacing: normal;\" width=20%><b>Don</b></td>  <td style=\"letter-spacing: normal;\" width=20%><b>Leden</b></td>  <td style=\"letter-spacing: normal;\" width=20%><b>Gebied</b></td><td width=20%><b>Stad</b></td></tr>\n";
-    $dbres				= mysql_query("SELECT * FROM `famillie`");
-    while($famillie = mysql_fetch_object($dbres)) {
-      $power				= 0;
-      $dbres2				= mysql_query("SELECT `xp` FROM `users` WHERE `famillie`='{$famillie->name}'");
-      while($member = mysql_fetch_object($dbres2))
-      $power				+= $member->xp;
-      $familliepower[$famillie->type][$famillie->name] = $power;
+}
+
+layout_header('Familie');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+if (get('x') !== '') {
+    toon_familie($user, get('x'));
+} else {
+    match (get('p')) {
+        'new'    => toon_oprichten($user),
+        'delete' => toon_opheffen($user),
+        default  => toon_lijst($user),
+    };
+}
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'oprichten' => oprichten($user, post('name')),
+        'opheffen'  => opheffen($user),
+        'verlaten'  => verlaten($user),
+        default     => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/** @throws SpelFout */
+function oprichten(array $user, string $naam): string
+{
+    $naam = trim(mb_substr($naam, 0, 20));
+
+    if (!preg_match('/^[A-Za-z0-9_\- ]{3,20}$/', $naam)) {
+        throw new SpelFout('De naam mag 3 tot 20 tekens lang zijn en alleen letters, '
+            . 'cijfers, spaties, - en _ bevatten.');
+    }
+    if (is_dead()) {
+        throw new SpelFout('Je bent dood.');
     }
 
-    foreach($familliepower as $type => $info) {
-      arsort($info);
-      foreach($info as $name => $power) {
-        $dbres				= mysql_query("SELECT * FROM `famillie` WHERE `name`='$name'");
-        $famillie					= mysql_fetch_object($dbres);
-	$don = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `famrang`='5' AND `famillie`='{$famillie->name}'"));
-        $dbres			= mysql_query("SELECT `id` FROM `users` WHERE `famillie`='$name'");
-        $nummembers				= mysql_num_rows($dbres);
-        print "	<tr><td><a href=\"?x=$name\">$name</a></td>  <td width=20%><a href=\"user.php?x={$don->login}\">{$don->login}</a></td>  <td width=20%>$nummembers</td>  <td width=20%>{$famillie->grond}m²</td><td width=20%>{$famillie->stad}</td>";
-          print "</tr>\n";
-      }
+    return db_transaction(static function () use ($user, $naam): string {
+        $speler = lock_user((int) $user['id']);
+
+        if ($speler['famillie'] !== '') {
+            throw new SpelFout('Je zit al in een familie.');
+        }
+        if ((int) $speler['xp'] < FAM_OPRICHT_XP) {
+            throw new SpelFout('Je moet minstens de rang Local Chief hebben om een familie te stichten.');
+        }
+        if ((int) q_val('SELECT COUNT(*) FROM `famillie` WHERE `name` = ?', [$naam], 0) > 0) {
+            throw new SpelFout('Er bestaat al een familie met die naam.');
+        }
+        if (!afboeken((int) $speler['id'], FAM_OPRICHTKOSTEN, 'zak')) {
+            throw new SpelFout('Een familie stichten kost ' . money(FAM_OPRICHTKOSTEN) . '.');
+        }
+
+        q('INSERT INTO `famillie` (`name`, `stad`, `grond`, `bank`) VALUES (?, ?, 50, 0)',
+            [$naam, $speler['stad']]);
+        q('UPDATE `users` SET `famillie` = ?, `famrang` = ? WHERE `id` = ?',
+            [$naam, FAM_DON, $speler['id']]);
+
+        log_action((string) $speler['login'], 'familie', 'Familie gesticht: ' . $naam, FAM_OPRICHTKOSTEN);
+
+        return 'De familie ' . $naam . ' is gesticht. Jij bent de Don.';
+    });
+}
+
+/** @throws SpelFout */
+function opheffen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $familie = fam_van($user, true);
+
+        if ($familie === null || (int) $user['famrang'] !== FAM_DON) {
+            throw new SpelFout('Alleen de Don kan de familie opheffen.');
+        }
+
+        $naam = (string) $familie['name'];
+
+        foreach (fam_leden($naam) as $lid) {
+            if ($lid['login'] !== $user['login']) {
+                notify((string) $lid['login'], 'Familie',
+                    'De familie ' . $naam . ' is opgeheven door de Don.');
+            }
+        }
+
+        q("UPDATE `users` SET `famillie` = '', `famrang` = 0, `famcapo` = '' WHERE `famillie` = ?", [$naam]);
+        q('DELETE FROM `invite` WHERE `famillie` = ?', [$naam]);
+        q('DELETE FROM `famillie` WHERE `name` = ?', [$naam]);
+
+        return 'De familie ' . $naam . ' is opgeheven.';
+    });
+}
+
+/** @throws SpelFout */
+function verlaten(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $familie = fam_van($user, true);
+
+        if ($familie === null) {
+            throw new SpelFout('Je zit niet in een familie.');
+        }
+        if ((int) $user['famrang'] === FAM_DON) {
+            throw new SpelFout('Als Don kun je de familie niet zomaar verlaten. '
+                . 'Draag eerst het leiderschap over of hef de familie op.');
+        }
+
+        q("UPDATE `users` SET `famillie` = '', `famrang` = 0, `famcapo` = '' WHERE `id` = ?",
+            [$user['id']]);
+
+        notify((string) $familie['name'], 'Familie', $user['login'] . ' heeft de familie verlaten.');
+
+        return 'Je hebt de familie ' . $familie['name'] . ' verlaten.';
+    });
+}
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function toon_lijst(array $user): void
+{
+    $families = q_all(
+        "SELECT f.*,
+                (SELECT COUNT(*) FROM `users` u
+                  WHERE u.`famillie` = f.`name` AND u.`status` = 'levend') AS `leden`,
+                (SELECT SUM(u.`xp`) FROM `users` u
+                  WHERE u.`famillie` = f.`name` AND u.`status` = 'levend') AS `ervaring`
+           FROM `famillie` f
+       ORDER BY `ervaring` DESC, `leden` DESC"
+    );
+
+    panel_open('Families');
+
+    if ($families === []) {
+        echo '<p>Er zijn nog geen families.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Familie</th><th>Stad</th><th class="getal">Leden</th>'
+           . '<th class="getal">Ervaring</th></tr></thead><tbody>';
+        foreach ($families as $familie) {
+            echo '<tr>';
+            echo '<td><a href="' . e(url('fam.php?x=' . rawurlencode((string) $familie['name']))) . '">'
+               . e((string) $familie['name']) . '</a></td>';
+            echo '<td>' . e((string) $familie['stad']) . '</td>';
+            echo '<td class="getal">' . num((int) $familie['leden']) . '</td>';
+            echo '<td class="getal">' . num((int) $familie['ervaring']) . '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table></div>';
     }
-    print "  </table></table></td></tr>\n";
-  }
-  else if($_GET['p'] == "new") {
-        $dbres					= mysql_query("SELECT `name` FROM `famillie` WHERE `name`='{$_POST['name']}'");
-        $exist = mysql_num_rows($dbres);
-    print "<tr> 
-    <td class=subTitle><b>Maak een familie</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-if ($data->zak < 25000000) { echo "Je hebt niet genoeg geld op zak om een familie te stichten.</B>"; exit; }
-elseif ($data->xp < 8000) { echo "Je rank is te laag om een familie op te starten. Je moet minstens Local Chief zijn."; exit;}
-elseif ($data->famillie) { echo "Je bent al lid van een familie."; exit; }
-elseif ($exist == 1) { echo "Deze familie bestaat al."; exit; }
-else {
-    if(isset($_POST['name'])) {
-      $_POST['name']				= substr($_POST['name'],0,16);
-    if(preg_match('/^[a-zA-Z0-9_\-]+$/',$_POST['name']) == 0) { echo "Ongeldige naam."; return; }
-      if(preg_match('/^[A-Za-z0-9_\- ]+$/',$_POST['name'])) {
-            $data->famillie	= $_POST['name'];
-            $data->famrang	= 5;
-            mysql_query("UPDATE `users` SET `famillie`='{$_POST['name']}',`famrang`='5' WHERE `login`='{$data->login}'");
-            mysql_query("INSERT INTO `famillie`(`name`,`stad`,`grond`) values('{$_POST['name']}','$data->stad','50')");
-            mysql_query("UPDATE `users` SET `zak`=`zak`-25000000 WHERE `login`='{$data->login}'");
-            echo "Je hebt een familie gesticht. <script language=\"javascript\">setTimeout('parent.window.location.reload()',300)</script>"; exit;
-                }
+
+    panel_close();
+
+    if (($user['famillie'] ?? '') === '') {
+        panel_open('Zelf een familie beginnen');
+        echo '<p>Een familie stichten kost ' . money(FAM_OPRICHTKOSTEN)
+           . ' en je hebt minstens de rang Local Chief nodig.</p>';
+        echo '<p><a class="knop" href="' . e(url('fam.php?p=new')) . '">Familie stichten</a></p>';
+        panel_close();
     }
-    print "<br><br><form method=\"post\">De naam van je familie wordt: <input type=\"text\" name=\"name\" value=\"{$_POST['name']}\" maxlength=16> <input type=\"submit\" value=\"Ok\" style=\"width: 100\"></form><br>\n";
-  }
-  }
-  else if($_GET['p'] == "delete" && $data->famrang == 5) {
-    print "<tr> 
-    <td class=subTitle><b>Verwijder familie</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-    if(isset($_POST['delete'])) {
-      mysql_query("UPDATE `users` SET `famillie`='',`famrang`='0' WHERE `famillie`='{$data->famillie}'");
-      mysql_query("DELETE FROM `famillie` WHERE `name`='{$data->famillie}'");
-  echo "De familie is verwijderd.";
-      print <<<ENDHTML
-<script language="javascript">
-setTimeout("parent.window.location.reload()",2000);
-</script>
-ENDHTML;
+}
+
+function toon_familie(array $user, string $naam): void
+{
+    $familie = q_row('SELECT * FROM `famillie` WHERE `name` = ?', [$naam]);
+
+    if ($familie === null) {
+        panel_open('Familie');
+        notice('Die familie bestaat niet.', 'fout');
+        panel_close();
+        return;
     }
-    else if(isset($_POST['cancel'])) {
-      print <<<ENDHTML
-<script language="javascript">
-document.location = "status.php";
-</script>
-ENDHTML;
+
+    $leden    = fam_leden((string) $familie['name']);
+    $eigenFam = $user['famillie'] === $familie['name'];
+
+    panel_open((string) $familie['name']);
+
+    if (($familie['pic'] ?? '') !== '') {
+        $plaatje = veilige_url((string) $familie['pic']);
+        if ($plaatje !== null) {
+            echo '<p><img src="' . e($plaatje) . '" alt="" style="max-width:100%;border-radius:4px"></p>';
+        }
     }
-    else {
-      print <<<ENDHTML
-  <table><tr><td align="center"><form method="post">
-	Bent u zeker dat u deze familie wilt verwijderen?<br><br>
-	<input type="submit" name="delete" value="Ja" style="width: 100px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-	<input type="submit" name="cancel" value="Neen" style="width: 100px;">
-  </form></td></tr>
-ENDHTML;
+
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<tr><th scope="row">Stad</th><td>' . e((string) $familie['stad']) . '</td></tr>';
+    echo '<tr><th scope="row">Leden</th><td>' . num(count($leden)) . '</td></tr>';
+    echo '<tr><th scope="row">Grondgebied</th><td>' . num((int) $familie['grond']) . '</td></tr>';
+    if ($eigenFam && (int) $user['famrang'] >= FAM_CONSIGLIERI) {
+        echo '<tr><th scope="row">In kas</th><td>' . money((int) $familie['bank']) . '</td></tr>';
     }
-  }
-?>
-</table></table>
+    echo '</table></div>';
+
+    if (($familie['info'] ?? '') !== '') {
+        echo '<div class="berichttekst">' . bericht_html((string) $familie['info']) . '</div>';
+    }
+
+    panel_close();
+
+    // --- Leden ---
+    panel_open('Leden');
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Speler</th><th>Rang</th><th class="getal">Ervaring</th><th>Stad</th></tr></thead><tbody>';
+    foreach ($leden as $lid) {
+        $dood = $lid['status'] !== 'levend';
+        echo '<tr>';
+        echo '<td><a href="' . e(url('user.php?x=' . rawurlencode((string) $lid['login']))) . '">'
+           . e((string) $lid['login']) . '</a>' . ($dood ? ' <small>(dood)</small>' : '') . '</td>';
+        echo '<td>' . e(fam_rangnaam((int) $lid['famrang'])) . '</td>';
+        echo '<td class="getal">' . num((int) $lid['xp']) . '</td>';
+        echo '<td>' . e((string) $lid['stad']) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table></div>';
+    panel_close();
+
+    if ($eigenFam && (int) $user['famrang'] !== FAM_DON) {
+        panel_open('Familie verlaten');
+        echo '<p>Je verliest je rang en alle rechten binnen de familie.</p>';
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="verlaten">'
+           . '<button type="submit">Verlaat ' . e((string) $familie['name']) . '</button></form>';
+        panel_close();
+    }
+}
+
+function toon_oprichten(array $user): void
+{
+    panel_open('Familie stichten');
+
+    if (($user['famillie'] ?? '') !== '') {
+        echo '<p>Je zit al in een familie.</p>';
+    } elseif ((int) $user['xp'] < FAM_OPRICHT_XP) {
+        echo '<p>Je moet minstens de rang Local Chief hebben. Je hebt nu '
+           . num((int) $user['xp']) . ' van de ' . num(FAM_OPRICHT_XP) . ' ervaringspunten.</p>';
+    } else {
+        echo '<p>Een familie stichten kost ' . money(FAM_OPRICHTKOSTEN)
+           . '. Je hebt ' . money((int) $user['zak']) . ' op zak.</p>';
+        echo '<form method="post">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="oprichten">';
+        echo '<div class="veldenraster">';
+        echo '<label for="name">Naam van de familie</label>';
+        echo '<input id="name" name="name" maxlength="20" pattern="[A-Za-z0-9_\- ]{3,20}" required '
+           . 'value="' . e(post('name')) . '">';
+        echo '<span></span><small>3 tot 20 tekens. Deze naam kun je later niet wijzigen.</small>';
+        echo '<span></span><button type="submit">Stichten</button>';
+        echo '</div></form>';
+    }
+
+    panel_close();
+}
+
+function toon_opheffen(array $user): void
+{
+    panel_open('Familie opheffen');
+
+    if ((int) $user['famrang'] !== FAM_DON) {
+        echo '<p>Alleen de Don kan de familie opheffen.</p>';
+    } else {
+        $leden = fam_aantal_leden((string) $user['famillie']);
+        echo '<p>Je staat op het punt <strong>' . e((string) $user['famillie'])
+           . '</strong> op te heffen. Alle ' . $leden . ' leden verliezen hun rang, '
+           . 'en wat er in de kas zit is verloren.</p>';
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="opheffen">'
+           . '<button type="submit">Ja, hef de familie op</button> '
+           . '<a class="knop" href="' . e(url('fam.php?x=' . rawurlencode((string) $user['famillie'])))
+           . '">Annuleren</a></form>';
+    }
+
+    panel_close();
+}
