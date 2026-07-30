@@ -1,0 +1,19 @@
+# Bevat het databasewachtwoord - nooit in versiebeheer.
+/inc/config.php
+
+# Slot dat de installer plaatst nadat hij gedraaid heeft.
+/install/.geinstalleerd
+
+# Logbestanden
+*.log
+/logs/
+
+# Rommel van Windows en editors
+Thumbs.db
+desktop.ini
+.DS_Store
+*.bak
+*.old
+*.swp
+.idea/
+.vscode/

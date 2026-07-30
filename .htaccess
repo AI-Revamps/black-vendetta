@@ -1,0 +1,59 @@
+# Black Vendetta - serverinstellingen
+#
+# Werkt op Apache (verreweg de meeste shared webhosts). Draait je host op
+# LiteSpeed, dan wordt dit bestand ook gelezen. Op nginx moet je de regels
+# handmatig omzetten; vraag je host daarnaar.
+
+# --- Mapinhoud niet tonen ------------------------------------------------
+Options -Indexes
+
+# --- Standaardpagina ------------------------------------------------------
+DirectoryIndex index.php index.html
+
+# --- Gevoelige bestanden afschermen ---------------------------------------
+# Databasedumps, logbestanden, versiebeheer en editor-backups.
+<FilesMatch "(?i)\.(sql|sqlite|db|log|ini|md|bak|old|swp|dist|sample)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "^(\.|Thumbs\.db|composer\.(json|lock))">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# --- Geen PHP uitvoeren in mappen met geüploade bestanden -------------------
+<Directory "uploads">
+    php_flag engine off
+</Directory>
+
+# --- Caching van statische bestanden ----------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css               "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/gif              "access plus 30 days"
+    ExpiresByType image/png              "access plus 30 days"
+    ExpiresByType image/jpeg             "access plus 30 days"
+</IfModule>
+
+# --- Compressie ---------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript
+</IfModule>
+
+# --- Beveiligingsheaders --------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>

@@ -1,0 +1,212 @@
+<?php
+/**
+ * Algemene hulpfuncties: configuratie, escaping, invoer, opmaak, redirects.
+ */
+
+declare(strict_types=1);
+
+defined('BV_INC') || exit;
+
+// --- Configuratie --------------------------------------------------------
+
+/**
+ * Haal een instelling op met puntnotatie: config('db.host'), config('site.url').
+ * Zonder argument krijg je de hele configuratie.
+ */
+function config(?string $key = null, mixed $default = null): mixed
+{
+    static $cfg = null;
+    if ($cfg === null) {
+        $cfg = require BV_INC . '/config.php';
+    }
+    if ($key === null) {
+        return $cfg;
+    }
+
+    $value = $cfg;
+    foreach (explode('.', $key) as $part) {
+        if (!is_array($value) || !array_key_exists($part, $value)) {
+            return $default;
+        }
+        $value = $value[$part];
+    }
+    return $value;
+}
+
+// --- Escaping ------------------------------------------------------------
+
+/**
+ * Escape tekst voor weergave in HTML. Gebruik dit ALTIJD rond alles wat van
+ * een speler komt: namen, berichten, profielteksten, familie-info.
+ *
+ *     echo 'Welkom ' . e($user['login']);
+ */
+function e(?string $text): string
+{
+    return htmlspecialchars((string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+/** Escape voor gebruik binnen een JavaScript-string of data-attribuut. */
+function ejs(mixed $value): string
+{
+    return json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+}
+
+// --- Invoer --------------------------------------------------------------
+
+/** Waarde uit $_POST als string (getrimd), of de standaardwaarde. */
+function post(string $key, string $default = ''): string
+{
+    $v = $_POST[$key] ?? null;
+    return is_string($v) ? trim($v) : $default;
+}
+
+/** Waarde uit $_GET als string (getrimd), of de standaardwaarde. */
+function get(string $key, string $default = ''): string
+{
+    $v = $_GET[$key] ?? null;
+    return is_string($v) ? trim($v) : $default;
+}
+
+/** Geheel getal uit $_POST of $_GET, desgewenst begrensd. */
+function int_input(string $key, int $default = 0, ?int $min = null, ?int $max = null): int
+{
+    $raw = $_POST[$key] ?? $_GET[$key] ?? null;
+    $val = is_scalar($raw) && preg_match('/^-?\d+$/', trim((string) $raw))
+        ? (int) trim((string) $raw)
+        : $default;
+
+    if ($min !== null && $val < $min) { $val = $min; }
+    if ($max !== null && $val > $max) { $val = $max; }
+    return $val;
+}
+
+/** Is dit een POST-request? */
+function is_post(): bool
+{
+    return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+}
+
+/** IP-adres van de bezoeker. */
+function client_ip(): string
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+}
+
+// --- URL's en redirects ---------------------------------------------------
+
+/** Volledige URL naar een pagina binnen het spel: url('home.php'). */
+function url(string $path = ''): string
+{
+    $base = rtrim((string) config('site.url', ''), '/');
+    return $base . '/' . ltrim($path, '/');
+}
+
+/**
+ * Stuur de bezoeker door en stop.
+ *
+ * @return never
+ */
+function redirect(string $path): void
+{
+    header('Location: ' . (preg_match('#^https?://#', $path) ? $path : url($path)));
+    exit;
+}
+
+// --- Opmaak ---------------------------------------------------------------
+
+/** Geldbedrag als "€ 1.234.567". */
+function money(int|float|string $amount): string
+{
+    return '&euro; ' . number_format((float) $amount, 0, ',', '.');
+}
+
+/** Getal met puntjes als duizendtalscheiding. */
+function num(int|float|string $n, int $decimals = 0): string
+{
+    return number_format((float) $n, $decimals, ',', '.');
+}
+
+/**
+ * Resterende tijd als "3:42" (m:ss) of "1:02:33" (u:mm:ss).
+ * Bij nul of minder wordt "0:00" teruggegeven.
+ */
+function duration(int $seconds): string
+{
+    if ($seconds <= 0) {
+        return '0:00';
+    }
+    $h = intdiv($seconds, 3600);
+    $m = intdiv($seconds % 3600, 60);
+    $s = $seconds % 60;
+
+    return $h > 0
+        ? sprintf('%d:%02d:%02d', $h, $m, $s)
+        : sprintf('%d:%02d', $m, $s);
+}
+
+/** Datum/tijd uit de database in Nederlandse notatie. */
+function datetime_nl(?string $sqlDatetime): string
+{
+    if ($sqlDatetime === null || str_starts_with($sqlDatetime, '0000')) {
+        return '-';
+    }
+    $ts = strtotime($sqlDatetime);
+    return $ts === false ? '-' : date('d-m-Y H:i', $ts);
+}
+
+// --- Meldingen tussen requests -------------------------------------------
+
+/**
+ * Bewaar een melding die na een redirect getoond wordt.
+ * $type is 'ok', 'fout' of 'info'.
+ */
+function flash(string $message, string $type = 'info'): void
+{
+    $_SESSION['_flash'][] = ['type' => $type, 'msg' => $message];
+}
+
+/** Haal de bewaarde meldingen op en leeg de wachtrij. */
+function flash_take(): array
+{
+    $items = $_SESSION['_flash'] ?? [];
+    unset($_SESSION['_flash']);
+    return $items;
+}
+
+// --- Foutpagina -----------------------------------------------------------
+
+/**
+ * Toon een losstaande foutpagina en stop. Wordt gebruikt als de normale
+ * layout niet beschikbaar is (geen database, ban, ontbrekende config).
+ *
+ * @return never
+ */
+function fail_page(string $title, string $body, int $status = 503): void
+{
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: text/html; charset=utf-8');
+    }
+    $t = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    echo <<<HTML
+    <!doctype html>
+    <html lang="nl">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>{$t}</title>
+      <style>
+        body { background:#111; color:#ddd; font:14px/1.6 system-ui, sans-serif;
+               display:grid; place-items:center; min-height:100vh; margin:0; padding:1rem; }
+        .box { max-width:34rem; border:1px solid #333; background:#1b1b1b; padding:1.5rem 2rem; border-radius:6px; }
+        h1 { color:#f90; font-size:1.2rem; margin:0 0 .75rem; }
+        a { color:#f90; }
+      </style>
+    </head>
+    <body><div class="box"><h1>{$t}</h1><div>{$body}</div></div></body>
+    </html>
+    HTML;
+    exit;
+}

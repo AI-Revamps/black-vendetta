@@ -1,0 +1,83 @@
+<?php
+/**
+ * Black Vendetta - instellingen
+ *
+ * Kopieer dit bestand naar `config.php` en vul je gegevens in.
+ * De installer (/install/) kan dit ook voor je doen.
+ *
+ * LET OP: config.php bevat je databasewachtwoord. Het staat in /inc/,
+ * die map wordt door .htaccess afgeschermd. Zet config.php nooit in git.
+ */
+
+return [
+
+    // --- Database -------------------------------------------------------
+    // Op de meeste shared webhosts (cPanel/DirectAdmin) is de host 'localhost'
+    // en beginnen db-naam en gebruiker met je accountnaam, bv. 'jansen_vendetta'.
+    'db' => [
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'vendetta',
+        'user' => 'vendetta',
+        'pass' => '',
+    ],
+
+    // --- Site -----------------------------------------------------------
+    'site' => [
+        // Volledige URL naar de map waarin het spel staat, ZONDER slash op het eind.
+        // Bijvoorbeeld: https://www.jouwdomein.nl  of  https://jouwdomein.nl/game
+        'url'   => 'https://www.jouwdomein.nl',
+
+        // Naam van het spel. Wordt gebruikt in titels en e-mails.
+        'name'  => 'Black Vendetta',
+
+        // Afzender van systeemmails (activatie, wachtwoord vergeten).
+        // Gebruik een adres op je eigen domein, anders komt de mail in de spam.
+        'mail_from'      => 'noreply@jouwdomein.nl',
+        'mail_from_name' => 'Black Vendetta',
+
+        // Waar foutmeldingen en misbruikmeldingen heen gaan.
+        'mail_admin'     => 'admin@jouwdomein.nl',
+
+        // Tijdzone waarin het spel draait.
+        'timezone' => 'Europe/Amsterdam',
+    ],
+
+    // --- Spelinstellingen ------------------------------------------------
+    'game' => [
+        // Steden waarin gespeeld wordt. Moeten overeenkomen met de `stad` tabel.
+        'cities' => [
+            'Brussel', 'Leuven', 'Gent', 'Brugge',
+            'Hasselt', 'Antwerpen', 'Amsterdam', 'Enschede',
+        ],
+
+        // Startkapitaal van een nieuwe speler.
+        'start_money' => 1000,
+
+        // Moet een nieuw account per e-mail geactiveerd worden?
+        // Zet op false als mail() op je host niet werkt.
+        'require_activation' => true,
+
+        // Mogen meerdere accounts vanaf hetzelfde IP-adres registreren?
+        'allow_multi_accounts' => false,
+    ],
+
+    // --- Cron -------------------------------------------------------------
+    // Het spel heeft periodieke taken (kogelvoorraad, prijzen, respectpunten).
+    //
+    //  'request' = de taken draaien mee op gewone paginabezoeken. Werkt altijd,
+    //              ook zonder cronjob-ondersteuning. Aanbevolen voor shared hosting.
+    //  'cron'    = alleen via een echte cronjob. Zet dan bij je host een taak op:
+    //              elke minuut  ->  php /home/JOUW_ACCOUNT/public_html/cron.php
+    //  'both'    = allebei.
+    'cron_mode' => 'request',
+
+    // Geheime sleutel voor cron.php via de browser (https://site/cron.php?key=...).
+    // Verander dit in een willekeurige reeks tekens.
+    'cron_key' => 'verander-dit-in-iets-willekeurigs',
+
+    // --- Ontwikkeling -----------------------------------------------------
+    // In productie ALTIJD op false: anders zien bezoekers PHP-foutmeldingen
+    // inclusief database-details.
+    'debug' => false,
+];
