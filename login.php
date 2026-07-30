@@ -1,149 +1,237 @@
 <?php
-  include("config.php");
-  if(isset($_POST['login'],$_POST['password'])) {
-    $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`online`) AS `online` FROM `users` WHERE `login`='{$_POST['login']}' AND `pass`=MD5('{$_POST['password']}')");
-    if(($data = mysql_fetch_object($dbres)) && $data->activated == 1) {
-    }
-  }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table align="center" width=100%>
-<?php /* ------------------------- */
-  if($_GET['x'] == "logout"){
-    session_unset($_SESSION['pass']);
-    session_destroy($_SESSION['login']);
-	session_unset($_SESSION['pass']);
-    session_destroy($_SESSION['login']);
-    echo"<table width=100% align=center>
-		   <tr><td class=subTitle><b>Uitloggen</b></td></tr>
-		   <tr><td>&nbsp;</td></tr>
-		   <tr><td class=mainTxt>U bent nu uitgelogd. Een ogenblik geduld.<br><a href=index.php><b>Wacht niet<b></a></td></tr>";
-    echo"<meta http-equiv=Refresh content=3;url=index.php>";
-  }
-  else if($_GET['x'] == "lostpass") {
-      if(isset($_GET['id'],$_GET['code'])) {
-      $dbres				= mysql_query("SELECT `login` FROM `temp` WHERE `id`='{$_GET['id']}' AND `code`='{$_GET['code']}' AND `area`='lostpass'");
-      if($data = mysql_fetch_object($dbres)) {
-        $dbres				= mysql_query("SELECT `login`,`email` FROM `users` WHERE `login`='{$data->login}'");
-        $data				= mysql_fetch_object($dbres);
+/**
+ * Inloggen en wachtwoord vergeten.
+ *
+ * Routes:
+ *   login.php                              inlogformulier
+ *   login.php?x=lostpass                   wachtwoord opvragen
+ *   login.php?x=lostpass&id=..&code=..     nieuw wachtwoord instellen
+ */
 
-        $newpass			= rand(100000,999999);
-        mysql_query("UPDATE `users` SET `pass`=MD5('{$newpass}') WHERE `login`='{$data->login}'");
-        mysql_query("DELETE FROM `temp` WHERE `id`='{$_GET['id']}'");
-		mail($data->email, "Vendetta Password", "Je wachtwoord is gereset. Het is nu : $newpass","From: ".Vendetta." <noreply@vendetta.com>");
-       // mail($data->email,"Vendetta password","Je wachtwoord is gereset, je kan nu inloggen met: $newpass","From: Vendetta <noreply@vendetta.com>\n");
-        print "Je nieuwe wachtwoord is verstuurt naar {$data->email}.\n";
-      }
-    }
-    else if(isset($_POST['email'],$_POST['login'])) {
-      $dbres				= mysql_query("SELECT `login`,`email` FROM `users` WHERE `login`='{$_POST['login']}' AND `email`='{$_POST['email']}'AND `activated`=1");
-      if($data = mysql_fetch_object($dbres)) {
-        $code				= rand(1000000000,9999999999);
-        mysql_query("INSERT INTO `temp`(`login`,`code`,`area`,`time`) values('{$data->login}',$code,'lostpass',NOW())");
-        $id				= mysql_insert_id();
-        mail($data->email,"Vendetta password","Vraag je wachtwoord op deze link aan. \nhttp://logd.nl/game3/login.php?x=lostpass&id=$id&code=$code","From: logd.nl-game3 <noreply@logd.nl>");
-        print "Er is een email met verdere instructies gestuurd naar: {$data->email}.\n";
-      }
-      else
-        print "De gebruikersnaam komt niet overeen met het e-mailadres.\n";
-    }
+declare(strict_types=1);
 
-    print <<<ENDHTML
-  <tr><td align="center">
-	<form method="post">
-	  <table width="100%" align="center">
-        <tr> 
-    <td class="subTitle"><b>Wachtwoord Vergeten</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt"><table width=100%>
-		<tr> 
-          <td width="49%"><div align="right">Gebruikersnaam:</div></td>
-          <td width="2%">&nbsp;</td>
-          <td width="49%"><input type="text" name="login"></td>
-        </tr>
-        <tr> 
-          <td width="49%"><div align="right">E-mailadres:</div></td>
-          <td width="2%">&nbsp;</td>
-          <td width="49%"><input type="text" name="email"></td>
-        </tr>
-        <tr> 
-          <td> <div align="center"> </div></td>
-          <td>&nbsp;</td>
-          <td><input name="submit" type="submit" style="width: 100" value="Ok"></td>
-        </tr>
-      </table></table>
-    </form></td></tr>
-ENDHTML;
-  }
-  elseif($data) {
-    $time = time();
-/*  if (($time - $data->online) < 60) { print "Je moet 60 seconden wachten voordat je weer kan inloggen.\n"; exit; }  */
-if($data->activated == 0) { print "Je acount is nog niet geactiveerd.\n"; }
-else {
-  $_SESSION['login']		= $_POST['login'];
-  $ip = $_SERVER['REMOTE_ADDR'];
-  $dbres = mysql_query("SELECT * FROM `multiple` WHERE `ip`='$ip'");
-  $allo = mysql_fetch_object($dbres);
-  $allo = ($allo->allo == 1) ? 1 : 0;
-  $exi = mysql_num_rows(mysql_query("SELECT * FROM `iplog` WHERE `ip`='$ip' AND `login`='{$_POST['login']}'"));
-  if ($exi == 1) { mysql_query("UPDATE `iplog` SET `time`=NOW() WHERE `login`='{$_POST['login']}' AND `ip`='$ip'"); }
-  else { mysql_query("INSERT INTO `iplog`(`login`,`ip`,`time`,`allo`,`status`) values('{$_POST['login']}','$ip',NOW(),'$allo','{$data->status}')"); }
-  echo"<table width=100% align=center>
-		   <tr><td class=subTitle><b>Inloggen</b></td></tr>
-		   <tr><td>&nbsp;</td></tr>
-		   <tr><td class=mainTxt>U bent nu ingelogd. Een ogenblik geduld.<br><a href=index.php><b>Wacht niet<b></a></td></tr>";
-    echo"<meta http-equiv=Refresh content=3;url=index.php>";  
+require __DIR__ . '/inc/bootstrap.php';
+
+// Al ingelogd? Dan hoeft dit niet.
+if (is_logged_in()) {
+    redirect('home.php');
 }
-}
-  else {
-      if(isset($_POST['login'],$_POST['pass']))
-      print "Verkeerde gebruikersnaam/wachtwoord.\n";
 
-    print <<<ENDHTML
- <tr><td>
-	<form method="post">
-      <table width="100%" align="center">
-        <tr> 
-    <td class="subTitle"><b>Inloggen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt"><table width=100%>
-        <tr> 
-          <td width="49%"><div align="right">Gebruikersnaam:</div></td>
-          <td width="2%">&nbsp;</td>
-          <td width="49%"><input type="text" name="login" maxlength=16 width="150"></td>
-        </tr>
-        <tr> 
-          <td width="49%"><div align="right">Wachtwoord:</div></td>
-          <td width="2%">&nbsp;</td>
-          <td width="49%"><input type="password" name="password" maxlength=16 width="150"></td>
-        </tr>
-        <tr> 
-          <td></td>
-          <td></td>
-          <td><input type="submit" name="submit" width="150" value="Login"></td>
-        </tr>
-        <tr> 
-          <td colspan="3" align=center> <a href=login.php?x=lostpass>Wachtwoord 
-            vergeten?</a></td>
-        </tr>
-      </table></table>
-    </form>
-  </td></tr>
-ENDHTML;
-  }
-?>
-</table>
-</body>
-</html>
-</table>
+$actie = get('x');
+
+match ($actie) {
+    'lostpass' => toon_wachtwoord_vergeten(),
+    default    => toon_inloggen(),
+};
+
+// ==========================================================================
+
+function toon_inloggen(): void
+{
+    $fout = null;
+
+    if (is_post()) {
+        csrf_check();
+
+        $login = post('login');
+        $pass  = (string) ($_POST['password'] ?? '');
+
+        if ($login === '' || $pass === '') {
+            $fout = 'Vul je gebruikersnaam en wachtwoord in.';
+        } elseif (te_veel_pogingen()) {
+            $fout = 'Te veel mislukte pogingen. Wacht een minuut en probeer het opnieuw.';
+        } else {
+            $poging = auth_attempt($login, $pass);
+
+            if ($poging['ok']) {
+                poging_wissen();
+                flash('Welkom terug, ' . $login . '.', 'ok');
+                redirect('home.php');
+            }
+
+            poging_tellen();
+            $fout = $poging['error'];
+        }
+    }
+
+    layout_header('Inloggen');
+    panel_open('Inloggen');
+
+    if ($fout !== null) {
+        notice(e($fout), 'fout');
+    }
+
+    echo '<form method="post">' . csrf_field();
+    echo '<div class="veldenraster">';
+    echo '<label for="login">Gebruikersnaam</label>';
+    echo '<input id="login" name="login" maxlength="16" required autofocus autocomplete="username" value="' . e(post('login')) . '">';
+    echo '<label for="password">Wachtwoord</label>';
+    echo '<input id="password" name="password" type="password" required autocomplete="current-password">';
+    echo '<span></span><button type="submit">Inloggen</button>';
+    echo '</div></form>';
+
+    echo '<p><a href="' . e(url('login.php?x=lostpass')) . '">Wachtwoord vergeten?</a>'
+       . ' &middot; <a href="' . e(url('register.php')) . '">Nog geen account? Registreer je.</a></p>';
+
+    panel_close();
+    layout_footer();
+}
+
+// ==========================================================================
+
+function toon_wachtwoord_vergeten(): void
+{
+    $melding = null;
+    $type    = 'info';
+
+    // --- Stap 2: link uit de mail geopend, nieuw wachtwoord instellen ---
+    if (get('id') !== '' && get('code') !== '') {
+        nieuw_wachtwoord_instellen();
+        return;
+    }
+
+    // --- Stap 1: aanvraag ---
+    if (is_post()) {
+        csrf_check();
+
+        $login = post('login');
+        $email = post('email');
+
+        $speler = q_row(
+            'SELECT `login`, `email` FROM `users` WHERE `login` = ? AND `email` = ? AND `activated` = 1',
+            [$login, $email]
+        );
+
+        if ($speler !== null) {
+            $token = make_token($speler['login'], 'lostpass');
+            $link  = url('login.php?x=lostpass&id=' . $token['id'] . '&code=' . $token['code']);
+
+            send_mail(
+                $speler['email'],
+                config('site.name') . ' - nieuw wachtwoord',
+                "Hallo {$speler['login']},\n\n"
+                . "Er is een nieuw wachtwoord aangevraagd voor je account.\n"
+                . "Klik op onderstaande link om er een in te stellen:\n\n"
+                . $link . "\n\n"
+                . "De link is 48 uur geldig en werkt één keer.\n\n"
+                . "Heb je dit niet zelf aangevraagd? Dan kun je deze mail negeren; "
+                . "je wachtwoord blijft dan ongewijzigd.\n"
+            );
+        }
+
+        // Altijd dezelfde melding, of het account nu bestaat of niet. Anders
+        // kan iemand met dit formulier uitzoeken welke namen in gebruik zijn.
+        $melding = 'Als de gegevens kloppen, is er een e-mail met instructies verstuurd.';
+        $type    = 'ok';
+    }
+
+    layout_header('Wachtwoord vergeten');
+    panel_open('Wachtwoord vergeten');
+
+    if ($melding !== null) {
+        notice(e($melding), $type);
+    }
+
+    echo '<p>Vul je gebruikersnaam en het e-mailadres in waarmee je je hebt aangemeld.</p>';
+    echo '<form method="post">' . csrf_field();
+    echo '<div class="veldenraster">';
+    echo '<label for="login">Gebruikersnaam</label>';
+    echo '<input id="login" name="login" maxlength="16" required>';
+    echo '<label for="email">E-mailadres</label>';
+    echo '<input id="email" name="email" type="email" maxlength="255" required>';
+    echo '<span></span><button type="submit">Versturen</button>';
+    echo '</div></form>';
+
+    echo '<p><a href="' . e(url('login.php')) . '">Terug naar inloggen</a></p>';
+
+    panel_close();
+    layout_footer();
+}
+
+function nieuw_wachtwoord_instellen(): void
+{
+    $id   = int_input('id');
+    $code = get('code');
+    $fout = null;
+
+    if (is_post()) {
+        csrf_check();
+
+        $pass  = (string) ($_POST['pass'] ?? '');
+        $pass2 = (string) ($_POST['pass2'] ?? '');
+
+        if (mb_strlen($pass) < 10) {
+            $fout = 'Kies een wachtwoord van minstens 10 tekens.';
+        } elseif ($pass !== $pass2) {
+            $fout = 'De twee wachtwoorden zijn niet gelijk.';
+        } else {
+            // Code pas hier innemen: bij een tikfout in het wachtwoord blijft
+            // de link bruikbaar.
+            $token = take_token($id, $code, 'lostpass');
+
+            if ($token === null) {
+                $fout = 'Deze link is verlopen of al gebruikt. Vraag een nieuwe aan.';
+            } else {
+                q('UPDATE `users` SET `pass` = ? WHERE `login` = ?',
+                    [auth_hash($pass), $token['login']]);
+
+                flash('Je wachtwoord is gewijzigd. Je kunt nu inloggen.', 'ok');
+                redirect('login.php');
+            }
+        }
+    } elseif (q_row('SELECT `id` FROM `temp` WHERE `id` = ? AND `area` = \'lostpass\'', [$id]) === null) {
+        $fout = 'Deze link is verlopen of al gebruikt. Vraag een nieuwe aan.';
+    }
+
+    layout_header('Nieuw wachtwoord');
+    panel_open('Nieuw wachtwoord instellen');
+
+    if ($fout !== null) {
+        notice(e($fout), 'fout');
+        echo '<p><a href="' . e(url('login.php?x=lostpass')) . '">Nieuwe link aanvragen</a></p>';
+    } else {
+        echo '<form method="post">' . csrf_field();
+        echo '<div class="veldenraster">';
+        echo '<label for="pass">Nieuw wachtwoord</label>';
+        echo '<input id="pass" name="pass" type="password" minlength="10" required autocomplete="new-password">';
+        echo '<span></span><small>Minimaal 10 tekens.</small>';
+        echo '<label for="pass2">Herhaal</label>';
+        echo '<input id="pass2" name="pass2" type="password" minlength="10" required autocomplete="new-password">';
+        echo '<span></span><button type="submit">Opslaan</button>';
+        echo '</div></form>';
+    }
+
+    panel_close();
+    layout_footer();
+}
+
+// ==========================================================================
+// Eenvoudige rem op het raden van wachtwoorden.
+// Per sessie én per IP, zodat één bezoeker niet eindeloos kan blijven proberen.
+// ==========================================================================
+
+function te_veel_pogingen(): bool
+{
+    $p = $_SESSION['_login_pogingen'] ?? null;
+
+    if (!is_array($p) || time() - (int) $p['sinds'] > 300) {
+        return false;   // venster van vijf minuten verlopen
+    }
+    return (int) $p['aantal'] >= 8;
+}
+
+function poging_tellen(): void
+{
+    $p = $_SESSION['_login_pogingen'] ?? null;
+
+    if (!is_array($p) || time() - (int) $p['sinds'] > 300) {
+        $p = ['aantal' => 0, 'sinds' => time()];
+    }
+    $p['aantal']++;
+    $_SESSION['_login_pogingen'] = $p;
+}
+
+function poging_wissen(): void
+{
+    unset($_SESSION['_login_pogingen']);
+}

@@ -1,34 +1,60 @@
-<?PHP
-include("config.php");
-		if($data->status == dood)  {
-			$dood = mysql_query("SELECT * FROM `vermoord` WHERE `login`='{$data->login}'");
-			$dinfo   = mysql_fetch_object($dood);
-			if ($dinfo->msg == NULL) { $kmsg = "<i>Geen</i>"; }
-			else { $kmsg = $dinfo->msg; }
-print <<<ENDHTML
-			<html>
-			<head>
-			<title>Vendetta</title>
-			<link rel="stylesheet" type="text/css" href="style.css">
-			</head>
-			 <table width=100%>
-			  	    <tr><td class=subTitle><b>RIP</b></td></tr><tr><td>&nbsp;&nbsp;</td></tr><td class=mainTxt>
-			<font color="#FFFFFF">
-			<center><b>RIP $data->login</b><br><br>
-			<img name="rip" src="images/rip.gif"><br>
-			Je bent omgelegd!<br>Bericht van de dader: $kmsg<br><Br>
-			<a href="register.php">Maak nieuwe account</a></center></font>
-			    </td></tr>
-			  </table>
-			</body>
-			</html>
-ENDHTML;
-			    unset($_SESSION['login']);
-			    exit;
-	  }
-	elseif ($data->health < 1) { mysql_query("UPDATE `users` SET `status`='dood' WHERE `login`='{$data->login}'");
-	echo "Je bent dood..."; 
-	exit;
-	}
-			    unset($_SESSION['login']);
-?>
+<?php
+/**
+ * Je bent vermoord. Hier eindigt het spel voor dit account.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+$user = require_login();
+
+// Gezondheid op nul betekent alsnog het einde.
+if (!is_dead() && (int) $user['health'] < 1) {
+    q("UPDATE `users` SET `status` = 'dood' WHERE `id` = ?", [$user['id']]);
+    $user = current_user(true);
+}
+
+if (!is_dead()) {
+    redirect('home.php');
+}
+
+$moord = q_row(
+    'SELECT * FROM `vermoord` WHERE `login` = ? ORDER BY `date` DESC LIMIT 1',
+    [$user['login']]
+);
+
+layout_header('Rust in vrede');
+panel_open('Rust in vrede');
+
+echo '<p><img src="' . e(url('images/rip.gif')) . '" alt="" style="float:right;margin-left:1rem">';
+echo '<strong>' . e((string) $user['login']) . '</strong> is niet meer. Je bent omgelegd.</p>';
+
+if ($moord !== null) {
+    echo '<p>Vermoord op ' . e(datetime_nl($moord['date']));
+    if (($moord['dader'] ?? '') !== '') {
+        echo ' door <strong>' . e((string) $moord['dader']) . '</strong>';
+    }
+    echo '.</p>';
+
+    // Het bericht van de dader is tekst van een speler: eerst escapen, dan pas
+    // de regelovergangen omzetten.
+    if (($moord['msg'] ?? '') !== '') {
+        echo '<p>Bericht van de dader:</p><blockquote>'
+           . nl2br(e((string) $moord['msg'])) . '</blockquote>';
+    }
+}
+
+if (($user['testament'] ?? '') !== '') {
+    echo '<p>Je bezit is nagelaten aan ' . e((string) $user['testament']) . '.</p>';
+}
+
+echo '<p style="clear:both">Je kunt opnieuw beginnen met een nieuw account.</p>';
+echo '<p><a class="knop" href="' . e(url('register.php')) . '">Nieuw account maken</a> '
+   . '<a class="knop" href="' . e(url('wallofshame.php')) . '">Schandpaal</a></p>';
+
+echo '<form method="post" action="' . e(url('logout.php')) . '" style="margin-top:1rem">'
+   . csrf_field() . '<button type="submit">Uitloggen</button></form>';
+
+panel_close();
+layout_footer();

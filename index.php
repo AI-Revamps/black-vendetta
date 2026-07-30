@@ -1,40 +1,57 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
-<html>
-<head>
-<title>logd.nl - game3 - vendetta</title>
-<meta name="keywords" content="Gangster4Crime,Crimegame,crimegame,Gangster4Crime">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Gangster4Crime crimegame met pit.">
-<script>
-<!--
-if (window!= top)
-top.location.href=location.href
-// -->
-</script>
-</head>
+<?php
+/**
+ * Voorpagina.
+ *
+ * Vervangt de oude frameset. Ingelogde spelers gaan meteen door naar hun status.
+ */
 
-<frameset cols="*,170" frameborder="NO" border="5" framespacing="0">
-  <frameset rows="135,*" cols="*" frameborder="NO" border="0" framespacing="0">
-    <frame src="upper.php" name="topFrame" target="hoofd" scrolling="NO" noresize >
-    <frameset rows="*" cols="170,*" framespacing="0" frameborder="NO" border="0">
-     <frame name="inhoud" target="hoofd" src="menu.php">
-      <frame src="home.php" name="hoofd">
-    </frameset>
-  </frameset>
-  <frameset rows="135,*" cols="*" framespacing="0" frameborder="NO" border="0">
-    <frame src="clock.php" name="topFrame1" scrolling="NO" noresize >
-    <frame src="right.php" target="hoofd" name="rightFrame" scrolling="auto" noresize>
-  </frameset>
-  
-</frameset>
-<noframes>
-    <noframes>
-	<body>
+declare(strict_types=1);
 
-	<p>Op deze pagina worden frames gebruikt, maar uw browser ondersteunt geen 
-	frames. download firefox of internet explorer en geniet optimaal van uw surfervaring.</p>
+require __DIR__ . '/inc/bootstrap.php';
 
-	</body>
-	</noframes>
-    </noframes>
-</html>
+if (is_logged_in()) {
+    redirect('home.php');
+}
+
+$online = (int) q_val(
+    "SELECT COUNT(*) FROM `users`
+      WHERE `status` = 'levend' AND `online` > DATE_SUB(NOW(), INTERVAL 5 MINUTE)",
+    [],
+    0
+);
+
+$spelers = (int) q_val(
+    "SELECT COUNT(*) FROM `users` WHERE `status` = 'levend' AND `activated` = 1", [], 0
+);
+
+$naam = (string) config('site.name');
+
+layout_header('Welkom');
+panel_open('Welkom bij ' . $naam);
+?>
+<p><strong><?= e($naam) ?> is een online multiplayer rollenspel in tekstvorm.</strong></p>
+
+<p>Het spel speelt zich af in de onderwereld, tussen gangsters en wiseguys, waar
+misdaad tot de orde van de dag hoort. Door misdaden te plegen, auto's te stelen
+en banken te beroven word je een machtige crimineel. Obstakels op je pad ruim je
+uit de weg met wapens en kogels.</p>
+
+<p>Je kunt jezelf ook beschermen: verwerf bondgenoten, richt een familie op,
+koop bodyguards en kogelvrije vesten. Want wie omhoog klimt, wordt gezien.</p>
+
+<p>Denk je klaar te zijn voor deze uitdaging? Meld je aan en stap de onderwereld
+binnen.</p>
+
+<p>
+  <a class="knop knop-nadruk" style="display:inline-block" href="<?= e(url('register.php')) ?>">Registreren</a>
+  <a class="knop" href="<?= e(url('login.php')) ?>">Inloggen</a>
+</p>
+
+<p class="uitleg">
+  Er <?= $online === 1 ? 'is' : 'zijn' ?> momenteel <strong><?= num($online) ?></strong>
+  <?= $online === 1 ? 'speler' : 'spelers' ?> aan het spelen,
+  van in totaal <?= num($spelers) ?> geregistreerde <?= $spelers === 1 ? 'gangster' : 'gangsters' ?>.
+</p>
+<?php
+panel_close();
+layout_footer();
