@@ -73,6 +73,21 @@ function rank_progress(int $xp): int
     return 0;
 }
 
+/**
+ * Positie op de rangladder, 1 (Empty-Suit) tot en met 15 (Godfather).
+ * Wordt gebruikt om te bepalen hoeveel rangen je omhoog mag moorden.
+ */
+function rank_index(int $xp): int
+{
+    $index = 1;
+    foreach (rank_ladder() as $i => $step) {
+        if ($xp >= $step[0]) {
+            $index = $i + 1;
+        }
+    }
+    return $index;
+}
+
 // --- Wachttijden ----------------------------------------------------------
 
 /**
