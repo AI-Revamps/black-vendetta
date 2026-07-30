@@ -193,7 +193,7 @@ Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
 | | Blok | Bestanden |
 |---|---|---|
 | ✅ | **Geld** | `bank.php`, `hitlist.php`, `mshop.php`, `donate.php` |
-| ⬜ | Gevechten | `kill.php`, `oc.php` |
+| ✅ | **Gevechten** | `kill.php`, `oc.php`, `inc/combat.php` |
 | ⬜ | Misdaad en bezit | `nickacar.php`, `heist.php`, `carrace.php`, `garage.php`, `shop.php`, `transport.php`, `drank.php`, `drugs.php` |
 | ⬜ | Casino | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
 | ⬜ | Sociaal | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
