@@ -116,10 +116,16 @@ function redirect(string $path): void
 
 // --- Opmaak ---------------------------------------------------------------
 
-/** Geldbedrag als "€ 1.234.567". */
+/**
+ * Geldbedrag als "€ 1.234.567".
+ *
+ * Geeft een echt euroteken terug, geen &euro;-entiteit: dan kan de uitkomst
+ * zonder problemen door e() en blijft hij ook bruikbaar in tekst die niet in
+ * HTML terechtkomt, zoals e-mail en systeemberichten.
+ */
 function money(int|float|string $amount): string
 {
-    return '&euro; ' . number_format((float) $amount, 0, ',', '.');
+    return '€ ' . number_format((float) $amount, 0, ',', '.');
 }
 
 /** Getal met puntjes als duizendtalscheiding. */

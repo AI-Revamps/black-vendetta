@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS `kogels` (
 -- binnen de tijd, dan terug naar de garage van de eigenaar.
 -- (Ontbrak eveneens in de oude sql.sql.)
 CREATE TABLE IF NOT EXISTS `mgarage` (
-  `id`     int unsigned NOT NULL,
+  `id`     int unsigned NOT NULL AUTO_INCREMENT,
   `login`  varchar(16) NOT NULL,
   `naam`   varchar(64) NOT NULL DEFAULT '',
   `waarde` int unsigned NOT NULL DEFAULT 0,

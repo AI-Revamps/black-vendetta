@@ -230,7 +230,7 @@ function misdaad_geslaagd(array $user, string $keuze, array $def): array
     $buit = ($def['opbrengst'])();
     q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + 1 WHERE `id` = ?', [$buit, $user['id']]);
 
-    return ['tekst' => 'Het is gelukt. Je hebt ' . strip_tags(money($buit)) . ' gestolen.', 'type' => 'ok'];
+    return ['tekst' => 'Het is gelukt. Je hebt ' . money($buit) . ' gestolen.', 'type' => 'ok'];
 }
 
 /** @return array{tekst:string, type:string} */
@@ -284,19 +284,14 @@ function steel_van_member(array $user): array
     q('UPDATE `users` SET `zak` = `zak` - ? WHERE `id` = ?', [$buit, $slachtoffer['id']]);
     q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + 1 WHERE `id` = ?', [$buit, $user['id']]);
 
-    q(
-        'INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`)
-              VALUES (NOW(), ?, ?, ?, ?)',
-        [
-            'Notificatie',
-            $slachtoffer['login'],
-            'Zakkenroller',
-            $user['login'] . ' heeft ' . strip_tags(money($buit)) . ' uit je zak gestolen.',
-        ]
+    notify(
+        (string) $slachtoffer['login'],
+        'Zakkenroller',
+        $user['login'] . ' heeft ' . money($buit) . ' uit je zak gestolen.'
     );
 
     return [
-        'tekst' => 'Je hebt ' . strip_tags(money($buit)) . ' gestolen van ' . $slachtoffer['login'] . '.',
+        'tekst' => 'Je hebt ' . money($buit) . ' gestolen van ' . $slachtoffer['login'] . '.',
         'type'  => 'ok',
     ];
 }

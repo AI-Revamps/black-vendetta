@@ -158,7 +158,8 @@ function markt_afhandelen(string $login): void
         db_transaction(static function () use ($partij) {
             q('UPDATE `users` SET `kogels` = `kogels` + ? WHERE `login` = ?',
                 [(int) $partij['aantal'], $partij['login']]);
-            bericht($partij['login'], 'Kogels', 'Je kogels zijn niet verkocht en staan weer in je voorraad.');
+            notify((string) $partij['login'], 'Kogels',
+                'Je kogels zijn niet verkocht en staan weer in je voorraad.');
             q('DELETE FROM `kogels` WHERE `id` = ?', [$partij['id']]);
         });
     }
@@ -167,22 +168,13 @@ function markt_afhandelen(string $login): void
     foreach ($autos as $auto) {
         db_transaction(static function () use ($auto) {
             q(
-                'INSERT INTO `garage` (`id`, `login`, `naam`, `waarde`, `damage`, `stad`)
-                      VALUES (?, ?, ?, ?, ?, ?)',
-                [$auto['id'], $auto['login'], $auto['naam'], $auto['waarde'], $auto['damage'], $auto['stad']]
+                'INSERT INTO `garage` (`login`, `naam`, `waarde`, `damage`, `stad`)
+                      VALUES (?, ?, ?, ?, ?)',
+                [$auto['login'], $auto['naam'], $auto['waarde'], $auto['damage'], $auto['stad']]
             );
-            bericht($auto['login'], 'Wagen', 'Je wagen is niet verkocht en staat weer in je garage.');
+            notify((string) $auto['login'], 'Wagen',
+                'Je wagen is niet verkocht en staat weer in je garage.');
             q('DELETE FROM `mgarage` WHERE `id` = ?', [$auto['id']]);
         });
     }
-}
-
-/** Stuur een bericht van het systeem naar een speler. */
-function bericht(string $naar, string $onderwerp, string $tekst): void
-{
-    q(
-        'INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`)
-              VALUES (NOW(), ?, ?, ?, ?)',
-        ['Notificatie', $naar, $onderwerp, $tekst]
-    );
 }

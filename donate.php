@@ -1,142 +1,261 @@
 <?php
-  include('config.php');
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-$i = $data->id;
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-<script language="javascript" src="http://www.mollie.nl/partners/js/2687.js"> </script>
-</head>
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Doneer</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	Je kan Vendetta steunen door te doneren. Hiermee haal je ook veel voordelen. Een donatie eindigt na 14 dagen of indien je sterft.<br>Wanneer je de donatie voltooit krijg je een code die je onderaan deze pagina kan invoeren.<br><br>
-	<table width="100%">
-        <tr> 
-          <td width="20%"> </td>
-          <td width="20%">Niet donateurs</td>
-          <td width="20%">Donateur</td>
-          <td width="20%">Zilveren Donateur</td>
-          <td width="20%">Gouden Donateur</td>
-        </tr>
-        <tr> 
-          <td> <br> </td>
-          <td> </td>
-          <td> </td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr> 
-          <td>Klik limiet </td>
-          <td>15</td>
-          <td>25 </td>
-          <td>35</td>
-          <td>50</td>
-        </tr>
-        <tr> 
-          <td>Afbeelding</td>
-          <td>Geen</td>
-          <td>Donater</td>
-          <td>Silver Donater</td>
-          <td>Golden Donater</td>
-        </tr>
-        <tr> 
-          <td>Timers</td>
-          <td>Neen</td>
-          <td>Neen</td>
-          <td>Ja</td>
-          <td>Ja</td>
-        </tr>
-        <tr> 
-          <td>Profiel caracters</td>
-          <td>500</td>
-          <td>1000</td>
-          <td>1500</td>
-          <td>2000</td>
-        </tr>
-        <tr> 
-          <td>Bescherming</td>
-          <td>1 maal</td>
-          <td>2 maal</td>
-          <td>3 maal</td>
-          <td>4 maal</td>
-        </tr>
-      </table><br>Ook krijg je per donatie &euro;50.000 in je zak en 500 kogels.<br><a href=\"#\" onClick="mbetaal('id=2687&parameter[1]=<? echo $i; ?>');return false;"><center>Klik hier Doneer nu!</center></a><br><br>
-	  <form method='POST'>Code&nbsp;&nbsp;<input type=text name=code><br><br><input type=submit name=submit value=Submit></form>
-  <?
-if (isset($_GET['betaalcode'],$_GET['betaalnummer'])) {
-$code = $_GET['betaalcode'];
-$nummer = $_GET['betaalnummer'];
-$id = $_GET['parameter'][1];
-$ip = $_SERVER['REMOTE_ADDR'];
-$time = (time()+(14*24*60*60));
-if($ip != "82.94.255.118" && $ip != "82.94.255.119"){echo"Er is een hack poging onderschept.";}
-else{
-$dbres = mysql_query("SELECT * FROM `users` WHERE `id`='{$id}'");
-$data = mysql_fetch_object($dbres);
-$keychars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  $length = 10;
+/**
+ * Donateurscodes inwisselen.
+ *
+ * LET OP - de betaalkoppeling is bewust NIET meegenomen.
+ *
+ * De oude versie hing aan een Mollie-widget uit 2007: een hardcoded partner-id
+ * in een extern JavaScript-bestand dat niet meer bestaat, en een terugmelding
+ * die alleen gecontroleerd werd op twee vaste IP-adressen. Dat is geen werkende
+ * betaling meer en het opnieuw aansluiten van een betaalprovider vraagt om
+ * accountgegevens en keuzes die de beheerder zelf moet maken.
+ *
+ * Wat hier wél werkt: een beheerder maakt codes aan en spelers wisselen ze in.
+ * Wil je later echt betalingen aannemen, dan sluit je een provider aan op
+ * donatie_code_maken() en hoeft de rest niet te veranderen.
+ */
 
-  // genereren
-  $code = "";
-  $max=strlen($keychars)-1;
-  for ($i=0;$i<=$length;$i++) {
-    $code .= substr($keychars, rand(0, $max), 1);
-  }
-while(mysql_num_rows(mysql_query("SELECT * FROM `donate` WHERE `code`='{$code}'")) == 1){
-//parameters
-  $keychars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  $length = 10;
+declare(strict_types=1);
 
-  // genereren
-  $code = "";
-  $max=strlen($keychars)-1;
-  for ($i=0;$i<=$length;$i++) {
-    $code .= substr($keychars, rand(0, $max), 1);
-  }
-}
-mysql_query("INSERT INTO `donate`(`door`,`code`) values('{$data->login}','{$code}')"); 
+require __DIR__ . '/inc/bootstrap.php';
 
-mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$data->login}','Donatie','Je donatiecode is: $code')"); 
+const DONATIE_DAGEN  = 14;
+const DONATIE_GELD   = 50_000;
+const DONATIE_KOGELS = 500;
+const DONATIE_MAX    = 3;      // hoeveel donaties tegelijk actief kunnen zijn
 
-echo"Het Vendetta team dankt je voor je donatie. Je donatiecode is: &nbsp;$code";
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = match (post('actie')) {
+            'inwisselen' => inwisselen($user, post('code')),
+            'aanmaken'   => aanmaken($user, post('voor')),
+            default      => throw new SpelFout('Onbekende handeling.'),
+        };
+        $type = 'ok';
+        $user = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-elseif(isset($_POST['code'],$_POST['submit'])){
-  $dbres = mysql_query("SELECT * FROM `donate` WHERE `code`='{$_POST['code']}'");
-  $don	= mysql_fetch_object($dbres);
-  $nr = mysql_num_rows($dbres);
-  $time = (time()+(14*24*60*60));
-  if($nr != 1){echo"Deze donatie code is ongeldig.";}
-  elseif($don->status != 0){echo"Deze donatie code is te koop gesteld op de veiling.";}
-  else{
-    mysql_query("UPDATE `users` SET `zak`=`zak`+50000 WHERE `login`='{$data->login}'");
-    mysql_query("UPDATE `users` SET `kogels`=`kogels`+500 WHERE `login`='{$data->login}'");
-    mysql_query("UPDATE `users` SET `paid`=`paid`+1 WHERE `login`='{$data->login}'");
-    if($data->paid > 3){
-      mysql_query("UPDATE `users` SET `paid`='3' WHERE `login`='{$data->login}'");
-    }
-    if($data->paidtime1 <= $data->paidtime2 && $data->paidtime1 <= $data->paidtime3){
-      mysql_query("UPDATE `users` SET `paidtime1`='{$time}' WHERE `login`='{$data->login}'");
-    }
-    elseif($data->paidtime2 <= $data->paidtime1 && $data->paidtime2 <= $data->paidtime3){
-      mysql_query("UPDATE `users` SET `paidtime2`='{$time}' WHERE `login`='{$data->login}'");
-    }
-    elseif($data->paidtime3 <= $data->paidtime1 && $data->paidtime3 <= $data->paidtime2){
-      mysql_query("UPDATE `users` SET `paidtime3`='{$time}' WHERE `login`='{$data->login}'");
-    }
-	echo "De donatie code is correct. Bedankt voor het doneren.";
-	mysql_query("DELETE FROM `donate` WHERE `code`='{$_POST['code']}'"); 
-  }
+
+$actief = actieve_donaties($user);
+
+layout_header('Doneren');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-?>
+
+// --- Voordelen ---
+panel_open('Donateur worden');
+echo '<p>Als donateur krijg je een aantal voordelen, ' . DONATIE_DAGEN
+   . ' dagen lang. Bij elke donatie ontvang je bovendien ' . money(DONATIE_GELD)
+   . ' en ' . num(DONATIE_KOGELS) . ' kogels.</p>';
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Voordeel</th><th class="getal">Geen</th><th class="getal">Brons</th>'
+   . '<th class="getal">Zilver</th><th class="getal">Goud</th></tr></thead><tbody>';
+foreach ([
+    ['Kliklimiet',        '15',   '25',   '35',   '50'],
+    ['Profieltekens',     '500',  '1000', '1500', '2000'],
+    ['Beschermingen',     '1',    '2',    '3',    '4'],
+    ['Afbeelding',        'Geen', 'Ja',   'Ja',   'Ja'],
+    ['Timers zichtbaar',  'Nee',  'Nee',  'Ja',   'Ja'],
+] as $rij) {
+    echo '<tr><th scope="row">' . e($rij[0]) . '</th>';
+    for ($i = 1; $i <= 4; $i++) {
+        echo '<td class="getal">' . e($rij[$i]) . '</td>';
+    }
+    echo '</tr>';
+}
+echo '</tbody></table></div>';
+
+echo '<p class="uitleg">Je hebt op dit moment <strong>' . $actief['aantal']
+   . ' van de ' . DONATIE_MAX . '</strong> donaties actief.';
+if ($actief['tot'] > 0) {
+    echo ' De eerstvolgende loopt af op ' . e(date('d-m-Y H:i', $actief['tot'])) . '.';
+}
+echo '</p>';
+panel_close();
+
+// --- Code inwisselen ---
+panel_open('Code inwisselen');
+echo '<p>Heb je een donatiecode? Vul hem hier in.</p>';
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="inwisselen">';
+echo '<div class="veldenraster">';
+echo '<label for="code">Donatiecode</label>';
+echo '<input id="code" name="code" maxlength="32" required autocomplete="off" spellcheck="false">';
+echo '<span></span><button type="submit">Inwisselen</button>';
+echo '</div></form>';
+panel_close();
+
+// --- Beheer ---
+if ((int) $user['level'] >= LEVEL_ADMIN) {
+    $open = q_all('SELECT * FROM `donate` WHERE `status` = 0 ORDER BY `id` DESC LIMIT 25');
+
+    panel_open('Codes aanmaken (beheer)');
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="aanmaken">';
+    echo '<div class="veldenraster">';
+    echo '<label for="voor">Voor speler</label>';
+    echo '<input id="voor" name="voor" maxlength="16" required>';
+    echo '<span></span><button type="submit">Code aanmaken</button>';
+    echo '</div></form>';
+
+    if ($open !== []) {
+        echo '<h3>Nog niet ingewisseld</h3><div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Voor</th><th>Code</th></tr></thead><tbody>';
+        foreach ($open as $rij) {
+            echo '<tr><td>' . e((string) $rij['door']) . '</td>'
+               . '<td><code>' . e((string) $rij['code']) . '</code></td></tr>';
+        }
+        echo '</tbody></table></div>';
+    }
+    panel_close();
+}
+
+layout_footer();
+
+// ==========================================================================
+
+/** Hoeveel donaties zijn nog actief, en wanneer loopt de eerste af? */
+function actieve_donaties(array $user): array
+{
+    $nu     = time();
+    $tijden = array_filter([
+        (int) $user['paidtime1'],
+        (int) $user['paidtime2'],
+        (int) $user['paidtime3'],
+    ], static fn (int $t): bool => $t > $nu);
+
+    return [
+        'aantal' => count($tijden),
+        'tot'    => $tijden === [] ? 0 : min($tijden),
+    ];
+}
+
+/**
+ * Wissel een code in.
+ *
+ * @throws SpelFout
+ */
+function inwisselen(array $user, string $code): string
+{
+    if ($code === '') {
+        throw new SpelFout('Vul een code in.');
+    }
+
+    return db_transaction(static function () use ($user, $code): string {
+        // Vergrendel de code, zodat hij niet twee keer tegelijk ingewisseld wordt.
+        $donatie = q_row('SELECT * FROM `donate` WHERE `code` = ? FOR UPDATE', [$code]);
+
+        if ($donatie === null) {
+            throw new SpelFout('Deze donatiecode is ongeldig of al gebruikt.');
+        }
+        if ((int) $donatie['status'] !== 0) {
+            throw new SpelFout('Deze donatiecode staat te koop op de veiling.');
+        }
+
+        $speler = lock_user((int) $user['id']);
+        $nu     = time();
+        $tot    = $nu + DONATIE_DAGEN * 86400;
+
+        // Vul het vakje dat het eerst afloopt. Zo stapelen donaties netjes op
+        // tot het maximum, in plaats van elkaar te overschrijven.
+        $vakjes = [
+            'paidtime1' => (int) $speler['paidtime1'],
+            'paidtime2' => (int) $speler['paidtime2'],
+            'paidtime3' => (int) $speler['paidtime3'],
+        ];
+        asort($vakjes);
+        $vakje = array_key_first($vakjes);
+
+        if ($vakjes[$vakje] > $nu) {
+            throw new SpelFout(
+                'Je hebt al ' . DONATIE_MAX . ' donaties tegelijk actief. '
+                . 'Wacht tot er een afloopt.'
+            );
+        }
+
+        q("UPDATE `users` SET `{$vakje}` = ? WHERE `id` = ?", [$tot, $speler['id']]);
+
+        // `paid` is het aantal actieve donaties; opnieuw berekend zodat het
+        // niet uit de pas kan lopen zoals in de oude versie.
+        q(
+            "UPDATE `users`
+                SET `paid` = (`paidtime1` > ?) + (`paidtime2` > ?) + (`paidtime3` > ?),
+                    `zak` = `zak` + ?,
+                    `kogels` = `kogels` + ?
+              WHERE `id` = ?",
+            [$nu, $nu, $nu, DONATIE_GELD, DONATIE_KOGELS, $speler['id']]
+        );
+
+        q('DELETE FROM `donate` WHERE `id` = ?', [$donatie['id']]);
+
+        log_action((string) $user['login'], 'donate', 'Code ingewisseld', DONATIE_GELD);
+
+        return 'Bedankt voor je donatie. Je hebt ' . money(DONATIE_GELD)
+             . ' en ' . num(DONATIE_KOGELS) . ' kogels ontvangen. Je voordelen lopen '
+             . DONATIE_DAGEN . ' dagen.';
+    });
+}
+
+/**
+ * Maak een nieuwe code aan. Alleen voor beheerders.
+ *
+ * Wil je later een echte betaalprovider aansluiten, roep dan deze functie aan
+ * zodra de betaling bevestigd is.
+ *
+ * @throws SpelFout
+ */
+function aanmaken(array $user, string $voor): string
+{
+    if ((int) $user['level'] < LEVEL_ADMIN) {
+        throw new SpelFout('Je hebt niet genoeg rechten.');
+    }
+
+    $ontvanger = q_row('SELECT `login` FROM `users` WHERE `login` = ?', [$voor]);
+    if ($ontvanger === null) {
+        throw new SpelFout('Die speler bestaat niet.');
+    }
+
+    $code = donatie_code_maken((string) $ontvanger['login']);
+
+    notify((string) $ontvanger['login'], 'Donatie',
+        'Je donatiecode is: ' . $code . ' — wissel hem in op de donatiepagina.');
+
+    log_action((string) $user['login'], 'donate',
+        'Code aangemaakt voor ' . $ontvanger['login'], 0, (string) $ontvanger['login']);
+
+    return 'Code ' . $code . ' aangemaakt voor ' . $ontvanger['login'] . '.';
+}
+
+/** Maak een unieke donatiecode en sla hem op. */
+function donatie_code_maken(string $voor): string
+{
+    do {
+        // Zonder tekens die op elkaar lijken, zodat overtypen makkelijk blijft.
+        $code = '';
+        $tekens = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        for ($i = 0; $i < 12; $i++) {
+            $code .= $tekens[random_int(0, strlen($tekens) - 1)];
+        }
+        $bestaat = (int) q_val('SELECT COUNT(*) FROM `donate` WHERE `code` = ?', [$code], 0);
+    } while ($bestaat > 0);
+
+    q('INSERT INTO `donate` (`door`, `code`, `status`) VALUES (?, ?, 0)', [$voor, $code]);
+
+    return $code;
+}

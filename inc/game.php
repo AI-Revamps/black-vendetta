@@ -185,6 +185,86 @@ function block_if_jailed(): void
     }
 }
 
+// --- Geld en spelers vergrendelen -------------------------------------------
+
+/**
+ * Haal een speler op en vergrendel de rij tot het einde van de transactie.
+ *
+ * Gebruik dit vóór elke controle op saldo, kogels of voorraad. Zonder deze
+ * vergrendeling kunnen twee gelijktijdige verzoeken allebei "genoeg geld"
+ * zien en allebei afboeken — de klassieke manier om geld te verdubbelen.
+ *
+ *     db_transaction(function () use ($id, $bedrag) {
+ *         $speler = lock_user($id);
+ *         if ($speler['zak'] < $bedrag) { throw new SpelFout('Te weinig geld.'); }
+ *         q('UPDATE `users` SET `zak` = `zak` - ? WHERE `id` = ?', [$bedrag, $id]);
+ *     });
+ */
+function lock_user(int $id): ?array
+{
+    return q_row('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', [$id]);
+}
+
+/** Zelfde, maar op naam. */
+function lock_user_by_login(string $login): ?array
+{
+    return q_row('SELECT * FROM `users` WHERE `login` = ? FOR UPDATE', [$login]);
+}
+
+/**
+ * Boek geld af, maar alleen als het er is. De voorwaarde zit in de query zelf,
+ * zodat er geen gaatje zit tussen controleren en afboeken.
+ *
+ * @return bool False als het saldo niet toereikend was.
+ */
+function afboeken(int $userId, int $bedrag, string $veld = 'zak'): bool
+{
+    if ($bedrag < 0 || !in_array($veld, ['zak', 'bank', 'kogels'], true)) {
+        return false;
+    }
+    return q_count(
+        "UPDATE `users` SET `{$veld}` = `{$veld}` - ? WHERE `id` = ? AND `{$veld}` >= ?",
+        [$bedrag, $userId, $bedrag]
+    ) === 1;
+}
+
+/** Geld of kogels bijschrijven. */
+function bijschrijven(int $userId, int $bedrag, string $veld = 'zak'): void
+{
+    if ($bedrag < 0 || !in_array($veld, ['zak', 'bank', 'kogels'], true)) {
+        return;
+    }
+    q("UPDATE `users` SET `{$veld}` = `{$veld}` + ? WHERE `id` = ?", [$bedrag, $userId]);
+}
+
+/** Stuur een systeembericht naar een speler. */
+function notify(string $naar, string $onderwerp, string $tekst): void
+{
+    q(
+        'INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`)
+              VALUES (NOW(), ?, ?, ?, ?)',
+        ['Notificatie', $naar, $onderwerp, $tekst]
+    );
+}
+
+/** Leg een handeling vast in het logboek, voor de beheerders. */
+function log_action(string $login, string $area, string $com, int $code = 0, string $person = ''): void
+{
+    q(
+        'INSERT INTO `logs` (`time`, `login`, `person`, `code`, `area`, `com`)
+              VALUES (NOW(), ?, ?, ?, ?, ?)',
+        [$login, $person, $code, $area, $com]
+    );
+}
+
+/**
+ * Fout die de speler mag zien: "je hebt niet genoeg geld", "die persoon
+ * bestaat niet". Draait een transactie netjes terug.
+ */
+class SpelFout extends RuntimeException
+{
+}
+
 // --- Steden ----------------------------------------------------------------
 
 /** Lijst met steden uit de configuratie. */
