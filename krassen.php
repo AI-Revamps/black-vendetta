@@ -1,122 +1,164 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-//if ($sisin == 1) { header('Location: sisin.php'); }
-//if ($data->sl == 1) { header('Location: eisin.php'); }
-//if ($spisin == 1) { header("Location: spisin.php"); }
-?> 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-$kras = mysql_fetch_object(mysql_query("SELECT * FROM `kras` WHERE `login`='$data->login'"));
-if (!$kras) { mysql_query("INSERT INTO `kras`(`login`,`aantal`) values('$data->login','0')"); 
-$kras = mysql_fetch_object(mysql_query("SELECT * FROM `kras` WHERE `login`='$data->login'")); }
-print <<<ENDHTML
-<table width=100%>
-   <tr> 
-    <td class="subTitle"><b>Krassen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-ENDHTML;
-if ($kras->aantal >= 10) { echo "Je kan elke dag maar 10 loten kopen."; exit; }
-if ($_GET['scratch'] == yes) {
-if ($data->zak < 10000) { echo "Je hebt niet genoeg geld op zak"; exit; }
-else { 
-mysql_query("UPDATE `kras` SET `aantal`=`aantal`+1 WHERE `login`='$data->login'");
-$won = 0;
-mysql_query("UPDATE `users` SET `zak`=`zak`-10000 WHERE `login`='$data->login'");
-for ($i = 1; $i < 7; $i++) {
-$prijzen = Array("","&euro;1.000.000","&euro;500.000","&euro;100.000","500 kogels","250 kogels","100 kogels","&euro;50.000","&euro;10.000","&euro;5000");
-$r = rand(1,9);
-$prijs[$i] = $prijzen[$r];
-$p[$r] = ($p[$r] + 1);
-}
-if ($p[1] > 2) { echo "Je hebt $prijzen[1] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+1000000 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[2] > 2) { echo "Je hebt $prijzen[2] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+500000 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[3] > 2) { echo "Je hebt $prijzen[3] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+100000 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[4] > 2) { echo "Je hebt $prijzen[4] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `kogels`=`kogels`+500 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[5] > 2) { echo "Je hebt $prijzen[5] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `kogels`=`kogels`+250 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[6] > 2) { echo "Je hebt $prijzen[6] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `kogels`=`kogels`+100 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[7] > 2) { echo "Je hebt $prijzen[7] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+50000 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[8] > 2) { echo "Je hebt $prijzen[8] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+10000 WHERE `login`='$data->login'"); $won = 1; }
-if ($p[9] > 2) { echo "Je hebt $prijzen[9] gewonnen<br><br>"; mysql_query("UPDATE `users` SET `zak`=`zak`+5000 WHERE `login`='$data->login'"); $won = 1; }
-if ($won == 0) { echo "Je hebt niks gewonnen<br><br>"; }
-print <<<ENDHTML
-<table border="1" width="25%" cellspacing="0" cellpadding="0" bordercolor="#000000" bgcolor="#339933" align=center>
-	<tr>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
-				<p align="center">$prijs[1]</td>
-			</tr>
-		</table>
-		</td>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
-				<p align="center">$prijs[2]</td>
-			</tr>
-		</table>
-		</td>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
+/**
+ * Krasloten: koop een lot van € 10.000 en kras zes vakjes open. Komt hetzelfde
+ * symbool drie keer of vaker voor, dan win je die prijs.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Een lot kopen ging via een GET-link (krassen.php?scratch=yes). Een
+ *    afbeelding met die URL in een bericht liet de lezer € 10.000 uitgeven.
+ *  - Betalen en uitbetalen gebeurde in losse queries zonder transactie.
+ *  - De teller van gekochte loten werd opgehoogd vóór de betaalcontrole.
+ */
 
-				<p align="center">$prijs[3]</td>
-			</tr>
-		</table>
-		</td>
-	</tr>
-	<tr>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
-				<p align="center">$prijs[4]</td>
-			</tr>
-		</table>
-		</td>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
-				<p align="center">$prijs[5]</td>
-			</tr>
-		</table>
-		</td>
-		<td>
-		<table border="0" width="75" height="45" cellspacing="0">
-			<tr>
-				<td>
-				<p align="center">$prijs[6]</td>
-			</tr>
-		</table>
-		</td>
-	</tr>
-</table>
-ENDHTML;
-echo "<br>Je hebt nog &euro;$data->zak <br><br><a href=krassen.php?scratch=yes>Speel nog een keer (&euro; 10.000)</a>";
-exit;
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const KRAS_PRIJS    = 10_000;
+const KRAS_PER_DAG  = 10;
+const KRAS_VAKJES   = 6;
+const KRAS_NODIG    = 3;    // hoe vaak een symbool moet voorkomen om te winnen
+
+/** De symbolen op een kraslot en wat ze opleveren. */
+function kras_prijzen(): array
+{
+    return [
+        ['label' => '€ 1.000.000', 'soort' => 'geld',   'waarde' => 1_000_000],
+        ['label' => '€ 500.000',   'soort' => 'geld',   'waarde' => 500_000],
+        ['label' => '€ 100.000',   'soort' => 'geld',   'waarde' => 100_000],
+        ['label' => '500 kogels',  'soort' => 'kogels', 'waarde' => 500],
+        ['label' => '250 kogels',  'soort' => 'kogels', 'waarde' => 250],
+        ['label' => '100 kogels',  'soort' => 'kogels', 'waarde' => 100],
+        ['label' => '€ 50.000',    'soort' => 'geld',   'waarde' => 50_000],
+        ['label' => '€ 10.000',    'soort' => 'geld',   'waarde' => 10_000],
+        ['label' => '€ 5.000',     'soort' => 'geld',   'waarde' => 5_000],
+    ];
 }
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-else {
-echo "<a href=krassen.php?scratch=yes>Klik hier om te krassen. (&euro; 10.000)</a>";
+
+$uitslag = null;
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $uitslag = krassen($user);
+    } catch (SpelFout $e) {
+        $uitslag = ['tekst' => $e->getMessage(), 'type' => 'fout', 'vakjes' => []];
+    }
+    $user = current_user(true);
 }
-?>
+
+$vandaag = (int) q_val('SELECT `aantal` FROM `kras` WHERE `login` = ?', [$user['login']], 0);
+
+layout_header('Krassen');
+
+if ($uitslag !== null) {
+    notice(e($uitslag['tekst']), $uitslag['type']);
+
+    if ($uitslag['vakjes'] !== []) {
+        toon_lot($uitslag['vakjes']);
+    }
+}
+
+panel_open('Krasloten');
+
+echo '<p>Een kraslot kost ' . money(KRAS_PRIJS) . '. Je krast ' . KRAS_VAKJES
+   . ' vakjes open; staat er ' . KRAS_NODIG . ' keer hetzelfde, dan win je die prijs.</p>';
+echo '<p>Je hebt vandaag <strong>' . $vandaag . ' van de ' . KRAS_PER_DAG
+   . '</strong> loten gekocht.</p>';
+
+if ($vandaag >= KRAS_PER_DAG) {
+    echo '<p>Je kunt vandaag geen loten meer kopen. Morgen weer.</p>';
+} elseif ((int) $user['zak'] < KRAS_PRIJS) {
+    echo '<p>Je hebt niet genoeg geld op zak.</p>';
+} else {
+    echo '<form method="post">' . csrf_field()
+       . '<button type="submit">Koop een lot voor ' . money(KRAS_PRIJS) . '</button></form>';
+}
+
+echo '<h3>Prijzen</h3><ul>';
+foreach (kras_prijzen() as $prijs) {
+    echo '<li>' . e($prijs['label']) . '</li>';
+}
+echo '</ul>';
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/**
+ * @return array{tekst:string, type:string, vakjes:array}
+ * @throws SpelFout
+ */
+function krassen(array $user): array
+{
+    return db_transaction(static function () use ($user): array {
+        $speler = lock_user((int) $user['id']);
+
+        // Rij aanmaken als die er nog niet is, en meteen vergrendelen.
+        q('INSERT IGNORE INTO `kras` (`login`, `aantal`) VALUES (?, 0)', [$speler['login']]);
+        $vandaag = (int) q_val('SELECT `aantal` FROM `kras` WHERE `login` = ? FOR UPDATE',
+            [$speler['login']], 0);
+
+        if ($vandaag >= KRAS_PER_DAG) {
+            throw new SpelFout('Je kunt maar ' . KRAS_PER_DAG . ' loten per dag kopen.');
+        }
+        if (!afboeken((int) $speler['id'], KRAS_PRIJS, 'zak')) {
+            throw new SpelFout('Een lot kost ' . money(KRAS_PRIJS) . '.');
+        }
+
+        q('UPDATE `kras` SET `aantal` = `aantal` + 1 WHERE `login` = ?', [$speler['login']]);
+
+        // Zes vakjes openkrassen.
+        $prijzen = kras_prijzen();
+        $vakjes  = [];
+        $telling = array_fill(0, count($prijzen), 0);
+
+        for ($i = 0; $i < KRAS_VAKJES; $i++) {
+            $nr        = random_int(0, count($prijzen) - 1);
+            $vakjes[]  = $prijzen[$nr]['label'];
+            $telling[$nr]++;
+        }
+
+        // Uitbetalen.
+        $gewonnen = [];
+        foreach ($telling as $nr => $keer) {
+            if ($keer < KRAS_NODIG) {
+                continue;
+            }
+
+            $prijs = $prijzen[$nr];
+            $veld  = $prijs['soort'] === 'kogels' ? 'kogels' : 'zak';
+            bijschrijven((int) $speler['id'], (int) $prijs['waarde'], $veld);
+            $gewonnen[] = $prijs['label'];
+        }
+
+        if ($gewonnen === []) {
+            return ['tekst' => 'Helaas, niets gewonnen.', 'type' => 'fout', 'vakjes' => $vakjes];
+        }
+
+        log_action((string) $speler['login'], 'krassen', 'Gewonnen: ' . implode(', ', $gewonnen));
+
+        return [
+            'tekst'  => 'Gewonnen: ' . implode(' en ', $gewonnen) . '.',
+            'type'   => 'ok',
+            'vakjes' => $vakjes,
+        ];
+    });
+}
+
+function toon_lot(array $vakjes): void
+{
+    echo '<div class="kraslot">';
+    foreach ($vakjes as $vakje) {
+        echo '<span>' . e($vakje) . '</span>';
+    }
+    echo '</div>';
+}

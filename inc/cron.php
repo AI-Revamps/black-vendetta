@@ -93,7 +93,106 @@ function cron_tasks(): array
                   WHERE `activated` = 1 AND `status` = 'levend' AND `xp` >= 50"
             );
         }],
+
+        // Wekelijkse loterijtrekking. Deze taak ontbrak volledig: spelers
+        // konden loten kopen maar er werd nooit getrokken.
+        'loterij' => [604800, static function (): void {
+            loterij_trekken();
+        }],
     ];
+}
+
+/**
+ * De prijzen van de loterij, in volgorde van trekking.
+ *
+ * soort: 'jackpot' (alle inleg), 'geld', 'kogels' of 'auto'.
+ */
+function loterij_prijzen(): array
+{
+    return [
+        ['soort' => 'jackpot', 'waarde' => 0,         'omschrijving' => 'De jackpot: alle inleg samen'],
+        ['soort' => 'geld',    'waarde' => 1_000_000, 'omschrijving' => '€ 1.000.000'],
+        ['soort' => 'geld',    'waarde' => 500_000,   'omschrijving' => '€ 500.000'],
+        ['soort' => 'geld',    'waarde' => 250_000,   'omschrijving' => '€ 250.000'],
+        ['soort' => 'auto',    'waarde' => 0,         'omschrijving' => 'Mercedes W124 Avus Streamling, 0% schade'],
+        ['soort' => 'kogels',  'waarde' => 3000,      'omschrijving' => '3.000 kogels'],
+        ['soort' => 'kogels',  'waarde' => 2000,      'omschrijving' => '2.000 kogels'],
+        ['soort' => 'kogels',  'waarde' => 1000,      'omschrijving' => '1.000 kogels'],
+        ['soort' => 'kogels',  'waarde' => 500,       'omschrijving' => '500 kogels'],
+    ];
+}
+
+/**
+ * Trek de loterij: wijs per prijs een lot aan, betaal uit en maak de pot leeg.
+ *
+ * Een lot kan maar één prijs winnen. Zijn er minder loten dan prijzen, dan
+ * blijven de resterende prijzen liggen tot de volgende trekking.
+ */
+function loterij_trekken(): void
+{
+    db_transaction(static function (): void {
+        $loten = q_all('SELECT `id`, `login` FROM `loterij` ORDER BY RAND()');
+
+        // Onder de tien loten is er te weinig inleg; laat staan tot volgende keer.
+        if (count($loten) < 10) {
+            return;
+        }
+
+        $pot = count($loten) * 10_000;
+
+        foreach (loterij_prijzen() as $prijs) {
+            $lot = array_shift($loten);
+            if ($lot === null) {
+                break;
+            }
+
+            $winnaar = lock_user_by_login((string) $lot['login']);
+            if ($winnaar === null || $winnaar['status'] !== 'levend') {
+                continue;
+            }
+
+            loterij_uitbetalen($winnaar, $prijs, $pot);
+        }
+
+        q('DELETE FROM `loterij`');
+    });
+}
+
+/** Keer één prijs uit aan de winnaar. */
+function loterij_uitbetalen(array $winnaar, array $prijs, int $pot): void
+{
+    $naam = (string) $winnaar['login'];
+
+    switch ($prijs['soort']) {
+        case 'jackpot':
+            bijschrijven((int) $winnaar['id'], $pot, 'zak');
+            notify($naam, 'Loterij', 'Je hebt de jackpot gewonnen: ' . money($pot) . '!');
+            break;
+
+        case 'geld':
+            bijschrijven((int) $winnaar['id'], (int) $prijs['waarde'], 'zak');
+            notify($naam, 'Loterij', 'Je hebt ' . money((int) $prijs['waarde'])
+                . ' gewonnen in de loterij.');
+            break;
+
+        case 'kogels':
+            bijschrijven((int) $winnaar['id'], (int) $prijs['waarde'], 'kogels');
+            notify($naam, 'Loterij', 'Je hebt ' . num((int) $prijs['waarde'])
+                . ' kogels gewonnen in de loterij.');
+            break;
+
+        case 'auto':
+            $model = q_row("SELECT * FROM `cars` ORDER BY `waarde` DESC LIMIT 1");
+            if ($model !== null) {
+                q('INSERT INTO `garage` (`login`, `naam`, `waarde`, `damage`, `stad`) VALUES (?, ?, ?, 0, ?)',
+                    [$naam, $model['naam'], $model['waarde'], $winnaar['stad']]);
+                notify($naam, 'Loterij', 'Je hebt een ' . $model['auto']
+                    . ' gewonnen in de loterij. Hij staat in je garage in ' . $winnaar['stad'] . '.');
+            }
+            break;
+    }
+
+    log_action($naam, 'loterij', 'Prijs gewonnen: ' . $prijs['omschrijving']);
 }
 
 /** Is deze taak aan de beurt? Goedkope controle, zonder lock. */

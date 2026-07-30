@@ -344,6 +344,26 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .captcha label { color: var(--tekst-dof); font-size: .85rem; }
 .captcha input { text-transform: uppercase; letter-spacing: .15em; font-family: ui-monospace, Consolas, monospace; }
 
+/* Kraslot: zes vakjes in een raster van drie */
+.kraslot {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .4rem;
+    max-width: 24rem;
+    margin: 0 0 1rem;
+}
+.kraslot span {
+    display: grid;
+    place-items: center;
+    min-height: 3rem;
+    padding: .4rem;
+    background: linear-gradient(#2f2f2f, #1f1f1f);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    font-size: .8rem;
+    text-align: center;
+}
+
 blockquote {
     margin: .8rem 0;
     padding: .6rem .9rem;

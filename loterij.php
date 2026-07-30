@@ -1,108 +1,131 @@
 <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-  if(! check_login()) {
-    header("Location: login.php");
-    exit;
-  }
-if ($jisin == 1) { header("Location: jisin.php"); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-  <tr> 
-    <td class="subTitle"><b>Loterij</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	<?php
-	$prijs = 10000; //prijs per lot
-	$max = 100; //maximaal aantal loten per persoon
-	
-	if(isset($_POST['submit']) || isset($_POST['nroflot'])){
-	  $sql = mysql_query("SELECT * FROM `loterij` WHERE `login`='{$data->login}'");
-	  $urnroflot = mysql_num_rows($sql);
-	  if(!preg_match('/^[0-9]+$/',$_POST['nroflot'])){echo"Ongeldig aantal.";}
-	  elseif(($urnroflot + $_POST['nroflot']) > 100){echo"Je mag maximaal 100 loten hebben. Je hebt er reeds $urnroflot.";}
-	  elseif(($_POST['nroflot']*$prijs) > $data->zak){echo"Je hebt niet genoeg geld op zak.";}
-	  else{
-	    $kosten = $prijs*$_POST['nroflot'];
-		$i = 0;
-		while($i < $_POST['nroflot']){
-	      mysql_query("INSERT INTO `loterij`(`login`) values('{$data->login}')"); 
-		  $i++;
-		}
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$kosten WHERE `login`='{$data->login}'");
-		echo "Je hebt {$_POST['nroflot']} loten gekocht voor &euro;$kosten.";
-	  }
-	  exit;
-	}
-	
-	$sql = mysql_query("SELECT * FROM `loterij`");
-    $lot = mysql_fetch_object($sql); 
-	$nroflot = mysql_num_rows($sql);
-	$jackpot = $nroflot*10000;
-	$jackpot = number_format($jackpot, 0, ',' , ',');
-	
-	$sql = mysql_query("SELECT UNIX_TIMESTAMP(`time`) AS `time` FROM `cron` WHERE `name`='loterij'");
-    $cron = mysql_fetch_object($sql); 
-	$cront = date('H:i:s d/m/Y', ($cron->time));
-	
-	$sql = mysql_query("SELECT * FROM `loterij` WHERE `login`='{$data->login}'");
-    $urlot = mysql_fetch_object($sql); 
-	$urnroflot = mysql_num_rows($sql);
-	$urtxt = "Je hebt ".$urnroflot." lot(en).";
-	$nroflotforsale = floor($data->zak/$prijs);
-	if($nroflotforsale >= 100){$nroflotforsale = 100;}
-	?>
-    Loterij trekking voor deze loterij is: <?php echo $cront; ?><br>
-    Jackpot: &euro;<?php echo $jackpot; ?><br>
-    Totaal aantal gekochte loten: <?php echo $nroflot; ?> <br>
- <br>
-<br>
-    Prijzen<br>
-<br>
-    De Jackpot<br>
-	&euro;1.000.000<br>
-	&euro;500.000<br>
-	&euro;250.000<br>
-	Mercedes W124 Avus Streamling (0% Schade) <br>
-	3.000 kogels <br>
-	2.000 kogels <br>
-	1.000 kogels <br>
-	500 kogels <br>
-<br>
-<br>
-	<?php echo $urtxt; ?><br>
- <br>
-	Je hebt &euro;<?php echo $data->zak; ?> op zak.<br>
-	Je kunt met je geld op zak <?php echo $nroflotforsale; ?> loten kopen.<br>
-<br>
-<br>
-</td>
-</tr>
-<tr><td>&nbsp;</td></tr>
-<tr> 
-    <td class="subTitle"><b>Loten kopen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	<form method="post">
-	Aantal loten: <input name="nroflot" type="text" value="0" maxlength="3"><br>
-	<br>
-	<input name="submit" type="submit" value="Koop">
-	</form>
-	</td>
- </tr>
-</table>
-</body>
-</html>
+/**
+ * Loterij: koop loten, win wekelijks een prijs.
+ *
+ * LET OP - in de oude versie werd er nooit getrokken.
+ *
+ * Spelers konden loten kopen van € 10.000 per stuk, tot honderd stuks, en de
+ * pagina toonde een lijst met negen prijzen. Maar nergens in de hele codebase
+ * stond code die een winnaar aanwees of iets uitbetaalde. De tabel `cron` had
+ * wel een regel 'loterij', maar geen enkele taak deed er iets mee. De loterij
+ * was dus een put waar geld in verdween en nooit iets uit kwam.
+ *
+ * De trekking staat nu als taak in inc/cron.php en draait wekelijks.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const LOT_PRIJS = 10_000;
+const LOT_MAX   = 100;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
+}
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = loten_kopen($user, int_input('nroflot', 0));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+$totaal   = (int) q_val('SELECT COUNT(*) FROM `loterij`', [], 0);
+$eigen    = (int) q_val('SELECT COUNT(*) FROM `loterij` WHERE `login` = ?', [$user['login']], 0);
+$jackpot  = $totaal * LOT_PRIJS;
+$volgende = q_val("SELECT UNIX_TIMESTAMP(`time`) + 604800 FROM `cron` WHERE `name` = 'loterij'");
+$betaalbaar = min(LOT_MAX - $eigen, intdiv((int) $user['zak'], LOT_PRIJS));
+
+layout_header('Loterij');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Loterij');
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<tr><th scope="row">Jackpot</th><td>' . money($jackpot) . '</td></tr>';
+echo '<tr><th scope="row">Loten verkocht</th><td>' . num($totaal) . '</td></tr>';
+echo '<tr><th scope="row">Jouw loten</th><td>' . num($eigen) . ' van ' . LOT_MAX . '</td></tr>';
+echo '<tr><th scope="row">Volgende trekking</th><td>'
+   . ($volgende !== null ? e(date('d-m-Y H:i', (int) $volgende)) : 'onbekend') . '</td></tr>';
+echo '</table></div>';
+
+echo '<h3>Prijzen</h3>';
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Prijs</th><th>Wat je wint</th></tr></thead><tbody>';
+foreach (loterij_prijzen() as $i => $prijs) {
+    echo '<tr><td>' . ($i + 1) . 'e</td><td>' . e($prijs['omschrijving']) . '</td></tr>';
+}
+echo '</tbody></table></div>';
+echo '<p class="uitleg">Elk lot maakt kans. Eén lot kan maar één prijs winnen, '
+   . 'en er wordt alleen getrokken als er genoeg loten verkocht zijn.</p>';
+
+panel_close();
+
+panel_open('Loten kopen');
+
+if ($eigen >= LOT_MAX) {
+    echo '<p>Je hebt het maximum van ' . LOT_MAX . ' loten al bereikt.</p>';
+} elseif ($betaalbaar < 1) {
+    echo '<p>Een lot kost ' . money(LOT_PRIJS) . ' en zoveel heb je niet op zak.</p>';
+} else {
+    echo '<p>Een lot kost ' . money(LOT_PRIJS) . '. Je kunt er nu ' . $betaalbaar . ' kopen.</p>';
+    echo '<form method="post">' . csrf_field();
+    echo '<div class="veldenraster">';
+    echo '<label for="nroflot">Aantal loten</label>';
+    echo '<input id="nroflot" name="nroflot" type="number" min="1" max="' . $betaalbaar . '" step="1" value="1" required>';
+    echo '<span></span><button type="submit">Kopen</button>';
+    echo '</div></form>';
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function loten_kopen(array $user, int $aantal): string
+{
+    if ($aantal < 1) {
+        throw new SpelFout('Vul een aantal van minstens 1 in.');
+    }
+    if ($aantal > LOT_MAX) {
+        throw new SpelFout('Je mag hoogstens ' . LOT_MAX . ' loten hebben.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal): string {
+        $speler = lock_user((int) $user['id']);
+        $eigen  = (int) q_val('SELECT COUNT(*) FROM `loterij` WHERE `login` = ?', [$speler['login']], 0);
+
+        if ($eigen + $aantal > LOT_MAX) {
+            throw new SpelFout('Je hebt al ' . $eigen . ' loten; het maximum is ' . LOT_MAX . '.');
+        }
+
+        $kosten = $aantal * LOT_PRIJS;
+
+        if (!afboeken((int) $speler['id'], $kosten, 'zak')) {
+            throw new SpelFout($aantal . ' loten kosten ' . money($kosten) . '.');
+        }
+
+        // Eén INSERT met meerdere rijen, in plaats van honderd losse queries.
+        $rijen = implode(',', array_fill(0, $aantal, '(?)'));
+        q("INSERT INTO `loterij` (`login`) VALUES {$rijen}",
+            array_fill(0, $aantal, $speler['login']));
+
+        return 'Je hebt ' . $aantal . ' ' . ($aantal === 1 ? 'lot' : 'loten')
+             . ' gekocht voor ' . money($kosten) . '.';
+    });
+}
