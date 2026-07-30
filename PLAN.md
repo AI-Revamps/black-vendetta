@@ -3,7 +3,7 @@
 Levend document. Wordt bijgewerkt zodra er stappen afgerond zijn.
 
 **Laatst bijgewerkt:** 30-07-2026
-**Voortgang:** Fase 0, 1 en 2 afgerond en getest · het spel is speelbaar · Fase 3 volgt
+**Voortgang:** Fase 0 t/m 2 afgerond · Fase 3 bezig (geldblok klaar) · het spel is speelbaar
 
 ---
 
@@ -185,21 +185,59 @@ Twee dingen kwamen tijdens het testen aan het licht:
 
 ---
 
-## Fase 3 — Modules migreren ⬜ gepland
+## Fase 3 — Modules migreren 🔄 bezig
 
 Per module: `mysql_*` → prepared statements, uitvoer door `e()`, geldmutaties in transacties.
 Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
 
 | | Blok | Bestanden |
 |---|---|---|
-| ⬜ | Geld en gevechten | `kill.php`, `oc.php`, `bank.php`, `mshop.php`, `donate.php`, `hitlist.php` |
+| ✅ | **Geld** | `bank.php`, `hitlist.php`, `mshop.php`, `donate.php` |
+| ⬜ | Gevechten | `kill.php`, `oc.php` |
 | ⬜ | Misdaad en bezit | `nickacar.php`, `heist.php`, `carrace.php`, `garage.php`, `shop.php`, `transport.php`, `drank.php`, `drugs.php` |
 | ⬜ | Casino | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
 | ⬜ | Sociaal | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
-| ⬜ | Beheer | de vijftien `adm-*.php` bestanden |
+| ⬜ | Beheer | de vijftien `adm-*.php` bestanden plus de herbouw van `admin.php` |
 | ⬜ | Overig | `stats.php`, `members.php`, `news.php`, `help.php`, `jail.php`, `respect.php`, … |
 
 Bij elk blok geldt: `SELECT … FOR UPDATE` binnen `db_transaction()` zodra er geld of items van eigenaar wisselen. Dat sluit de verdubbelingstrucs die met MyISAM sowieso niet te voorkomen waren.
+
+### Gedeelde helpers (Fase 3a)
+
+In `inc/game.php` staan nu de bouwstenen die elke module gebruikt:
+
+| Functie | Doel |
+|---|---|
+| `lock_user()` / `lock_user_by_login()` | Speler ophalen met `FOR UPDATE` |
+| `afboeken()` | Saldocontrole zit ín de `UPDATE`, dus geen gat tussen controleren en afschrijven |
+| `bijschrijven()` | Geld of kogels erbij |
+| `notify()` | Systeembericht — verving overal herhaalde `INSERT`-blokken |
+| `log_action()` | Vastleggen voor de beheerders |
+| `SpelFout` | Draait de transactie terug en toont een nette melding |
+
+### Wat Fase 3a repareerde
+
+| Bestand | Probleem |
+|---|---|
+| `bank.php` | Saldo werd in PHP berekend en teruggeschreven — twee gelijktijdige opnames verdubbelden geld |
+| `hitlist.php` | Premie kwam ongefilterd in de query; afkopen zonder transactie |
+| `mshop.php` | Kopen via GET-link (CSRF); geen transactie bij aankoop |
+| `mshop.php` | **Iedereen kon andermans ooggetuigenverklaring verkopen** — `login` werd overschreven met de verkoper |
+| `donate.php` | Aantal actieve donaties liep uit de pas doordat het los werd bijgehouden |
+| overal | `money()` gaf `&euro;` terug, wat door `e()` dubbel geëscaped werd tot `&amp;euro;` |
+
+**De betaalkoppeling in `donate.php` is bewust niet meegenomen.** Die hing aan een Mollie-widget uit 2007 met een hardcoded partner-id en een IP-whitelist. Codes aanmaken en inwisselen werkt wel; wie echt wil incasseren sluit een provider aan op `donatie_code_maken()`.
+
+### Getest
+
+| Test | Resultaat |
+|---|---|
+| Storten en opnemen | klopt tot op de euro |
+| Premie zetten en afkopen | €5.000.000 → €4.500.000 en €5.000.000 → €4.000.000 |
+| Kogelhandel | verkoper +€400.000 / −500 kogels, koper −€400.000 / +500 kogels |
+| Eigen aanbod kopen | geweigerd |
+| Andermans ooggetuige verkopen | geweigerd; eigen verkoop lukt wel |
+| **8 gelijktijdige opnames van €100.000 bij saldo €100.000** | precies 1 geslaagd, 7 geweigerd, totaal onveranderd |
 
 ---
 
