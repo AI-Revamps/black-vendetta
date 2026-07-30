@@ -1,415 +1,799 @@
 <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?> 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-  <tr> 
-    <td class="subTitle"><b>Organised Crime</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-    <table width=100%>
-<?php    
-$geluk = rand(1,2);
-$nr = rand(1,2);
-$item = ($nr == 1) ? drugs : drank;
-$antal = rand(5,20);
-$time = time();
-$msgnum = rand(0,8);
-$message = Array("Jullie konden de kluis opblazen, maar jullie hadden de explosieven slecht aangebracht! Al het geld ging in vlammen op. Gelukkig konden jullie wegrijden voordat de politie kwam.","Jullie stormden de bank binnen en dreven iedereen in een hoekje. Plots kwam er een bewaker binnen die op jullie begon te schieten. Jullie moesten vluchten en zijn gewond geraakt.","De kluis opblazen was een makkie. Jullie schepten het geld in een zak en liepen de bank uit... Daar stond een batalion politieagenten jullie op te wachten. Jullie zijn gearresteerd.","Iemand liet het alarm afgaan. De Wapen Expert begon in het wilde weg te schieten. Gelukkig konden jullie nog op tijd weg komen.","Een eenheid politieagenten stond buiten. Jullie besloten de plannen dan maar te annuleren.","Jullie wagen geraakte niet eens ter plaatse, hij werd tegengehouden voor een drugscontrole. Gelukkig werd er niets gevonden.","De bediende smeekte jullie: 'Doe ons geen pijn, geen geweld, ik geef alles...' Ze nam jullie &eacute;&eacute;n voor &eacute;&eacute;n mee binnen in een klein kantoortje. Jullie leven is weer gestegen naar 100%","Jullie probeerden langst het ventilatiesysteem bij de kluis te komen.","'Steek je handen in de lucht, dit is een overval!' De bomma die net haar geld aan het tellen was, kreeg plots een hartaanval en viel tegen de leider zijn been. Hij schrok zo hard dat hij niet zag hoe iemand het alarm af liet gaan.");
-$msg = "$message[$msgnum]";
-$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$data->login}' OR `dr`='{$data->login}' OR `be`='{$data->login}' OR `we`='{$data->login}'");
-$oc = mysql_fetch_object($dbres);
-$bc = gmdate('H:i:s',($data->bc - time()));
-$octime = (time() + 43200);
-if ($data->xp < 500) { echo "Je moet minstens Thief zijn."; exit; }
-if($data->bc - $time > 0) { echo "Je bent nog $bc aan het uitrusten."; echo "</table></table>"; exit; }
-if ($_POST['submit']) {
-if (!$_POST['verify']){echo"Je moet een code opgeven.";exit;}
-elseif($_POST['verify'] != $_SESSION['verify']){echo"De code die je hebt ingevoerd komt niet overeen met het plaatje.";exit;}
-	$zelf = strtolower($data->login);
-	$dr = strtolower($_POST['dr']);
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['dr']}'");
-	$dr = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['we']}'");
-	$we = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['be']}'");
-	$be = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$we->login}' OR `dr`='{$we->login}' OR `be`='{$we->login}' OR `we`='{$we->login}'");
-	$hot1 = mysql_num_rows($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$be->login}' OR `dr`='{$be->login}' OR `be`='{$be->login}' OR `we`='{$be->login}'");
-	$hot2 = mysql_num_rows($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$dr->login}' OR `dr`='{$dr->login}' OR `be`='{$dr->login}' OR `we`='{$dr->login}'");
-	$hot3 = mysql_num_rows($dbres);
-    if (!$we->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($we->bc - time() > 0) { echo "$we->login heeft al een oc gedaan."; exit; }
-	elseif ($we->xp < 500) { echo "$we->login is nog geen Thief."; exit; }
-	elseif ($we->status == dood) { echo "$we->login is dood."; exit; }
-	if (!$be->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($be->bc - time() > 0) { echo "$be->login heeft al een oc gedaan."; exit; }
-	elseif ($be->xp < 500) { echo "$be->login is nog geen Thief."; exit; }
-	elseif ($be->status == dood) { echo "$be->login is dood."; exit; }
-	if (!$dr->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($zelf == $dr || $zelf == $we || $zelf == $be || $dr == $we || $dr == $be || $we == $be) { echo "Je moet voor iedere taak iemand anders hebben."; exit; }
-	elseif ($dr->bc - time() > 0) { echo "$dr->login heeft al een oc gedaan."; exit; }
-	elseif ($dr->xp < 500) { echo "$dr->login is nog geen Thief."; exit; }
-	elseif ($dr->status == dood) { echo "$dr->login is dood."; exit; }
-	elseif ($hot1 == 1) { echo "$we->login is al bezig met een oc."; ;exit; }
-	elseif ($hot2 == 1) { echo "$be->login is al bezig met een oc."; exit; }
-	elseif ($hot3 == 1) { echo "$dr->login is al bezig met een oc."; exit; }
-	elseif ($data->zak < 50000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else {
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$we->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als WE. Ga naar oc om wapens te selecteren, te accepteren of te weigeren','0','1')"); 
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$be->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als BE. Ga naar oc om explosieven te selecteren, te accepteren of te weigeren','0','1')"); 
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$dr->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als driver. Ga naar oc om een wagen te selecteren, te accepteren of te weigeren','0','1')"); 
-		mysql_query("INSERT INTO `oc`(`login`,`dr`,`we`,`be`,`wapens`,`kogels`,`ready1`,`ready2`,`ready3`,`stad`) VALUES('$data->login','$dr->login','$we->login','$be->login','0','0','0','0','0','$data->stad')");
-		mysql_query("UPDATE `users` SET `zak`=`zak`-50000 WHERE `login`='$data->login'");
-		echo "De uitnodiging is verzonden."; exit;
-	}
-}
-elseif ($_POST['submitdr']) {
-	$zelf = strtolower($data->login);
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['dr']}'");
-	$dr = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$dr->login}' OR `dr`='{$dr->login}' OR `be`='{$dr->login}' OR `we`='{$dr->login}'");
-	$hot3 = mysql_num_rows($dbres);
-	if (!$dr->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($zelf == $dr || $dr == $oc->be || $oc->we == $dr) { echo "Je moet voor iedere taak iemand anders hebben."; exit; }
-	elseif ($dr->bc - time() > 0) { echo "$dr->login heeft al een oc gedaan."; exit; }
-	elseif ($dr->xp < 500) { echo "$dr->login is nog geen Thief."; exit; }
-	elseif ($dr->status == dood) { echo "$dr->login is dood."; exit; }
-	elseif ($hot3 == 1) { echo "$dr->login is al bezig met een oc."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `dr`='{$_POST['dr']}',`ready3`='0',`auto`='',`damage`='',`autoid`='' WHERE `login`='{$data->login}'");
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$dr->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als driver. Ga naar oc om een wagen te selecteren, te accepteren of te weigeren','0','1')"); 
-		echo "De nieuwe driver is verwittigd."; exit;
-	}
-}
-elseif ($_POST['submitwe']) {
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['we']}'");
-	$we = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$we->login}' OR `dr`='{$we->login}' OR `be`='{$we->login}' OR `we`='{$we->login}'");
-	$hot1 = mysql_num_rows($dbres);
-	if (!$we->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($zelf == $we || $oc->dr == $we || $we == $oc->be) { echo "Je moet voor iedere taak iemand anders hebben.";exit; }
-	elseif ($we->bc - time() > 0) { echo "$we->login heeft al een oc gedaan."; exit; }
-	elseif ($we->xp < 500) { echo "$we->login is nog geen Thief."; exit; }
-	elseif ($we->status == dood) { echo "$we->login is dood."; exit; }
-	elseif ($hot1 == 1) { echo "$we->login is al bezig met een oc."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `we`='{$_POST['we']}',`ready1`='0',`wapens`='0',`kogels`='0' WHERE `login`='{$data->login}'");
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$we->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als WE. Ga naar oc om wapens te selecteren, te accepteren of te weigeren','0','1')"); 
-		echo "De nieuwe WE is verwittigd."; exit;
-	}
-}
-elseif ($_POST['submitbe']) {
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='{$_POST['be']}'");
-	$be = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$be->login}' OR `dr`='{$be->login}' OR `be`='{$be->login}' OR `we`='{$be->login}'");
-	$hot2 = mysql_num_rows($dbres);
-	if (!$be->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($zelf == $be || $oc->dr == $be || $oc->we == $be) { echo "Je moet voor iedere taak iemand anders hebben."; exit; }
-	elseif ($be->bc - time() > 0) { echo "$be->login heeft al een oc gedaan."; exit; }
-	elseif ($be->xp < 500) { echo "$be->login is nog geen Thief."; exit; }
-	elseif ($be->status == dood) { echo "$be->login is dood."; exit; }
-	elseif ($hot2 == 1) { echo "$be->login is al bezig met een oc."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `be`='{$_POST['be']}',`ready2`='0',`bommen`='0',`aantal`='0' WHERE `login`='{$data->login}'");
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$be->login','OC','Je bent door $data->login uitgenodigd om samen een oc te doen in {$data->stad} als BE. Ga naar oc om explosieven te selecteren, te accepteren of te weigeren','0','1')"); 
-		echo "De nieuwe BE is verwittigd."; exit;
-	}
-}
-elseif ($_POST['swe']) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `we`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	$wapen = $_POST['wapon'];
-	$kogels = $_POST['kogels'];
-	if ($wapen == "1") { $costs = (50000+($kogels*500)) ;}
-	else {$costs = (100000+($kogels*500));}
-	if ($data->zak < $costs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `wapens`='{$_POST['wapon']}',`kogels`='{$_POST['kogels']}' WHERE `we`='{$data->login}'");
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$costs WHERE `login`='$data->login'");
-		mysql_query("UPDATE `oc` SET `ready1`='1' WHERE `we`='$data->login'"); 
-        mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','WE Accept','$data->login heeft de uitnodiging geaccepteerd. Hij heeft voor &euro;{$costs} wapens gekocht.','0','1')"); 
-        echo "Je bent er klaar voor."; exit;
-	}
-}
-elseif ($_POST['sbe']) {
-    $dbres = mysql_query("SELECT * FROM `oc` WHERE `be`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	$bommen = $_POST['bommen'];
-	$aantal = $_POST['aantal'];
-	if ($bommen == "1") { $costs = (50000*$aantal) ;}
-	else {$costs = (100000*$aantal);}
-	if ($data->zak < $costs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `bommen`='{$_POST['bommen']}',`aantal`='{$_POST['aantal']}' WHERE `be`='{$data->login}'");
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$costs WHERE `login`='$data->login'");
-		mysql_query("UPDATE `oc` SET `ready2`='1' WHERE `be`='$data->login'"); 
-     	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','BE Accept','$data->login heeft de uitnodiging geaccepteerd. Hij heeft voor &euro;{$costs} bommen gekocht.','0','1')"); 
-	    echo "Je bent er klaar voor."; exit;
-	}
-}
-elseif ($_POST['scar']) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `dr`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT stad FROM `oc` WHERE `dr`='{$data->login}'");
-	$oc = mysql_fetch_object($dbres);
-	$auto = mysql_fetch_object(mysql_query("SELECT * FROM `garage` WHERE `id`='{$_POST['car']}' AND `login`='{$data->login}'"));
-	if (!$auto) { echo "Deze wagen is niet van jou."; exit; }
-	elseif ($auto->damage > 90) { echo "Deze wagen is te hard beschadigd."; exit; }
-	elseif ($auto->stad != $oc->stad) { echo "Deze wagen staat niet in $oc-stad."; exit; }
-	else {
-		mysql_query("UPDATE `oc` SET `autoid`='{$_POST['car']}',`auto`='{$auto->naam}',`damage`='{$auto->damage}' WHERE `dr`='{$data->login}'");
-		mysql_query("DELETE FROM `garage` WHERE `login`='$data->login' AND `id`='{$_POST['car']}'");
-		mysql_query("UPDATE `oc` SET `ready3`='1' WHERE `dr`='$data->login'"); 
-     	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','DR Accept','$data->login heeft de uitnodiging geaccepteerd. Hij gebruikt een wagen met een waarde van &euro;{$auto->waarde}','0','1')"); 
-	    echo "Je bent er klaar voor."; exit;
-	}
-}
-elseif (isset($_GET['accept3'])) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `dr`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	if ($orgcrime->ready3 == 1 || $orgcrime->dr != $data->login) { echo "Je hebt al geaccepteerd, of je bent niet met een oc bezig, of je bent niet de driver."; }
-	elseif ($_GET['accept3'] == 0) { 
-	mysql_query("UPDATE `oc` SET `dr`='' WHERE `dr`='$data->login'"); 
-	echo "Je hebt geweigerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','DR Weiger','$data->login heeft de uitnodiging geweigerd.','0','1')"); }
-	/*elseif ($_GET['accept3'] == 1) { 
-	mysql_query("UPDATE `oc` SET `ready3`='1' WHERE `dr`='$data->login'"); 
-	echo "Je hebt geaccepteerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','DR Accept','$data->login heeft de uitnodiging geaccepteerd.','0','1')"); }
-    */
-} 
-elseif (isset($_GET['accept2'])) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `be`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	if ($orgcrime->ready2 == 1 || $orgcrime->be != $data->login) { echo "Je hebt al geaccepteerd, of je bent niet met een oc bezig, of je bent niet de be."; }
-	elseif ($_GET['accept2'] == 0) { 
-	mysql_query("UPDATE `oc` SET `be`='' WHERE `be`='$data->login'"); 
-	echo "Je hebt geweigerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','BE Weiger','$data->login heeft de uitnodiging geweigerd.','0','1')"); }
-	/*elseif ($_GET['accept2'] == 1) { 
-	mysql_query("UPDATE `oc` SET `ready2`='1' WHERE `be`='$data->login'"); 
-	echo "Je hebt geaccepteerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','BE Accept','$data->login heeft de uitnodiging geaccepteerd.','0','1')"); }
-    */
-} 
-elseif (isset($_GET['accept1'])) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `we`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	if ($orgcrime->ready1 == 1 || $orgcrime->we != $data->login) { echo "Je hebt al geaccepteerd, of je bent niet met een oc bezig, of je bent niet de we."; }
-	elseif ($_GET['accept1'] == 0) { 
-	mysql_query("UPDATE `oc` SET `we`='' WHERE `we`='$data->login'"); 
-	echo "Je hebt geweigerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','WE Weiger','$data->login heeft de uitnodiging geweigerd.','0','1')"); }
-	/*elseif ($_GET['accept1'] == 1) { 
-	mysql_query("UPDATE `oc` SET `ready1`='1' WHERE `we`='$data->login'"); 
-	echo "Je hebt geaccepteerd."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','WE Accept','$data->login heeft de uitnodiging geaccepteerd.','0','1')"); }
-    */
-} 
-elseif (isset($_GET['cancel'])) {
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$data->login}' OR `dr`='{$data->login}' OR `be`='{$data->login}' OR `we`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-	if (!$orgcrime) { echo "Je bent niet met een oc bezig."; }
-	elseif ($_GET['cancel'] == 1 && $orgcrime->login == $data->login) { 
-	echo "Je hebt de oc geannuleerd. Nu is iedereen zijn spullen kwijt!"; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->dr','OC','$data->login heeft de oc geannuleerd. Je bent nu al je spullen kwijt.','0','1')"); 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->be','OC','$data->login heeft de oc geannuleerd. Je bent nu al je spullen kwijt.','0','1')");
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->we','OC','$data->login heeft de oc geannuleerd. Je bent nu al je spullen kwijt.','0','1')");
-	mysql_query("DELETE FROM `oc` WHERE `login`='$data->login'"); 
-	}
-	elseif ($_GET['cancel'] == 1 && $orgcrime->dr == $data->login) { 
-	echo "Je hebt de oc geannuleerd, nu moet de leider op zoek naar iemand anders."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','DR cancel','$data->login heeft de oc geannuleerd. Nu moet je een nieuwe driver zoeken.','0','1')"); 
-	mysql_query("UPDATE `oc` SET `dr`='' WHERE `dr`='$data->login'"); 
-	}
-	elseif ($_GET['cancel'] == 1 && $orgcrime->we == $data->login) { 
-	echo "Je hebt de oc geannuleerd, nu moet de leider op zoek naar iemand anders."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','WE cancel','$data->login heeft de oc geannuleerd. Nu moet je een nieuwe wapenexpert zoeken.','0','1')"); 
-	mysql_query("UPDATE `oc` SET `we`='' WHERE `we`='$data->login'"); 
-	}
-	elseif ($_GET['cancel'] == 1 && $orgcrime->be == $data->login) { 
-	echo "Je hebt de oc geannuleerd, nu moet de leider op zoek naar iemand anders."; 
-	mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$orgcrime->login','BE cancel','$data->login heeft de oc geannuleerd. Nu moet je een nieuwe bommenexpert zoeken.','0','1')"); 
-	mysql_query("UPDATE `oc` SET `be`='' WHERE `be`='$data->login'"); 
-	}
-} 
- elseif (isset($_GET['go'])) {
-if ($oc->ready1 == 0 || $oc->ready2 == 0 || $oc->ready3 == 0 || $oc->bommen == 0 || $oc->wapens == 0 || $oc->autoid == 0 && $oc->login == $data->login) {echo"Jullie zijn nog niet klaar.";exit;}
-$jtime = (time() + 600);
-	$dbres = mysql_query("SELECT * FROM `oc` WHERE `login`='{$data->login}'");
-	$orgcrime = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='$orgcrime->login'");
-		$leider = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='$orgcrime->dr'");
-		$dr = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='$orgcrime->we'");
-		$we = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`bc`) AS `bc` FROM `users` WHERE `login`='$orgcrime->be'");
-		$be = mysql_fetch_object($dbres);
-	if (!$orgcrime) { echo "Je bent niet met een oc bezig, of je bent niet de leider."; }
-	elseif ($leider->stad != $orgcrime->stad || $dr->stad != $orgcrime->stad || $we->stad != $orgcrime->stad || $be->stad != $orgcrime->stad) { echo "Niet iedereen is in $orgcrime->stad"; exit; }
-	else {
-		if ($leider->level + $dr->level + $we->level + $be->level > 255) { $kans = rand(1,2); } //Admin
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 4000) { $kans = rand(1,10); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp< 6000) { $kans = rand(1,10); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 9000) { $kans = rand(1,9); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 12000) { $kans = rand(1,9); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 16000) { $kans = rand(1,8); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 22000) { $kans = rand(1,8); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 30000) { $kans = rand(1,7); }
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp < 40000) { $kans = rand(1,7); } 
-		elseif ($leider->xp + $dr->xp + $we->xp + $be->xp >= 40000) { $kans = rand(1,6); }
-		$time = time();
-		$ammount = rand(500000,4000000);
-        $ammountp = rand(100000,1000000);
-		if ($orgcrime->wapens == 2) {$kans = $kans-1;}
-		if ($orgcrime->kogels >=25) {$kans = $kans-1;}
-		if ($orgcrime->bommen == 2) {$kans = $kans-1;}
-		if ($orgcrime->aantal >= 3) {$kans = $kans-1;}
-		if ($orgcrime->damage >= 50) {$kans = $kans-1;}
-		if ($orgcrime->damage == 100) {$kans = $kans-1;} 
-		if ($kans <= 1) { 
-		$slaagmessage = Array("Jullie gingen de bank binnen en maakten het alarm onschadelijk. Een bediende was net geld uit de kluis aan het halen en met een wapen onder zijn neus vulde hij 3 grote zakken geld. Jullie hebben &euro; {$ammount} gestolen.","Jullie kwamen op het geniale idee om het geld uit de portefeuilles van de aanwezigen te vragen. Jullie hebben &euro; {$ammount} verdient.","De bankdirecteur wou net het alarm laten afgaan toen {$orgcrime->we} hem neerschoot. De politie kwam, maar al schietend konden jullie toch nog wegkomen met &euro; {$ammount}.","Het was echt Fucked-Up, een van de bankbedienden begon te schreeuwen waardoor een groep security mensen afkwamen. Na een hels vuurgevecht wisten jullie toch nog te ontsnappen met &euro; {$ammount}.");
-		$slaagmsgnum = rand(0,3);
-		$slaagmsg = "$slaagmessage[$slaagmsgnum]";	
-			echo "$slaagmsg De leider heeft het geld gekregen. Dit moeten jullie zelf verdelen";
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$dr->login','OC','$slaagmsg De leider heeft het geld gekregen. Dit moeten jullie zelf verdelen.','0','1')"); 
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$we->login','OC','$slaagmsg De leider heeft het geld gekregen. Dit moeten jullie zelf verdelen.','0','1')"); 
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$be->login','OC','$slaagmsg De leider heeft het geld gekregen. Dit moeten jullie zelf verdelen.','0','1')"); 
-			mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount,`xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$data->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$dr->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$we->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$be->login'");
+/**
+ * Organised Crime: met vier spelers een bank beroven.
+ *
+ * De leider maakt de plannen en nodigt drie mensen uit:
+ *   WE - wapenexpert, koopt wapens en kogels
+ *   BE - bommenexpert, koopt explosieven
+ *   DR - driver, levert de vluchtauto
+ *
+ * Zijn alle drie klaar, dan kan de leider de overval starten.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Het aantal kogels en bommen kwam ongefilterd uit het formulier in de
+ *    kostenberekening: `50000 * aantal`. Met een negatief aantal werden de
+ *    kosten negatief en leverde `zak = zak - kosten` juist geld op. Zo was er
+ *    onbeperkt geld te maken. Nu worden hoeveelheden begrensd en gecontroleerd.
+ *  - Accepteren, annuleren en zelfs het starten van de overval liepen via
+ *    GET-links. Een afbeelding met `oc.php?go=1` in een bericht liet de
+ *    ontvanger de overval starten. Alles gaat nu via POST met CSRF-token.
+ *  - Betalen en de OC bijwerken gebeurde in losse queries zonder transactie.
+ */
 
-			mysql_query("DELETE FROM `oc` WHERE `login`='$data->login'");
-		}
-		else {
-			echo "$msg";
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$leider->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$dr->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$we->login'");
-			mysql_query("UPDATE `users` SET `xp`=`xp`+6,`bc`=FROM_UNIXTIME($octime),`nrofoc`=`nrofoc`+1 WHERE `login`='$be->login'");
-			if ($msgnum == 1) { 
-				mysql_query("UPDATE `users` SET `health`=`health`-2 WHERE `login`='$leider->login'");
-				mysql_query("UPDATE `users` SET `health`=`health`-2 WHERE `login`='$dr->login'");
-				mysql_query("UPDATE `users` SET `health`=`health`-2 WHERE `login`='$we->login'");
-				mysql_query("UPDATE `users` SET `health`=`health`-2 WHERE `login`='$be->login'");
-			}
-			elseif ($msgnum == 2) { 
-				mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$leider->login','1000000','{$data->stad}','{$data->famillie}',FROM_UNIXTIME($jtime))");
-				mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$dr->login','1000000','{$data->stad}','{$dr->famillie}',FROM_UNIXTIME($jtime))");
-				mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$we->login','1000000','{$data->stad}','{$we->famillie}',FROM_UNIXTIME($jtime))");
-				mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$be->login','1000000','{$data->stad}','{$be->famillie}',FROM_UNIXTIME($jtime))");
-			}
-			elseif ($msgnum == 6) { 
-				mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='$leider->login'");
-				mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='$dr->login'");
-				mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='$we->login'");
-				mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='$be->login'");
-			}
-			elseif ($msgnum == 7) { 
-				if ($geluk == 1) { echo "<br><br>Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine priv�kluis..."; $msg = "$msg Jullie kwamen terecht in de directeur zijn kantoor. Er was een kleine priv�kluis...";
-				if ($antal != 0) { echo "<br>Er lagen $antal units $item in de kluis."; mysql_query("UPDATE `users` SET `$item`=`$item`+$antal WHERE `login`='$leider->login'"); $msg = "$msg Er lagen $antal units $item in de kluis."; }
-				echo "Er lag ook nog &euro; {$ammountp} cash in. Jullie moeten zelf het geld verdelen"; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammountp WHERE `login`='{$leider->login}'"); $msg = "$msg Er lag ook nog &euro; {$ammountp} cash in.";
-								}					
-				else { 
-				echo "Jullie kwamen vast te zitten en zijn dan maar terug naar buiten gepkropen."; $msg = "$msg Jullie kwamen vast te zitten en zijn dan maar terug naar buiten gepkropen."; }
-					}
-			mysql_query("DELETE FROM `oc` WHERE `login`='$data->login'");
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$dr->login','OC','$msg','0','1')"); 
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$we->login','OC','$msg','0','1')"); 
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$be->login','OC','$msg','0','1')"); 
-		}
-	}
-} 
-elseif (!$oc) { 
-print <<<ENDHTML
-<div align=left>
-Maak hier de plannen om een bank te beroven.<br>Om de plannen te maken moet je &euro; 50.000 betalen.<br>
-<form method="POST">
-<div align=left>
-Leider : $data->login <br>
-Wapen Expert : &nbsp;&nbsp;&nbsp;<input type=text name=we size=16 maxlength=16><br>
-Bommen Expert : <input type=text name=be size="16" maxlength=16><br>
-Driver : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=text name=dr size=16 maxlength=16><br><br>
-Je code is: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=img.php><br>
-Typ hier de code in:    <input type=text name=verify><br>
-<input type="submit" value="Verzenden" name="submit"></form>
-ENDHTML;
-}
-elseif ($oc->dr == $data->login && $oc->autoid == 0) {
-echo "Je moet nog een wagen opgeven.<br><br><form method=POST><input type=text name=car><input type=submit name=scar value=OK></form><br><br><a href=oc.php?accept3=0>Weigeren</a>";
-}
-elseif ($oc->dr == $data->login && $oc->ready3 == 0) {
-echo "Je bent door $oc->login uitgenodigd om een oc te doen in {$oc->stad}.<br><br><a href=oc.php?accept3=1>Accepteren</a>&nbsp;<a href=oc.php?accept3=0>Weigeren</a>";
-}
-elseif ($oc->dr == $data->login && $oc->ready3 == 1 && $oc->autoid != 0) { 
-echo "Je bent er klaar voor, je moet alleen nog wachten op de rest <br><br><a href=oc.php?cancel=1>Annuleer de oc</a>";
-}
-elseif ($oc->we == $data->login && $oc->wapens == 0) {
-echo "Je moet nog wapens en een aantal kogels kiezen.<br><br><form method=POST>
-  Wapen : 
-  <select name=wapon>
-  <option value=1>Uzi (&euro; 50.000)</option>
-  <option value=2>M16 (&euro; 100.000)</option>
-  </select><br>
-Kogels : <input type=text name=kogels size=2 maxlength=2>
-  (max 50)<br>
-  <br>
-<input type=submit value=Verzenden name=swe></form><br><br><a href=oc.php?accept1=0>Weigeren</a>";
-}
-elseif ($oc->we == $data->login && $oc->ready1 == 0) {
-echo "Je bent door $oc->login uitgenodigd om een oc te doen in {$oc->stad}.<br><br><a href=oc.php?accept1=1>Accepteren</a>&nbsp;<a href=oc.php?accept1=0>Weigeren</a>";
-}
-elseif ($oc->we == $data->login && $oc->ready1 == 1 && $oc->wapens != 0) { 
-echo "Je bent er klaar voor, je moet alleen nog wachten op de rest <br><br><a href=oc.php?cancel=1>Annuleer de oc</a>";
-}
-elseif ($oc->be == $data->login && $oc->bommen == 0) {
-echo "Je moet nog explosieven kiezen.<br><br><form method=POST>
-  Explosieven : 
-  <select name=bommen>
-  <option value=1>TNT (&euro; 50.000)</option>
-  <option value=2>C4 (&euro; 100.000)</option>
-  </select><br>
-Aantal :<select name=aantal>
-  <option value=1>1</option>
-  <option value=2>2 (Prijs x 2)</option>
-  </select><br>
-  <br>
-<input type=submit value=Verzenden name=sbe></form><br><br><a href=oc.php?accept2=0>Weigeren</a>";
-}
-elseif ($oc->be == $data->login && $oc->ready2 == 0) {
-echo "Je bent door $oc->login uitgenodigd om een oc te doen in {$oc->stad}.<br><br><a href=oc.php?accept2=1>Accepteren</a>&nbsp;<a href=oc.php?accept2=0>Weigeren</a>";
-}
-elseif ($oc->be == $data->login && $oc->ready2 == 1 && $oc->bommen != 0) { 
-echo "Je bent er klaar voor, je moet alleen nog wachten op de rest <br><br><a href=oc.php?cancel=1>Annuleer de oc</a>";
-}
-elseif ($oc->dr == '' && $oc->login == $data->login) { echo "Je driver heeft geannuleerd, selecteer een nieuwe.<br><form method=POST>Driver : <input type=text name=dr size=16 maxlength=16><br><br><input type=submit value=Verzenden name=submitdr></form><br><br><a href=oc.php?cancel=1>Annuleer de oc</a>"; }
-elseif ($oc->we == '' && $oc->login == $data->login) { echo "Je WE heeft geannuleerd, selecteer een nieuwe.<br><form method=POST>WE : <input type=text name=we size=16 maxlength=16><br><br><input type=submit value=Verzenden name=submitwe></form><br><br><a href=oc.php?cancel=1>Annuleer de oc</a>"; }
-elseif ($oc->be == '' && $oc->login == $data->login) { echo "Je BE heeft geannuleerd, selecteer een nieuwe.<br><form method=POST>BE : <input type=text name=be size=16 maxlength=16><br><br><input type=submit value=Verzenden name=submitbe></form><br><br><a href=oc.php?cancel=1>Annuleer de oc</a>"; }
+declare(strict_types=1);
 
-elseif ($oc->ready1 == 0 || $oc->ready2 == 0 || $oc->ready3 == 0 || $oc->bommen == 0 || $oc->wapens == 0 || $oc->autoid == 0 && $oc->login == $data->login) { echo "Nog niet iedereen is klaar.<br><br><a href=oc.php?cancel=1>Annuleer de oc</a>"; }
-elseif ($oc->ready1 == 1 && $oc->ready2 == 1 && $oc->ready3 == 1 && $oc->login == $data->login && $oc->bommen != 0 && $oc->wapens != 0 && $oc->autoid != 0) { echo "Jullie zijn er helemaal klaar voor.<br><br><a href=oc.php?go=1>GO!</a>&nbsp;&nbsp;&nbsp;<a href=oc.php?cancel=1>Annuleer</a>"; }
-?> 
-</table> 
-</body> 
-</html> 
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/captcha.php';
+
+const OC_MIN_XP        = 500;        // minimaal Thief
+const OC_PLANKOSTEN    = 50_000;
+const OC_RUSTTIJD      = 43200;      // twaalf uur
+const OC_CELTIJD       = 600;
+const OC_BOETE         = 1_000_000;
+const OC_MAX_KOGELS    = 1000;
+const OC_MAX_BOMMEN    = 10;
+const OC_AUTO_MAXSCHADE = 90;
+
+/** Wapens en bommen die de experts kunnen kopen. */
+function oc_wapens(): array
+{
+    return [
+        1 => ['naam' => 'Machinegeweer', 'prijs' => 50_000],
+        2 => ['naam' => 'Zware artillerie', 'prijs' => 100_000],
+    ];
+}
+
+function oc_bommen(): array
+{
+    return [
+        1 => ['naam' => 'Dynamiet', 'prijs' => 50_000],
+        2 => ['naam' => 'C4', 'prijs' => 100_000],
+    ];
+}
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
+}
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+$oc    = mijn_oc((string) $user['login']);
+$rust  = cooldown_left((int) $user['bc_ts']);
+
+layout_header('Organised Crime');
+
+if ($melding !== null) {
+    notice(nl2br(e($melding)), $type);
+}
+
+panel_open('Organised Crime');
+
+if ((int) $user['xp'] < OC_MIN_XP) {
+    echo '<p>Je moet minstens de rang Thief hebben (' . num(OC_MIN_XP)
+       . ' ervaringspunten) om aan een Organised Crime mee te doen.</p>';
+} elseif ($rust > 0 && $oc === null) {
+    echo '<p>Je bent nog aan het uitrusten van je vorige overval. Nog '
+       . '<strong data-tot="' . (time() + $rust) . '">' . e(duration($rust)) . '</strong>.</p>';
+} elseif ($oc === null) {
+    toon_planformulier($user);
+} else {
+    toon_oc($user, $oc);
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+// Verwerking
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'plan'        => plannen($user),
+        'vervang'     => vervangen($user, post('rol'), post('naam')),
+        // Bewust zonder begrenzing inlezen: de controles in de functies zelf
+        // wijzen een ongeldig aantal af met een duidelijke melding, in plaats
+        // van het stil naar de dichtstbijzijnde waarde te verschuiven.
+        'kies_wapens' => wapens_kopen($user, int_input('wapen'), int_input('kogels', -1)),
+        'kies_bommen' => bommen_kopen($user, int_input('bom'), int_input('aantal', -1)),
+        'kies_auto'   => auto_leveren($user, int_input('car')),
+        'weiger'      => weigeren($user),
+        'annuleer'    => annuleren($user),
+        'go'          => overval_plegen($user),
+        default       => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/**
+ * De OC waar deze speler bij betrokken is, of null.
+ *
+ * Elke plaatshouder krijgt zijn eigen naam: met echte prepared statements
+ * (PDO::ATTR_EMULATE_PREPARES = false) mag dezelfde naam niet hergebruikt
+ * worden, want MySQL bindt op positie.
+ */
+function mijn_oc(string $login, bool $vergrendel = false): ?array
+{
+    $sql = 'SELECT * FROM `oc`
+             WHERE `login` = :a OR `dr` = :b OR `we` = :c OR `be` = :d
+             LIMIT 1';
+    if ($vergrendel) {
+        $sql .= ' FOR UPDATE';
+    }
+    return q_row($sql, ['a' => $login, 'b' => $login, 'c' => $login, 'd' => $login]);
+}
+
+/** Welke rol heeft deze speler in deze OC? */
+function mijn_rol(array $oc, string $login): string
+{
+    return match ($login) {
+        $oc['login'] => 'leider',
+        $oc['dr']    => 'dr',
+        $oc['we']    => 'we',
+        $oc['be']    => 'be',
+        default      => '',
+    };
+}
+
+/**
+ * Controleer of iemand mee kan doen.
+ *
+ * @throws SpelFout
+ */
+function bruikbare_deelnemer(string $naam, array $bezet): array
+{
+    if ($naam === '') {
+        throw new SpelFout('Vul voor elke rol een naam in.');
+    }
+
+    $speler = q_row(
+        'SELECT *, UNIX_TIMESTAMP(`bc`) AS `bc_ts` FROM `users` WHERE `login` = ?',
+        [$naam]
+    );
+
+    if ($speler === null) {
+        throw new SpelFout('De speler ' . $naam . ' bestaat niet.');
+    }
+    if ($speler['status'] !== 'levend') {
+        throw new SpelFout($speler['login'] . ' is dood.');
+    }
+    if ((int) $speler['xp'] < OC_MIN_XP) {
+        throw new SpelFout($speler['login'] . ' is nog geen Thief.');
+    }
+    if (cooldown_left((int) $speler['bc_ts']) > 0) {
+        throw new SpelFout($speler['login'] . ' is nog aan het uitrusten van een vorige overval.');
+    }
+    if (mijn_oc((string) $speler['login']) !== null) {
+        throw new SpelFout($speler['login'] . ' is al met een OC bezig.');
+    }
+
+    // Vergelijking zonder hoofdlettergevoeligheid: anders kun je jezelf
+    // als "padrino" naast "Padrino" invullen.
+    foreach ($bezet as $andere) {
+        if (strcasecmp((string) $speler['login'], $andere) === 0) {
+            throw new SpelFout('Je moet voor iedere rol iemand anders kiezen.');
+        }
+    }
+
+    return $speler;
+}
+
+/** @throws SpelFout */
+function plannen(array $user): string
+{
+    if (!captcha_check(post('verify'))) {
+        throw new SpelFout('De code die je invoerde klopt niet.');
+    }
+    if ((int) $user['xp'] < OC_MIN_XP) {
+        throw new SpelFout('Je moet minstens de rang Thief hebben.');
+    }
+    if (cooldown_left((int) $user['bc_ts']) > 0) {
+        throw new SpelFout('Je bent nog aan het uitrusten van je vorige overval.');
+    }
+
+    return db_transaction(static function () use ($user): string {
+        if (mijn_oc((string) $user['login'], true) !== null) {
+            throw new SpelFout('Je bent al met een OC bezig.');
+        }
+
+        $zelf = (string) $user['login'];
+        $dr = bruikbare_deelnemer(post('dr'), [$zelf]);
+        $we = bruikbare_deelnemer(post('we'), [$zelf, (string) $dr['login']]);
+        $be = bruikbare_deelnemer(post('be'), [$zelf, (string) $dr['login'], (string) $we['login']]);
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], OC_PLANKOSTEN, 'zak')) {
+            throw new SpelFout('Je hebt ' . money(OC_PLANKOSTEN) . ' op zak nodig om de plannen te maken.');
+        }
+
+        q(
+            'INSERT INTO `oc` (`login`, `dr`, `we`, `be`, `stad`) VALUES (?, ?, ?, ?, ?)',
+            [$zelf, $dr['login'], $we['login'], $be['login'], $user['stad']]
+        );
+
+        uitnodigen((string) $dr['login'], $zelf, (string) $user['stad'], 'driver', 'een wagen te kiezen');
+        uitnodigen((string) $we['login'], $zelf, (string) $user['stad'], 'wapenexpert', 'wapens te kopen');
+        uitnodigen((string) $be['login'], $zelf, (string) $user['stad'], 'bommenexpert', 'explosieven te kopen');
+
+        return 'De plannen zijn gemaakt en de uitnodigingen zijn verstuurd.';
+    });
+}
+
+function uitnodigen(string $naar, string $leider, string $stad, string $rol, string $taak): void
+{
+    notify($naar, 'Organised Crime',
+        $leider . ' nodigt je uit voor een overval in ' . $stad . ' als ' . $rol . '. '
+        . 'Ga naar Organised Crime om ' . $taak . ' of te weigeren.');
+}
+
+/** @throws SpelFout */
+function vervangen(array $user, string $rol, string $naam): string
+{
+    if (!in_array($rol, ['dr', 'we', 'be'], true)) {
+        throw new SpelFout('Onbekende rol.');
+    }
+
+    return db_transaction(static function () use ($user, $rol, $naam): string {
+        $oc = mijn_oc((string) $user['login'], true);
+
+        if ($oc === null || $oc['login'] !== $user['login']) {
+            throw new SpelFout('Alleen de leider kan iemand vervangen.');
+        }
+
+        $bezet = array_filter([
+            (string) $oc['login'], (string) $oc['dr'], (string) $oc['we'], (string) $oc['be'],
+        ], static fn (string $n): bool => $n !== '' && $n !== (string) $oc[$rol]);
+
+        $nieuw = bruikbare_deelnemer($naam, array_values($bezet));
+
+        // Rol leegmaken en wat die persoon had ingebracht ongedaan maken.
+        $resets = match ($rol) {
+            'dr' => "`ready3` = 0, `auto` = '', `damage` = 0, `autoid` = 0",
+            'we' => '`ready1` = 0, `wapens` = 0, `kogels` = 0',
+            'be' => '`ready2` = 0, `bommen` = 0, `aantal` = 0',
+        };
+
+        q("UPDATE `oc` SET `{$rol}` = ?, {$resets} WHERE `id` = ?", [$nieuw['login'], $oc['id']]);
+
+        $rolnaam = ['dr' => 'driver', 'we' => 'wapenexpert', 'be' => 'bommenexpert'][$rol];
+        uitnodigen((string) $nieuw['login'], (string) $user['login'], (string) $oc['stad'], $rolnaam, 'mee te doen');
+
+        return $nieuw['login'] . ' is uitgenodigd als ' . $rolnaam . '.';
+    });
+}
+
+/** @throws SpelFout */
+function wapens_kopen(array $user, int $wapen, int $kogels): string
+{
+    $lijst = oc_wapens();
+    if (!isset($lijst[$wapen])) {
+        throw new SpelFout('Kies een geldig wapen.');
+    }
+    if ($kogels < 0 || $kogels > OC_MAX_KOGELS) {
+        throw new SpelFout('Kies tussen 0 en ' . OC_MAX_KOGELS . ' kogels.');
+    }
+
+    return db_transaction(static function () use ($user, $wapen, $kogels, $lijst): string {
+        $oc = mijn_oc((string) $user['login'], true);
+
+        if ($oc === null || $oc['we'] !== $user['login']) {
+            throw new SpelFout('Je bent niet de wapenexpert van deze OC.');
+        }
+        if ((int) $oc['ready1'] === 1) {
+            throw new SpelFout('Je hebt de wapens al gekocht.');
+        }
+
+        // Kosten worden hier berekend, niet meegestuurd door de browser.
+        $kosten = $lijst[$wapen]['prijs'] + $kogels * 500;
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], $kosten, 'zak')) {
+            throw new SpelFout('Je hebt ' . money($kosten) . ' op zak nodig.');
+        }
+
+        q('UPDATE `oc` SET `wapens` = ?, `kogels` = ?, `ready1` = 1 WHERE `id` = ?',
+            [$wapen, $kogels, $oc['id']]);
+
+        notify((string) $oc['login'], 'Organised Crime',
+            $user['login'] . ' heeft voor ' . money($kosten) . ' aan wapens gekocht en is klaar.');
+
+        return 'Je hebt ' . $lijst[$wapen]['naam'] . ' en ' . num($kogels)
+             . ' kogels gekocht voor ' . money($kosten) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function bommen_kopen(array $user, int $bom, int $aantal): string
+{
+    $lijst = oc_bommen();
+    if (!isset($lijst[$bom])) {
+        throw new SpelFout('Kies een geldig explosief.');
+    }
+    if ($aantal < 1 || $aantal > OC_MAX_BOMMEN) {
+        throw new SpelFout('Kies tussen 1 en ' . OC_MAX_BOMMEN . ' explosieven.');
+    }
+
+    return db_transaction(static function () use ($user, $bom, $aantal, $lijst): string {
+        $oc = mijn_oc((string) $user['login'], true);
+
+        if ($oc === null || $oc['be'] !== $user['login']) {
+            throw new SpelFout('Je bent niet de bommenexpert van deze OC.');
+        }
+        if ((int) $oc['ready2'] === 1) {
+            throw new SpelFout('Je hebt de explosieven al gekocht.');
+        }
+
+        $kosten = $lijst[$bom]['prijs'] * $aantal;
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], $kosten, 'zak')) {
+            throw new SpelFout('Je hebt ' . money($kosten) . ' op zak nodig.');
+        }
+
+        q('UPDATE `oc` SET `bommen` = ?, `aantal` = ?, `ready2` = 1 WHERE `id` = ?',
+            [$bom, $aantal, $oc['id']]);
+
+        notify((string) $oc['login'], 'Organised Crime',
+            $user['login'] . ' heeft voor ' . money($kosten) . ' aan explosieven gekocht en is klaar.');
+
+        return 'Je hebt ' . $aantal . '× ' . $lijst[$bom]['naam'] . ' gekocht voor ' . money($kosten) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function auto_leveren(array $user, int $garageId): string
+{
+    return db_transaction(static function () use ($user, $garageId): string {
+        $oc = mijn_oc((string) $user['login'], true);
+
+        if ($oc === null || $oc['dr'] !== $user['login']) {
+            throw new SpelFout('Je bent niet de driver van deze OC.');
+        }
+        if ((int) $oc['ready3'] === 1) {
+            throw new SpelFout('Je hebt de wagen al geleverd.');
+        }
+
+        $auto = q_row('SELECT * FROM `garage` WHERE `id` = ? AND `login` = ? FOR UPDATE',
+            [$garageId, $user['login']]);
+
+        if ($auto === null) {
+            throw new SpelFout('Die wagen staat niet in jouw garage.');
+        }
+        if ((int) $auto['damage'] > OC_AUTO_MAXSCHADE) {
+            throw new SpelFout('Deze wagen is te zwaar beschadigd.');
+        }
+        if ($auto['stad'] !== $oc['stad']) {
+            throw new SpelFout('Deze wagen staat niet in ' . $oc['stad'] . '.');
+        }
+
+        q('UPDATE `oc` SET `autoid` = ?, `auto` = ?, `damage` = ?, `ready3` = 1 WHERE `id` = ?',
+            [$auto['id'], $auto['naam'], $auto['damage'], $oc['id']]);
+        q('DELETE FROM `garage` WHERE `id` = ?', [$auto['id']]);
+
+        notify((string) $oc['login'], 'Organised Crime',
+            $user['login'] . ' levert een ' . $auto['naam'] . ' als vluchtauto en is klaar.');
+
+        return 'Je ' . $auto['naam'] . ' staat klaar als vluchtauto. '
+             . 'Let op: je krijgt hem niet terug, hoe de overval ook afloopt.';
+    });
+}
+
+/** @throws SpelFout */
+function weigeren(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $oc  = mijn_oc((string) $user['login'], true);
+        $rol = $oc === null ? '' : mijn_rol($oc, (string) $user['login']);
+
+        if ($oc === null || $rol === '' || $rol === 'leider') {
+            throw new SpelFout('Je bent niet als deelnemer uitgenodigd.');
+        }
+
+        q("UPDATE `oc` SET `{$rol}` = '' WHERE `id` = ?", [$oc['id']]);
+
+        notify((string) $oc['login'], 'Organised Crime',
+            $user['login'] . ' heeft de uitnodiging geweigerd. Zoek een vervanger.');
+
+        return 'Je hebt de uitnodiging geweigerd.';
+    });
+}
+
+/** @throws SpelFout */
+function annuleren(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $oc  = mijn_oc((string) $user['login'], true);
+        $rol = $oc === null ? '' : mijn_rol($oc, (string) $user['login']);
+
+        if ($oc === null || $rol === '') {
+            throw new SpelFout('Je bent niet met een OC bezig.');
+        }
+
+        if ($rol !== 'leider') {
+            q("UPDATE `oc` SET `{$rol}` = '' WHERE `id` = ?", [$oc['id']]);
+            notify((string) $oc['login'], 'Organised Crime',
+                $user['login'] . ' heeft zich teruggetrokken. Zoek een vervanger.');
+            return 'Je hebt je teruggetrokken uit de OC.';
+        }
+
+        foreach (['dr', 'we', 'be'] as $r) {
+            if ($oc[$r] !== '') {
+                notify((string) $oc[$r], 'Organised Crime',
+                    $user['login'] . ' heeft de OC geannuleerd. Je spullen ben je kwijt.');
+            }
+        }
+        q('DELETE FROM `oc` WHERE `id` = ?', [$oc['id']]);
+
+        return 'Je hebt de OC geannuleerd. Iedereen is zijn inbreng kwijt.';
+    });
+}
+
+/**
+ * Voer de overval uit.
+ *
+ * @throws SpelFout
+ */
+function overval_plegen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $oc = mijn_oc((string) $user['login'], true);
+
+        if ($oc === null || $oc['login'] !== $user['login']) {
+            throw new SpelFout('Alleen de leider kan de overval starten.');
+        }
+        if ((int) $oc['ready1'] !== 1 || (int) $oc['ready2'] !== 1 || (int) $oc['ready3'] !== 1) {
+            throw new SpelFout('Niet iedereen is klaar.');
+        }
+
+        // Alle vier ophalen en vergrendelen.
+        $team = [];
+        foreach (['login', 'dr', 'we', 'be'] as $rol) {
+            $speler = lock_user_by_login((string) $oc[$rol]);
+            if ($speler === null || $speler['status'] !== 'levend') {
+                throw new SpelFout('Een van je teamgenoten is niet meer beschikbaar.');
+            }
+            if ($speler['stad'] !== $oc['stad']) {
+                throw new SpelFout($speler['login'] . ' is niet in ' . $oc['stad'] . '.');
+            }
+            $team[$rol] = $speler;
+        }
+
+        // --- Slaagkans ---
+        $ervaring = array_sum(array_map(static fn (array $s): int => (int) $s['xp'], $team));
+        $staf     = array_sum(array_map(static fn (array $s): int => (int) $s['level'], $team)) > 255;
+
+        $worp = match (true) {
+            $staf             => random_int(1, 2),
+            $ervaring < 6000  => random_int(1, 10),
+            $ervaring < 12000 => random_int(1, 9),
+            $ervaring < 22000 => random_int(1, 8),
+            $ervaring < 40000 => random_int(1, 7),
+            default           => random_int(1, 6),
+        };
+
+        // Goede uitrusting verlaagt de worp en dus de kans op mislukking.
+        if ((int) $oc['wapens'] === 2)    { $worp--; }
+        if ((int) $oc['kogels'] >= 25)    { $worp--; }
+        if ((int) $oc['bommen'] === 2)    { $worp--; }
+        if ((int) $oc['aantal'] >= 3)     { $worp--; }
+        if ((int) $oc['damage'] >= 50)    { $worp--; }
+        if ((int) $oc['damage'] >= 100)   { $worp--; }
+
+        $gelukt = $worp <= 1;
+        $rust   = time() + OC_RUSTTIJD;
+
+        // Iedereen krijgt ervaring en rusttijd, geslaagd of niet.
+        foreach ($team as $speler) {
+            q('UPDATE `users` SET `xp` = `xp` + 6, `bc` = FROM_UNIXTIME(?), `nrofoc` = `nrofoc` + 1 WHERE `id` = ?',
+                [$rust, $speler['id']]);
+        }
+
+        $tekst = $gelukt
+            ? overval_geslaagd($team, $oc)
+            : overval_mislukt($team, $oc);
+
+        q('DELETE FROM `oc` WHERE `id` = ?', [$oc['id']]);
+
+        return $tekst;
+    });
+}
+
+function overval_geslaagd(array $team, array $oc): string
+{
+    $buit = random_int(500_000, 4_000_000);
+
+    $verhalen = [
+        'Jullie maakten het alarm onschadelijk. Met een wapen onder zijn neus vulde de bediende drie zakken.',
+        'Jullie vroegen doodleuk de portefeuilles van alle aanwezigen op. Niemand durfde te weigeren.',
+        'De directeur wilde het alarm indrukken, maar jullie wapenexpert was sneller. Al schietend kwamen jullie weg.',
+        'Een bediende begon te schreeuwen en de beveiliging kwam af. Na een vuurgevecht wisten jullie te ontsnappen.',
+    ];
+    $verhaal = $verhalen[array_rand($verhalen)];
+
+    bijschrijven((int) $team['login']['id'], $buit, 'zak');
+
+    $bericht = $verhaal . ' Jullie hebben ' . money($buit) . ' buitgemaakt. '
+             . 'De leider heeft het geld; verdeel het onderling.';
+
+    foreach (['dr', 'we', 'be'] as $rol) {
+        notify((string) $team[$rol]['login'], 'Organised Crime', $bericht);
+    }
+    log_action((string) $team['login']['login'], 'oc', 'Overval geslaagd', $buit);
+
+    return $bericht;
+}
+
+function overval_mislukt(array $team, array $oc): string
+{
+    // Elk verhaal heeft zijn eigen gevolg.
+    $uitkomsten = [
+        ['tekst' => 'Jullie hadden de explosieven slecht aangebracht. Al het geld ging in vlammen op, '
+                  . 'maar jullie konden wegrijden voor de politie kwam.',
+         'gevolg' => 'geen'],
+        ['tekst' => 'Er kwam een bewaker binnen die begon te schieten. Jullie moesten vluchten en raakten gewond.',
+         'gevolg' => 'gewond'],
+        ['tekst' => 'De kluis openen was een makkie, maar buiten stond een bataljon agenten te wachten.',
+         'gevolg' => 'cel'],
+        ['tekst' => 'Iemand liet het alarm afgaan. De wapenexpert schoot in het wilde weg; jullie kwamen net weg.',
+         'gevolg' => 'geen'],
+        ['tekst' => 'Er stond een eenheid agenten buiten. Jullie bliezen de overval af.',
+         'gevolg' => 'geen'],
+        ['tekst' => 'De vluchtauto werd onderweg tegengehouden voor een drugscontrole. Er werd niets gevonden.',
+         'gevolg' => 'geen'],
+        ['tekst' => 'De bediende gaf zich zonder slag of stoot over en verzorgde jullie zelfs. '
+                  . 'Jullie zijn er beter uitgekomen dan jullie erin gingen.',
+         'gevolg' => 'genezen'],
+        ['tekst' => 'Jullie probeerden via het ventilatiesysteem bij de kluis te komen.',
+         'gevolg' => 'kluisje'],
+        ['tekst' => 'Een oude dame kreeg een hartaanval en viel tegen de leider aan. In de verwarring '
+                  . 'zag niemand dat het alarm werd ingedrukt.',
+         'gevolg' => 'geen'],
+    ];
+
+    $uitkomst = $uitkomsten[array_rand($uitkomsten)];
+    $tekst    = $uitkomst['tekst'];
+
+    switch ($uitkomst['gevolg']) {
+        case 'gewond':
+            foreach ($team as $speler) {
+                q('UPDATE `users` SET `health` = GREATEST(1, `health` - 2) WHERE `id` = ?', [$speler['id']]);
+            }
+            break;
+
+        case 'cel':
+            foreach ($team as $speler) {
+                q(
+                    'INSERT INTO `jail` (`login`, `boete`, `stad`, `famillie`, `time`)
+                          VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))
+                     ON DUPLICATE KEY UPDATE `time` = VALUES(`time`), `boete` = VALUES(`boete`)',
+                    [$speler['login'], OC_BOETE, $oc['stad'], $speler['famillie'], OC_CELTIJD]
+                );
+            }
+            $tekst .= ' Jullie zitten nu allemaal vast.';
+            break;
+
+        case 'genezen':
+            foreach ($team as $speler) {
+                q('UPDATE `users` SET `health` = 100 WHERE `id` = ?', [$speler['id']]);
+            }
+            $tekst .= ' Jullie gezondheid staat weer op 100%.';
+            break;
+
+        case 'kluisje':
+            if (random_int(1, 2) === 1) {
+                $contant = random_int(100_000, 1_000_000);
+                $waar    = random_int(1, 2) === 1 ? 'drugs' : 'drank';
+                $units   = random_int(5, 20);
+
+                bijschrijven((int) $team['login']['id'], $contant, 'zak');
+                // Kolomnaam uit een vaste lijst, niet uit invoer.
+                q("UPDATE `users` SET `{$waar}` = `{$waar}` + ? WHERE `id` = ?",
+                    [$units, $team['login']['id']]);
+
+                $tekst .= ' Jullie kwamen uit bij het kantoor van de directeur, met een klein privékluisje. '
+                        . 'Er lag ' . money($contant) . ' en ' . $units . ' units ' . $waar . ' in. '
+                        . 'De leider heeft het; verdeel het onderling.';
+            } else {
+                $tekst .= ' Jullie kwamen vast te zitten in de koker en zijn maar teruggekropen.';
+            }
+            break;
+    }
+
+    foreach (['dr', 'we', 'be'] as $rol) {
+        notify((string) $team[$rol]['login'], 'Organised Crime', $tekst);
+    }
+    log_action((string) $team['login']['login'], 'oc', 'Overval mislukt');
+
+    return $tekst;
+}
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function toon_planformulier(array $user): void
+{
+    echo '<p>Maak hier de plannen om een bank te beroven. Je hebt drie medeplichtigen '
+       . 'nodig die minstens Thief zijn, in ' . e((string) $user['stad']) . ' verblijven '
+       . 'en niet al met een OC bezig zijn.</p>';
+    echo '<p>De plannen kosten ' . money(OC_PLANKOSTEN) . '.</p>';
+
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="plan">';
+    echo '<div class="veldenraster">';
+    echo '<label for="we">Wapenexpert</label><input id="we" name="we" maxlength="16" required>';
+    echo '<label for="be">Bommenexpert</label><input id="be" name="be" maxlength="16" required>';
+    echo '<label for="dr">Driver</label><input id="dr" name="dr" maxlength="16" required>';
+    echo '<span></span>' . captcha_field();
+    echo '<span></span><button type="submit">Maak de plannen</button>';
+    echo '</div></form>';
+}
+
+function toon_oc(array $user, array $oc): void
+{
+    $rol   = mijn_rol($oc, (string) $user['login']);
+    $klaar = (int) $oc['ready1'] === 1 && (int) $oc['ready2'] === 1 && (int) $oc['ready3'] === 1;
+
+    // --- Stand van zaken ---
+    echo '<p>Overval in <strong>' . e((string) $oc['stad']) . '</strong>. Jouw rol: <strong>'
+       . e(rolnaam($rol)) . '</strong>.</p>';
+
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Rol</th><th>Speler</th><th>Status</th></tr></thead><tbody>';
+    echo '<tr><th scope="row">Leider</th><td>' . e((string) $oc['login']) . '</td><td>Plannen gemaakt</td></tr>';
+    regelrij('Wapenexpert', (string) $oc['we'], (int) $oc['ready1'],
+        oc_wapens()[(int) $oc['wapens']]['naam'] ?? '' , num((int) $oc['kogels']) . ' kogels');
+    regelrij('Bommenexpert', (string) $oc['be'], (int) $oc['ready2'],
+        oc_bommen()[(int) $oc['bommen']]['naam'] ?? '', (int) $oc['aantal'] . '×');
+    regelrij('Driver', (string) $oc['dr'], (int) $oc['ready3'],
+        (string) $oc['auto'], (int) $oc['damage'] . '% schade');
+    echo '</tbody></table></div>';
+
+    // --- Wat kan ik nu doen? ---
+    if ($rol === 'we' && (int) $oc['ready1'] === 0) {
+        formulier_wapens();
+    } elseif ($rol === 'be' && (int) $oc['ready2'] === 0) {
+        formulier_bommen();
+    } elseif ($rol === 'dr' && (int) $oc['ready3'] === 0) {
+        formulier_auto($user, (string) $oc['stad']);
+    }
+
+    // --- Leider: vervangen en starten ---
+    if ($rol === 'leider') {
+        foreach (['we' => 'wapenexpert', 'be' => 'bommenexpert', 'dr' => 'driver'] as $r => $naam) {
+            if ((string) $oc[$r] === '') {
+                echo '<h3>Nieuwe ' . e($naam) . ' zoeken</h3>';
+                echo '<form method="post">' . csrf_field()
+                   . '<input type="hidden" name="actie" value="vervang">'
+                   . '<input type="hidden" name="rol" value="' . e($r) . '">'
+                   . '<div class="veldenraster"><label for="n_' . e($r) . '">Naam</label>'
+                   . '<input id="n_' . e($r) . '" name="naam" maxlength="16" required>'
+                   . '<span></span><button type="submit">Uitnodigen</button></div></form>';
+            }
+        }
+
+        if ($klaar) {
+            echo '<p>Jullie zijn er klaar voor.</p>';
+            echo '<form method="post" style="display:inline">' . csrf_field()
+               . '<input type="hidden" name="actie" value="go">'
+               . '<button type="submit" class="knop-nadruk" style="display:inline-block">Overval starten</button></form> ';
+        } else {
+            echo '<p>Nog niet iedereen is klaar.</p>';
+        }
+    }
+
+    // --- Annuleren of weigeren ---
+    echo '<form method="post" style="display:inline">' . csrf_field()
+       . '<input type="hidden" name="actie" value="annuleer">'
+       . '<button type="submit">' . ($rol === 'leider' ? 'OC annuleren' : 'Terugtrekken') . '</button></form>';
+
+    if ($rol !== 'leider' && (int) $oc[gereedveld($rol)] === 0) {
+        echo ' <form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="weiger">'
+           . '<button type="submit">Uitnodiging weigeren</button></form>';
+    }
+}
+
+function rolnaam(string $rol): string
+{
+    return ['leider' => 'leider', 'we' => 'wapenexpert', 'be' => 'bommenexpert', 'dr' => 'driver'][$rol] ?? 'onbekend';
+}
+
+function gereedveld(string $rol): string
+{
+    return ['we' => 'ready1', 'be' => 'ready2', 'dr' => 'ready3'][$rol] ?? 'ready1';
+}
+
+function regelrij(string $rol, string $speler, int $gereed, string $wat, string $extra): void
+{
+    $status = $speler === ''
+        ? '<em>heeft afgehaakt</em>'
+        : ($gereed === 1 ? 'Klaar — ' . e($wat) . ' (' . e($extra) . ')' : 'Wacht nog');
+
+    echo '<tr><th scope="row">' . e($rol) . '</th>'
+       . '<td>' . ($speler === '' ? '-' : e($speler)) . '</td>'
+       . '<td>' . $status . '</td></tr>';
+}
+
+function formulier_wapens(): void
+{
+    echo '<h3>Wapens kopen</h3>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="kies_wapens">';
+    echo '<div class="veldenraster">';
+    echo '<label for="wapen">Wapen</label><select id="wapen" name="wapen">';
+    foreach (oc_wapens() as $nr => $w) {
+        echo '<option value="' . $nr . '">' . e($w['naam']) . ' - ' . money($w['prijs']) . '</option>';
+    }
+    echo '</select>';
+    echo '<label for="kogels">Kogels</label>';
+    echo '<input id="kogels" name="kogels" type="number" min="0" max="' . OC_MAX_KOGELS . '" step="1" value="25" required>';
+    echo '<span></span><small>' . money(500) . ' per kogel. Vanaf 25 kogels stijgt de slaagkans.</small>';
+    echo '<span></span><button type="submit">Kopen</button>';
+    echo '</div></form>';
+}
+
+function formulier_bommen(): void
+{
+    echo '<h3>Explosieven kopen</h3>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="kies_bommen">';
+    echo '<div class="veldenraster">';
+    echo '<label for="bom">Soort</label><select id="bom" name="bom">';
+    foreach (oc_bommen() as $nr => $b) {
+        echo '<option value="' . $nr . '">' . e($b['naam']) . ' - ' . money($b['prijs']) . ' per stuk</option>';
+    }
+    echo '</select>';
+    echo '<label for="aantal">Aantal</label>';
+    echo '<input id="aantal" name="aantal" type="number" min="1" max="' . OC_MAX_BOMMEN . '" step="1" value="3" required>';
+    echo '<span></span><small>Vanaf 3 stuks stijgt de slaagkans.</small>';
+    echo '<span></span><button type="submit">Kopen</button>';
+    echo '</div></form>';
+}
+
+function formulier_auto(array $user, string $stad): void
+{
+    $garage = q_all(
+        'SELECT * FROM `garage` WHERE `login` = ? AND `stad` = ? AND `damage` <= ? ORDER BY `waarde` DESC',
+        [$user['login'], $stad, OC_AUTO_MAXSCHADE]
+    );
+
+    echo '<h3>Vluchtauto leveren</h3>';
+
+    if ($garage === []) {
+        echo '<p>Je hebt geen bruikbare wagen in ' . e($stad) . '. Je hebt er een nodig met '
+           . 'hoogstens ' . OC_AUTO_MAXSCHADE . '% schade.</p>';
+        return;
+    }
+
+    echo '<p>Let op: je krijgt de wagen niet terug, hoe de overval ook afloopt.</p>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="kies_auto">';
+    echo '<div class="veldenraster">';
+    echo '<label for="car">Wagen</label><select id="car" name="car" required>';
+    foreach ($garage as $auto) {
+        echo '<option value="' . (int) $auto['id'] . '">' . e((string) $auto['naam'])
+           . ' - ' . (int) $auto['damage'] . '% schade - ' . money((int) $auto['waarde']) . '</option>';
+    }
+    echo '</select>';
+    echo '<span></span><button type="submit">Wagen leveren</button>';
+    echo '</div></form>';
+}
