@@ -1,183 +1,446 @@
 <?php
-  include('config.php');
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`safe`) AS `safe`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Winkel</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-  <?
-if (isset($_POST['safe1'])) { 
-if($_POST['safe'] != 60 && $_POST['safe'] != 60 && $_POST['safe'] != 120 && $_POST['safe'] != 360 && $_POST['safe'] != 720 && $_POST['safe'] != 1440 && $_POST['safe'] != 2880){
-echo"Er is een error opgetreden. U bent nu &euro; 1.000.000 kwijt.";
-exit;
-}
-$safe = $_POST['safe'];
-$safetijd = (time() + ($safe*60));
-$prijs = (($safe/60)*500000);
-	if ($data->zak < $prijs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs,`safe`=FROM_UNIXTIME($safetijd) WHERE `login`='{$data->login}'"); echo "Je bent nu ondergedoken"; exit; }
+/**
+ * Winkel: wapens, bescherming, vervoer, lijfwachten, een huis en een safehouse.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Verkopen controleerde eerst of je het item had en boekte daarna het geld
+ *    bij, in twee losse queries. Twee gelijktijdige verzoeken zagen allebei dat
+ *    je het wapen nog had en betaalden allebei uit. Nu zit de voorwaarde in de
+ *    UPDATE zelf, binnen een transactie.
+ *  - De stad waarin je een huis koopt kwam uit een globale variabele die in
+ *    config.php gezet werd en rechtstreeks als kolomnaam in de query ging.
+ *  - Geen CSRF-bescherming op de aankopen.
+ *  - Kale woorden als 'huis' en 'guard1' in vergelijkingen, wat in PHP 8 een
+ *    fatale fout geeft.
+ */
 
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const HUIS_KOOPPRIJS   = 850_000;
+const HUIS_VERKOOPPRIJS = 750_000;
+
+/** Lijfwachten: niveau => prijs. */
+function lijfwachten(): array
+{
+    return [1 => 25_000, 2 => 50_000, 3 => 100_000, 4 => 250_000, 5 => 500_000];
 }
-elseif (isset($_POST['huis'])) { 
-if ($_POST['wat'] == huis) { 
-	if ($data->zak < 850000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `{$huis}`='1',`zak`=`zak`-850000 WHERE `login`='{$data->login}'"); echo "Je hebt een huis gekocht"; exit; }
+
+/** Safehouse: minuten => prijs. */
+function safehuizen(): array
+{
+    return [
+        60   => 500_000,
+        120  => 1_000_000,
+        360  => 3_000_000,
+        720  => 6_000_000,
+        1440 => 12_000_000,
+        2880 => 24_000_000,
+    ];
 }
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-elseif (isset($_POST['guard'])) { 
-if ($_POST['wat'] == guard1) { 
-	if ($data->zak < 25000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `guard`=1,`zak`=`zak`-25000 WHERE `login`='{$data->login}'"); echo "Je hebt een lijfwacht gekocht"; exit; }
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-elseif ($_POST['wat'] == guard2) { 
-	if ($data->zak < 50000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `guard`=2,`zak`=`zak`-50000 WHERE `login`='{$data->login}'"); echo "Je hebt een lijfwacht gekocht"; exit; }
+
+layout_header('Winkel');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-elseif ($_POST['wat'] == guard3) { 
-	if ($data->zak < 100000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `guard`=3,`zak`=`zak`-100000 WHERE `login`='{$data->login}'"); echo "Je hebt een lijfwacht gekocht"; exit; }
+
+echo '<p class="uitleg">Je hebt ' . money((int) $user['zak']) . ' op zak. '
+   . 'Je bent in ' . e((string) $user['stad']) . '.</p>';
+
+toon_items($user, 'att',   'Wapens', 'wapon');
+toon_items($user, 'def',   'Bescherming', 'defence');
+toon_items($user, 'trans', 'Vervoer', 'trans');
+toon_lijfwachten($user);
+toon_huis($user);
+toon_safehouse($user);
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'koop_item'   => item_kopen($user, post('soort'), int_input('nr')),
+        'verkoop_item' => item_verkopen($user, post('soort')),
+        'koop_guard'  => guard_kopen($user, int_input('niveau')),
+        'koop_huis'   => huis_kopen($user),
+        'verkoop_huis' => huis_verkopen($user),
+        'safehouse'   => onderduiken($user, int_input('minuten')),
+        default       => throw new SpelFout('Onbekende handeling.'),
+    };
 }
-elseif ($_POST['wat'] == guard4) { 
-	if ($data->zak < 250000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `guard`=4,`zak`=`zak`-250000 WHERE `login`='{$data->login}'"); echo "Je hebt een lijfwacht gekocht"; exit; }
+
+/** Welke kolom in `users` hoort bij welk itemsoort? */
+function item_kolom(string $soort): string
+{
+    return match ($soort) {
+        'att'   => 'wapon',
+        'def'   => 'defence',
+        'trans' => 'trans',
+        default => throw new SpelFout('Onbekend soort item.'),
+    };
 }
-elseif ($_POST['wat'] == guard5) { 
-	if ($data->zak < 500000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `guard`=5,`zak`=`zak`-500000 WHERE `login`='{$data->login}'"); echo "Je hebt een lijfwacht gekocht"; exit; }
+
+/** @throws SpelFout */
+function item_kopen(array $user, string $soort, int $nr): string
+{
+    $kolom = item_kolom($soort);
+
+    return db_transaction(static function () use ($user, $soort, $nr, $kolom): string {
+        $item = q_row('SELECT * FROM `items` WHERE `type` = ? AND `nr` = ?', [$soort, $nr]);
+
+        if ($item === null) {
+            throw new SpelFout('Dat item bestaat niet.');
+        }
+
+        $speler = lock_user((int) $user['id']);
+
+        if ((int) $speler[$kolom] === $nr) {
+            throw new SpelFout('Je hebt al een ' . $item['naam'] . '.');
+        }
+
+        $prijs = (int) $item['aprijs'];
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        // Had je al iets van dit soort, dan wordt dat ingeruild zonder vergoeding.
+        $oud = (int) $speler[$kolom];
+        $ruil = '';
+        if ($oud > 0) {
+            $oudeNaam = q_val('SELECT `naam` FROM `items` WHERE `type` = ? AND `nr` = ?', [$soort, $oud]);
+            if ($oudeNaam !== null) {
+                $ruil = ' Je oude ' . $oudeNaam . ' is weggedaan.';
+            }
+        }
+
+        q("UPDATE `users` SET `{$kolom}` = ? WHERE `id` = ?", [$nr, $speler['id']]);
+
+        return 'Je hebt een ' . $item['naam'] . ' gekocht voor ' . money($prijs) . '.' . $ruil;
+    });
 }
+
+/** @throws SpelFout */
+function item_verkopen(array $user, string $soort): string
+{
+    $kolom = item_kolom($soort);
+
+    return db_transaction(static function () use ($user, $soort, $kolom): string {
+        $speler = lock_user((int) $user['id']);
+        $nr     = (int) $speler[$kolom];
+
+        if ($nr < 1) {
+            throw new SpelFout('Je hebt niets om te verkopen.');
+        }
+
+        $item = q_row('SELECT * FROM `items` WHERE `type` = ? AND `nr` = ?', [$soort, $nr]);
+
+        if ($item === null) {
+            throw new SpelFout('Dat item bestaat niet meer in de winkel.');
+        }
+
+        // De voorwaarde staat in de UPDATE: lukt dat niet, dan was iemand net
+        // eerder. Zo kan hetzelfde item niet twee keer verkocht worden.
+        $gelukt = q_count("UPDATE `users` SET `{$kolom}` = 0 WHERE `id` = ? AND `{$kolom}` = ?",
+            [$speler['id'], $nr]) === 1;
+
+        if (!$gelukt) {
+            throw new SpelFout('Je hebt dit item niet meer.');
+        }
+
+        bijschrijven((int) $speler['id'], (int) $item['vprijs'], 'zak');
+
+        return 'Je hebt je ' . $item['naam'] . ' verkocht voor ' . money((int) $item['vprijs']) . '.';
+    });
 }
-elseif (isset($_POST['trans'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`='{$_POST['wat']}'");
-$trans = mysql_fetch_object($dbres);
-	if ($data->zak < $trans->aprijs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `trans`='{$trans->nr}',`zak`=`zak`-$trans->aprijs WHERE `login`='{$data->login}'"); echo "Je hebt een $trans->naam gekocht"; exit; }
-}	
-elseif (isset($_POST['vtrans'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`='{$_POST['wat']}'");
-$trans = mysql_fetch_object($dbres);
-	if ($data->trans != $trans->nr) { echo "Je hebt geen $trans->naam."; exit; }
-	else { mysql_query("UPDATE `users` SET `trans`=0,`zak`=`zak`+$trans->vprijs WHERE `login`='{$data->login}'"); echo "Je hebt je $trans->naam verkocht"; exit; }
+
+/** @throws SpelFout */
+function guard_kopen(array $user, int $niveau): string
+{
+    $prijzen = lijfwachten();
+
+    if (!isset($prijzen[$niveau])) {
+        throw new SpelFout('Dat aantal lijfwachten bestaat niet.');
+    }
+
+    return db_transaction(static function () use ($user, $niveau, $prijzen): string {
+        $speler = lock_user((int) $user['id']);
+        $nu     = (int) $speler['guard'];
+
+        if ($nu >= $niveau) {
+            throw new SpelFout('Je hebt al ' . $nu . ' lijfwachten. Kies een hoger aantal.');
+        }
+
+        // Je betaalt alleen het verschil met wat je al hebt.
+        $prijs = $prijzen[$niveau] - ($nu > 0 ? $prijzen[$nu] : 0);
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Uitbreiden kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `users` SET `guard` = ? WHERE `id` = ?', [$niveau, $speler['id']]);
+
+        return 'Je hebt nu ' . $niveau . ' lijfwachten. Dat kostte ' . money($prijs) . '.';
+    });
 }
-elseif (isset($_POST['wapon'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' AND `nr`='{$_POST['wat']}'");
-$wapen = mysql_fetch_object($dbres);
-	if ($data->zak < $wapen->aprijs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `wapon`='{$wapen->nr}',`zak`=`zak`-$wapen->aprijs WHERE `login`='{$data->login}'"); echo "Je hebt een $wapen->naam gekocht"; exit; }
-}	
-elseif (isset($_POST['vwapon'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' AND `nr`='{$_POST['wat']}'");
-$wapen = mysql_fetch_object($dbres);
-	if ($data->wapon != $wapen->nr) { echo "Je hebt geen $wapen->naam."; exit; }
-	else { mysql_query("UPDATE `users` SET `wapon`=0,`zak`=`zak`+$wapen->vprijs WHERE `login`='{$data->login}'"); echo "Je hebt je $wapen->naam verkocht"; exit; }
+
+/** @throws SpelFout */
+function huis_kopen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $speler = lock_user((int) $user['id']);
+        $stad   = (string) $speler['stad'];
+
+        // Kolomnaam alleen uit de vaste stedenlijst, nooit uit invoer.
+        if (!is_city($stad)) {
+            throw new SpelFout('Je verblijft in een onbekende stad.');
+        }
+        if ((int) $speler[$stad] > 0) {
+            throw new SpelFout('Je hebt al een huis in ' . $stad . '.');
+        }
+        if (!afboeken((int) $speler['id'], HUIS_KOOPPRIJS, 'zak')) {
+            throw new SpelFout('Een huis kost ' . money(HUIS_KOOPPRIJS) . '.');
+        }
+
+        q("UPDATE `users` SET `{$stad}` = 1 WHERE `id` = ?", [$speler['id']]);
+
+        return 'Je hebt een huis gekocht in ' . $stad . ' voor ' . money(HUIS_KOOPPRIJS)
+             . '. Dat geeft je thuisvoordeel bij gevechten in deze stad.';
+    });
 }
-elseif (isset($_POST['defence'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='def' AND `nr`='{$_POST['wat']}'");
-$defence = mysql_fetch_object($dbres);
-	if ($data->zak < $defence->aprijs) { echo "Je hebt niet genoeg geld op zak."; exit; }
-	else { mysql_query("UPDATE `users` SET `defence`='{$defence->nr}',`zak`=`zak`-$defence->aprijs WHERE `login`='{$data->login}'"); echo "Je hebt een $defence->naam gekocht"; exit; }
-}	
-elseif (isset($_POST['vdefence'])) { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='def' AND `nr`='{$_POST['wat']}'");
-$defence = mysql_fetch_object($dbres);
-	if ($data->defence != $defence->nr) { echo "Je hebt geen $defence->naam."; exit; }
-	else { mysql_query("UPDATE `users` SET `defence`=0,`zak`=`zak`+$defence->vprijs WHERE `login`='{$data->login}'"); echo "Je hebt je $defence->naam verkocht"; exit; }
+
+/** @throws SpelFout */
+function huis_verkopen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $speler = lock_user((int) $user['id']);
+        $stad   = (string) $speler['stad'];
+
+        if (!is_city($stad)) {
+            throw new SpelFout('Je verblijft in een onbekende stad.');
+        }
+
+        $gelukt = q_count("UPDATE `users` SET `{$stad}` = 0 WHERE `id` = ? AND `{$stad}` > 0",
+            [$speler['id']]) === 1;
+
+        if (!$gelukt) {
+            throw new SpelFout('Je hebt geen huis in ' . $stad . '.');
+        }
+
+        bijschrijven((int) $speler['id'], HUIS_VERKOOPPRIJS, 'zak');
+
+        return 'Je huis in ' . $stad . ' is verkocht voor ' . money(HUIS_VERKOOPPRIJS) . '.';
+    });
 }
-elseif (isset($_POST['vhuis'])) { 
-if ($_POST['wat'] == huis1) { 
-	if ($data->{$huis} < 1) { echo "Je hebt geen huis."; ;exit; }
-	else { mysql_query("UPDATE `users` SET `{$huis}`='0',`zak`=`zak`+750000 WHERE `login`='{$data->login}'"); echo "Je hebt je huis verkocht"; exit; }
+
+/** @throws SpelFout */
+function onderduiken(array $user, int $minuten): string
+{
+    $prijzen = safehuizen();
+
+    if (!isset($prijzen[$minuten])) {
+        throw new SpelFout('Die duur bestaat niet.');
+    }
+
+    return db_transaction(static function () use ($user, $minuten, $prijzen): string {
+        $speler = lock_user((int) $user['id']);
+        $safeTs = (int) q_val('SELECT UNIX_TIMESTAMP(`safe`) FROM `users` WHERE `id` = ?',
+            [$speler['id']], 0);
+
+        if ($safeTs > time()) {
+            throw new SpelFout('Je zit al ondergedoken.');
+        }
+
+        $prijs = $prijzen[$minuten];
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `users` SET `safe` = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE `id` = ?',
+            [$minuten, $speler['id']]);
+
+        return 'Je bent ondergedoken voor ' . ($minuten / 60) . ' uur. '
+             . 'Zolang kan niemand je vermoorden, maar jij ook niemand.';
+    });
 }
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function toon_items(array $user, string $soort, string $titel, string $kolom): void
+{
+    $items  = q_all('SELECT * FROM `items` WHERE `type` = ? ORDER BY `aprijs`', [$soort]);
+    $huidig = (int) $user[$kolom];
+
+    panel_open($titel);
+
+    if ($items === []) {
+        echo '<p>Er is hier niets te koop.</p>';
+        panel_close();
+        return;
+    }
+
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Item</th><th class="getal">Koop</th><th class="getal">Verkoop</th>'
+       . '<th class="getal">Effect</th><th></th></tr></thead><tbody>';
+
+    foreach ($items as $item) {
+        $isVanJou = (int) $item['nr'] === $huidig;
+
+        echo '<tr>';
+        echo '<td>' . e((string) $item['naam']) . ($isVanJou ? ' <small>(in bezit)</small>' : '') . '</td>';
+        echo '<td class="getal">' . money((int) $item['aprijs']) . '</td>';
+        echo '<td class="getal">' . money((int) $item['vprijs']) . '</td>';
+        echo '<td class="getal">' . e(effect_tekst($soort, (float) $item['effect'])) . '</td>';
+        echo '<td>';
+
+        if ($isVanJou) {
+            echo '<form method="post" style="margin:0">' . csrf_field()
+               . '<input type="hidden" name="actie" value="verkoop_item">'
+               . '<input type="hidden" name="soort" value="' . e($soort) . '">'
+               . '<button type="submit">Verkoop</button></form>';
+        } elseif ((int) $item['aprijs'] > 0) {
+            $tekort = (int) $user['zak'] < (int) $item['aprijs'];
+            echo '<form method="post" style="margin:0">' . csrf_field()
+               . '<input type="hidden" name="actie" value="koop_item">'
+               . '<input type="hidden" name="soort" value="' . e($soort) . '">'
+               . '<input type="hidden" name="nr" value="' . (int) $item['nr'] . '">'
+               . '<button type="submit"' . ($tekort ? ' disabled' : '') . '>Koop</button></form>';
+        }
+
+        echo '</td></tr>';
+    }
+
+    echo '</tbody></table></div>';
+    panel_close();
 }
-print "<table><tr><td width=100% align=center><form method='post'>";
-print "<tr><td width=100%><b>Safehouse</b></td></tr>"; 
-if ($data->safe - time() > 0) { $safe = gmdate('H:i:s',($data->safe - time())); print "<tr><td width=100%>Je zit nog $safe in een safehouse</td></tr>"; }
-if ($data->safe - time() < 0) { print "<tr><td width=100%><select name=safe width=150>
-                <option value=60>1 uur &euro; 500.000</option>
-                <option value=120>2 uur &euro; 1.000.000</option>
-				<option value=360>6 uur &euro; 3.000.000</option>
-				<option value=720>12 uur &euro; 6.000.000</option>
-				<option value=1440>24 uur &euro; 12.000.000</option>
-				<option value=2880>48 uur &euro; 24.000.000</option>
-				</select>
-              Verberg je in een safehouse.<br></td></tr>"; }
-if ($data->safe - time() < 0) { print "<tr><td width=100%><br><input type='submit' name='safe1' value='Duik onder'></td></tr>"; }
-print "<tr><td width=100%>&nbsp;</td></tr>";
-print "<tr><td width=100%><b>Huis</b></td></tr>"; 
-if (!$data->{$huis}) { print "<tr><td width=100%><input type='radio' name='wat' value='huis' checked>Koop een Huis &euro;850000<br></td></tr>"; }
-if ($data->{$huis} < 1) { print "<tr><td width=100%><br><input type='submit' name='huis' value='Koop'></td></tr>"; }
-if ($data->{$huis} > 0) { print "<tr><td width=100%><input type='radio' name='wat' value='huis1' checked>Verkoop je huis voor &euro;750000<br></td></tr>"; }
-if ($data->{$huis} > 0) { print "<tr><td width=100%><br><input type='submit' name='vhuis' value='Verkoop'></td></tr>"; }
-print "<tr><td width=100%>&nbsp;</td></tr>";
-if ($data->guard != 5) { print "<tr><td width=100%><b>Bodyguards</b></td></tr>"; }
-if ($data->guard == 0) { print "<tr><td width=100%><input type='radio' name='wat' value='guard1' checked>Koop een Lijfwacht &euro;25000<br></td></tr>"; }
-if ($data->guard == 1) { print "<tr><td width=100%><input type='radio' name='wat' value='guard2'>Koop een Lijfwacht &euro;50000<br></td></tr>"; }
-if ($data->guard == 2) { print "<tr><td width=100%><input type='radio' name='wat' value='guard3'>Koop een Lijfwacht &euro;100000<br></td></tr>"; }
-if ($data->guard == 3) { print "<tr><td width=100%><input type='radio' name='wat' value='guard4'>Koop een Lijfwacht &euro;250000<br></td></tr>"; }
-if ($data->guard == 4) { print "<tr><td width=100%><input type='radio' name='wat' value='guard5'>Koop een Lijfwacht &euro;500000<br></td></tr>"; }
-if ($data->guard != 5) { print "<tr><td width=100%><br><input type='submit' name='guard' value='Koop'></td></tr>"; }
-print "<tr><td width=100%>&nbsp;</td></tr>";
-print "<tr><td width=100%><b>Transport</b></td></tr>"; 
-if ($data->trans < 1) {
-   $dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans'  ORDER BY `nr`");
-   while($trans = mysql_fetch_object($dbres)) {
-   print "<tr><td width=100%><input type='radio' name='wat' value='$trans->nr'>Koop een $trans->naam voor &euro;{$trans->aprijs}<br></td></tr>";  
-   }
-   print "<tr><td width=100%><br><input type='submit' name='trans' value='Koop'></td></tr>"; 
+
+function effect_tekst(string $soort, float $effect): string
+{
+    return match ($soort) {
+        'trans' => duration((int) round($effect)) . ' reistijd',
+        default => num($effect, 2),
+    };
 }
-else {
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`='{$data->trans}'");
-$trans = mysql_fetch_object($dbres);
-print "<tr><td width=100%><input type='radio' name='wat' value='$data->trans' checked>Verkoop je $trans->naam voor &euro;{$trans->vprijs}<br></td></tr>
-<tr><td width=100%><br><input type='submit' name='vtrans' value='Verkoop'></td></tr>" ;
+
+function toon_lijfwachten(array $user): void
+{
+    $nu = (int) $user['guard'];
+
+    panel_open('Lijfwachten');
+    echo '<p>Lijfwachten maken je moeilijker te vermoorden. Je hebt er nu <strong>'
+       . $nu . '</strong>.</p>';
+
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Aantal</th><th class="getal">Prijs</th><th></th></tr></thead><tbody>';
+
+    foreach (lijfwachten() as $niveau => $prijs) {
+        $bij     = $prijs - ($nu > 0 ? lijfwachten()[$nu] : 0);
+        $tekort  = (int) $user['zak'] < $bij;
+
+        echo '<tr><td>' . $niveau . '</td><td class="getal">' . money($prijs) . '</td><td>';
+
+        if ($niveau > $nu) {
+            echo '<form method="post" style="margin:0">' . csrf_field()
+               . '<input type="hidden" name="actie" value="koop_guard">'
+               . '<input type="hidden" name="niveau" value="' . $niveau . '">'
+               . '<button type="submit"' . ($tekort ? ' disabled' : '') . '>Bijkopen voor '
+               . money($bij) . '</button></form>';
+        } else {
+            echo '<small>' . ($niveau === $nu ? 'in bezit' : '-') . '</small>';
+        }
+
+        echo '</td></tr>';
+    }
+
+    echo '</tbody></table></div>';
+    panel_close();
 }
-print "<tr><td width=100%>&nbsp;</td></tr>";
-print "<tr><td width=100%><b>Wapens</b></td></tr>"; 
-if ($data->wapon < 1) {
-   $dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' ORDER BY `nr`");
-   while($wapen = mysql_fetch_object($dbres)) {
-   print "<tr><td width=100%><input type='radio' name='wat' value='$wapen->nr'>Koop een $wapen->naam voor &euro;{$wapen->aprijs}<br></td></tr>";  
-   }
-   print "<tr><td width=100%><br><input type='submit' name='wapon' value='Koop'></td></tr>"; 
+
+function toon_huis(array $user): void
+{
+    $stad   = (string) $user['stad'];
+    $heeft  = is_city($stad) && (int) $user[$stad] > 0;
+
+    panel_open('Huis in ' . $stad);
+    echo '<p>Een eigen huis geeft je thuisvoordeel bij gevechten in deze stad.</p>';
+
+    if ($heeft) {
+        echo '<p>Je hebt hier een huis.</p>';
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="verkoop_huis">'
+           . '<button type="submit">Verkoop voor ' . money(HUIS_VERKOOPPRIJS) . '</button></form>';
+    } else {
+        $tekort = (int) $user['zak'] < HUIS_KOOPPRIJS;
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="koop_huis">'
+           . '<button type="submit"' . ($tekort ? ' disabled' : '') . '>Koop voor '
+           . money(HUIS_KOOPPRIJS) . '</button></form>';
+    }
+
+    // Overzicht van je andere huizen.
+    $elders = array_filter(cities(), static fn (string $s): bool => $s !== $stad && (int) ($user[$s] ?? 0) > 0);
+    if ($elders !== []) {
+        echo '<p class="uitleg">Je hebt ook een huis in: ' . e(implode(', ', $elders)) . '.</p>';
+    }
+
+    panel_close();
 }
-else {
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='att' AND `nr`='{$data->wapon}'");
-$wapen = mysql_fetch_object($dbres);
-print "<tr><td width=100%><input type='radio' name='wat' value='$data->wapon' checked>Verkoop je $wapen->naam voor &euro;{$wapen->vprijs}<br></td></tr>
-<tr><td width=100%><br><input type='submit' name='vwapon' value='Verkoop'></td></tr>" ;
+
+function toon_safehouse(array $user): void
+{
+    $safeTs = (int) q_val('SELECT UNIX_TIMESTAMP(`safe`) FROM `users` WHERE `id` = ?', [$user['id']], 0);
+
+    panel_open('Safehouse');
+
+    if ($safeTs > time()) {
+        echo '<p>Je zit ondergedoken. Nog <strong data-tot="' . $safeTs . '">'
+           . e(duration($safeTs - time())) . '</strong>.</p>';
+        panel_close();
+        return;
+    }
+
+    echo '<p>Ondergedoken kan niemand je vermoorden — maar jij kunt ook niemand aanvallen.</p>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="safehouse">';
+    echo '<div class="veldenraster">';
+    echo '<label for="minuten">Duur</label><select id="minuten" name="minuten">';
+    foreach (safehuizen() as $minuten => $prijs) {
+        echo '<option value="' . $minuten . '">' . ($minuten / 60) . ' uur - ' . money($prijs) . '</option>';
+    }
+    echo '</select>';
+    echo '<span></span><button type="submit">Onderduiken</button>';
+    echo '</div></form>';
+
+    panel_close();
 }
-print "<tr><td width=100%>&nbsp;</td></tr>";
-print "<tr><td width=100%><b>Bescherming</b></td></tr>"; 
-if ($data->defence < 1) {
-   $dbres = mysql_query("SELECT * FROM `items` WHERE `type`='def' AND `nr`!='0' ORDER BY `nr`");
-   while($defence = mysql_fetch_object($dbres)) {
-   print "<tr><td width=100%><input type='radio' name='wat' value='$defence->nr'>Koop een $defence->naam voor &euro;{$defence->aprijs}<br></td></tr>";  
-   }
-   print "<tr><td width=100%><br><input type='submit' name='defence' value='Koop'></td></tr>"; 
-}
-else {
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='def' AND `nr`='{$data->defence}'");
-$defence = mysql_fetch_object($dbres);
-print "<tr><td width=100%><input type='radio' name='wat' value='$data->defence' checked>Verkoop je $defence->naam voor &euro;{$defence->vprijs}<br></td></tr>
-<tr><td width=100%><br><input type='submit' name='vdefence' value='Verkoop'></td></tr>" ;
-}
-print "</table></td></tr></form>";
-?>
-</table></table>

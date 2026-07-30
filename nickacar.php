@@ -1,166 +1,305 @@
-<?php /* ------------------------- */
-include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-$data	= mysql_fetch_object($dbres);
-$car = mysql_query("SELECT * FROM `cars` ORDER BY rand() LIMIT 0,1");
-$garage = mysql_fetch_object($car);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-echo " 
-<table align=center width=100%> 
-   <tr> 
-    <td class=subTitle><b>Steel een wagen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>
-    <table align=center width=100%>"; 
-		$gkan = round($data->xp * 0.1);
-		if ($gkan > 30) { $gkan = 30; }
-		$gkans = rand(1, (100 / $gkan));
-$ka = floor(0.05 * $data->xp);
-if ($ka > 30) { $ka = rand(15,40); }
-$ka2 = rand(0,floor(0.05 * $data->xp+5));
-if ($ka2 > 30) { $ka2 = rand(15,40); }
-$ka3 = rand(0,floor(0.05 * $data->xp+5));
-if ($ka3 > 30) { $ka3 = rand(15,40); }
-$kan = 100 / $ka;
-if ($ka == 30) { $kans = rand(1,3); }
-else { $kans = rand(0, $kan); }
-if ($data->level > 254) {$kans = rand (1,2);}
-$percent         = rand(0, 100);
-$msgnum = rand(0,13);
-$waarde = round($garage->waarde - (($garage->waarde / 75) * $percent));
-if ($waarde < 500) { $waarde = 500; }
-   $message          = Array(
-"De benzine was op.",
-"Je kreeg de deur niet open.",
-"Toen je de deur probeerde te openen vernielde je de wagen zo hard, dat hij niets meer waard was.",
-"Je kon de wagen stelen, maar je was iets te enthousiast. Je reed de gevangenis muur om. Je bent gearresteerd.",
-"Een agent kwam kijken toen je aan het slot was aan het prutsen. Hij wou je sleutel in beslag nemen omdat je te dronken was, dus liep je weg toen hij zich omdraaide.",
-"De wagen was te goed beveiligd.",
-"Net toen je de deur van de wagen wou opendoen zag je een stel vrijen op de achterbank. Gelukkig was je sneller weg dan dat ze zich konden aankleden om achter je aan te komen.",
-"De wagen die je wou stelen werd net voor je kon beginnen weg getakelt.",
-"Het alarm ging af, je kon nog maar net ontsnappen.",
-"De politie kwam achter je aan, maar je kon nog ontsnappen.",
-"Je kreeg de deur niet open en dus sloeg je het raam in. Je sneed jezelf in je duim en besloot dus maar om de wagen achter te laten.",
-"Je moest dringend naar de wc en koos de eerste en beste auto uit. Je had niet veel zin meer om de wagen te stelen en dus heb je hem maar achter gelaten.",
-"Toen je net wou wegrijden kwam je er achter dat de banden lek waren.",
-"De eigenaar kwam net aanlopen.");
+<?php
+/**
+ * Auto's stelen: van een parkeerplaats, uit een woonwijk, bij een tankstation
+ * of rechtstreeks uit de garage van een andere speler.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De slaagkans werd berekend als `rand(0, 100 / $ka)`. Bij weinig ervaring
+ *    is `$ka` nul, wat een deling door nul geeft: op PHP 8 een fatale fout.
+ *    Hetzelfde gold voor de kans om van een speler te stelen.
+ *  - De drie locaties toonden elk een eigen percentage, maar stuurden alle drie
+ *    dezelfde waarde mee. Ze waren dus identiek; het verschil was schijn. Nu
+ *    hebben ze werkelijk verschillende kansen, zoals de oude weergave beloofde.
+ *  - `$gkans` werd berekend maar nergens gebruikt; het stelen van een speler
+ *    liep op de kans van de parkeerplaats.
+ *  - Een wagen uit andermans garage werd overgezet zonder transactie of
+ *    vergrendeling, dus twee dieven konden dezelfde wagen "stelen".
+ */
 
-$msg                    = "{$message[$msgnum]}";
-$smsgnum = rand(0,9);
-$smessage = Array(
-"Je kreeg na lang te sleutelen het protier open.",
-"De benzine was op, maar toen vond je iets verder een jerrycan die nog halfvol was.",
-"Een agent kwam kijken toen je aan het slot was aan het prutsen. Hij wou je sleutel in beslag nemen omdat je te dronken was, maar je sloeg hem neer en reed snel weg.",
-"De wagen was goed beveiligd. Van woede sloeg je tegen de deur, ze ging open...",
-"Net toen je de deur van de wagen wou opendoen zag je een stel vrijen op de achterbank. Je trok ze uit de wagen en reed snel weg.",
-"Ze wouden de wagen die je wou stelen weg takelen, dus heb je de wagen ervoor maar gestolen.",
-"Het alarm ging af. Een man kwam je helpen, hij zette het alarm af en wuifde je uit toen je wegreed.",
-"Je kreeg de deur niet open en dus sloeg je het raam in.",
-"Je moest dringend naar de wc en koos de eerste en beste auto uit. Je had gelukkig op de klink van de passagierskant gepist.",
-"De eigenaar kwam net aanlopen. Je sloeg hem op zijn gezicht en reed weg.");
-$smsg  = "{$smessage[$smsgnum]}";
-$acrime = gmdate('i:s',($data->ac - time()));
-if($data->ac - time() > 0) { echo "Je bent nog $acrime aan het uitrusten."; echo "</table></table>"; exit; }
-if (isset($_POST['submit'])) {
-if (!$_POST['verify']){echo"Je moet een code opgeven.";}
-elseif($_POST['verify'] != $_SESSION['verify']){echo"De code die je hebt ingevoerd komt niet overeen met het plaatje.";}
-	elseif ($_POST['waar'] == onbekend) {
-		if($kans != 1) {
-			echo "$msg";
-			mysql_query("UPDATE `users` SET `xp`=`xp`+2,`ac`=FROM_UNIXTIME($autotijd),`nrofcar`=`nrofcar`+1 WHERE `login`='{$data->login}'");
-			if ($msgnum == 3) {
-				mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','$boete','$data->stad','{$data->famillie}',FROM_UNIXTIME($jailtime))");
-			}
-			elseif ($msgnum == 10) {
-				mysql_query("UPDATE `users` SET `health`=`health`-1 WHERE `login`='{$data->login}'");
-			}
-			exit;
-		}
-		else {
-			mysql_query("UPDATE `users` SET `xp`=`xp`+2,`ac`=FROM_UNIXTIME($autotijd),`nrofcar`=`nrofcar`+1 WHERE `login`='{$data->login}'");
-			mysql_query("INSERT INTO `garage`(`login`,`naam`,`waarde`,`damage`,`stad`) values('{$data->login}','$garage->naam','$waarde','$percent','$data->stad')");
-			$id = mysql_insert_id();
-			echo "$smsg <br>Je hebt een $garage->auto gejat met {$percent}% schade en met een waarde &euro;$waarde.
-			<br><br><center><img src=\"{$garage->url}\" border=0 alt=\"{$garage->auto}\"><br><br><a href=garage.php?x=$id>Klik hier om de auto te verkopen</a></center></table></td></tr>";
-			exit;
-		}
-	}
-	elseif ($_POST['waar'] == gebruiker) {
-		$dbres = mysql_query("SELECT * FROM `garage` WHERE `stad`='{$data->stad}' AND `login`!='{$data->login}' AND `safe`='0' ORDER BY rand() LIMIT 0,1");
-		$auto = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT * FROM `cars` WHERE `naam`='{$auto->naam}'");
-		$aut = mysql_fetch_object($dbres);
-		if (!$auto->naam) { echo "Er is geen gebruiker met een auto in deze stad."; exit; }
-		else {
-			if ($kans == 1) {
-				echo "Je hebt een $aut->auto uit de garage van $auto->login gejat met {$auto->damage}% schade en met een waarde &euro;$auto->waarde.
-				<br><br><center><img src=\"{$aut->url}\" width=500 height=240 border=0 alt=\"{$aut->auto}\"></center></table></td></tr>";
-				mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$auto->login}','Autodief','$data->login heeft een $aut->auto met $auto->damage% schade en waarde &euro;$auto->waarde uit je garage gestolen.')");
-				mysql_query("UPDATE `users` SET `xp`=`xp`+1,`ac`=FROM_UNIXTIME($autotijd),`nrofcar`=`nrofcar`+1 WHERE `login`='{$data->login}'");
-				mysql_query("UPDATE `garage` SET `login`='{$data->login}' WHERE `id`='{$auto->id}'");
-				exit;
-			}
-			else {
-				echo "$msg";
-				mysql_query("UPDATE `users` SET `xp`=`xp`+1,`ac`=FROM_UNIXTIME($autotijd),`nrofcar`=`nrofcar`+1 WHERE `login`='{$data->login}'");
-				if ($msgnum == 3) {
-					mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$data->famillie}',FROM_UNIXTIME($jailtime))");
-				}
-				elseif ($msgnum == 10) {
-					mysql_query("UPDATE `users` SET `health`=`health`-1 WHERE `login`='{$data->login}'");
-				}
-				exit;
-			}
-		}
-	}
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/captcha.php';
+
+/**
+ * De plekken waar je kunt stelen.
+ *
+ * bonus     : extra procentpunten slaagkans bovenop de basis
+ * schade    : bereik van de schade aan de buitgemaakte wagen
+ */
+function steelplekken(): array
+{
+    return [
+        'parkeerplaats' => [
+            'label'  => 'Steel een wagen op een parkeerplaats',
+            'bonus'  => 0,
+            'schade' => [0, 100],
+        ],
+        'woonwijk' => [
+            'label'  => 'Steel een wagen in een woonwijk',
+            'bonus'  => 5,
+            'schade' => [0, 75],
+        ],
+        'tankstation' => [
+            'label'  => 'Steel een wagen bij een tankstation',
+            'bonus'  => 5,
+            'schade' => [0, 50],
+        ],
+    ];
 }
-print <<<ENDHTML
-<FORM METHOD=post ACTION="">
-  <table width="350" border="0" cellpadding="0" cellspacing="0">
-    <tr>
-      <td width="20"><input type=radio name=waar value=onbekend checked></td>
-      <td width="6">&nbsp;</td>
-      <td width="326">Steel een wagen op een parking....{$ka}% </td>
-    </tr>
-	<tr>
-      <td><input type=radio name=waar value=onbekend></td>
-      <td>&nbsp;</td>
-      <td>Steel een wagen bij een huis....{$ka2}%</td>
-    </tr>
-	<tr>
-      <td><input type=radio name=waar value=onbekend></td>
-      <td>&nbsp;</td>
-      <td>Steel een wagen bij een tankstation...{$ka3}%</td>
-    </tr>
-	<tr>
-      <td><input type=radio name=waar value=gebruiker></td>
-      <td>&nbsp;</td>
-      <td>Steel een wagen van een andere gebruiker....$gkan%</td>
-    </tr>
-	<tr><td colspan=3><br>Je code is: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=img.php></td></tr>
-    <tr><td colspan=3>Typ hier de code in:    <input type=text name=verify></td></tr>
-    <tr>
-      <td colspan=3><input name="submit" type="submit" value="Steel"></td>
-    </tr>
-  </table>
-  </form>
-ENDHTML;
 
-?>
-</table></table>
+/** Slaagkans in procenten voor een plek. */
+function steelkans(array $user, string $plek): int
+{
+    $basis = (int) floor(0.05 * (int) $user['xp']);
+    $bonus = steelplekken()[$plek]['bonus'] ?? 0;
+
+    if ((int) $user['level'] > LEVEL_ADMIN) {
+        return 50;
+    }
+    return max(1, min(30, $basis + $bonus));
+}
+
+/** Slaagkans om uit de garage van een andere speler te stelen. */
+function garagekans(array $user): int
+{
+    if ((int) $user['level'] > LEVEL_ADMIN) {
+        return 50;
+    }
+    return max(1, min(30, (int) round((int) $user['xp'] * 0.1)));
+}
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
+}
+block_if_jailed();
+
+$uitkomst = null;
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $uitkomst = stelen($user, post('waar'), post('verify'));
+    } catch (SpelFout $e) {
+        $uitkomst = ['tekst' => $e->getMessage(), 'type' => 'fout', 'auto' => null];
+    }
+    $user = current_user(true);
+}
+
+$wacht = cooldown_left((int) $user['ac_ts']);
+
+layout_header('Auto stelen');
+
+if ($uitkomst !== null) {
+    notice(e($uitkomst['tekst']), $uitkomst['type']);
+
+    if (($uitkomst['auto'] ?? null) !== null && ($uitkomst['auto']['url'] ?? '') !== '') {
+        echo '<p><img src="' . e((string) $uitkomst['auto']['url']) . '" alt="'
+           . e((string) $uitkomst['auto']['auto']) . '" style="max-width:100%;border-radius:4px"></p>';
+    }
+}
+
+panel_open('Steel een wagen');
+
+if ($wacht > 0) {
+    echo '<p>Je bent nog aan het uitrusten. Nog <strong data-tot="' . (time() + $wacht) . '">'
+       . e(duration($wacht)) . '</strong>.</p>';
+} else {
+    toon_formulier($user);
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/**
+ * @return array{tekst:string, type:string, auto:?array}
+ * @throws SpelFout
+ */
+function stelen(array $user, string $waar, string $captcha): array
+{
+    if (cooldown_left((int) $user['ac_ts']) > 0) {
+        throw new SpelFout('Je bent nog aan het uitrusten.');
+    }
+    if (!captcha_check($captcha)) {
+        throw new SpelFout('De code die je invoerde klopt niet.');
+    }
+
+    if ($waar === 'gebruiker') {
+        return steel_van_speler($user);
+    }
+    if (!isset(steelplekken()[$waar])) {
+        throw new SpelFout('Kies een geldige plek.');
+    }
+
+    return steel_op_straat($user, $waar);
+}
+
+/** @return array{tekst:string, type:string, auto:?array} */
+function steel_op_straat(array $user, string $plek): array
+{
+    $def      = steelplekken()[$plek];
+    $geslaagd = random_int(1, 100) <= steelkans($user, $plek);
+
+    return db_transaction(static function () use ($user, $def, $geslaagd): array {
+        q('UPDATE `users` SET `xp` = `xp` + 2, `ac` = FROM_UNIXTIME(?), `nrofcar` = `nrofcar` + 1 WHERE `id` = ?',
+            [cooldown_until('auto'), $user['id']]);
+
+        if (!$geslaagd) {
+            return mislukking($user);
+        }
+
+        // Willekeurige wagen uit de catalogus.
+        $model = q_row('SELECT * FROM `cars` ORDER BY RAND() LIMIT 1');
+
+        if ($model === null) {
+            throw new SpelFout('Er staan geen wagens in het spel. Waarschuw een beheerder.');
+        }
+
+        [$minSchade, $maxSchade] = $def['schade'];
+        $schade = random_int($minSchade, $maxSchade);
+        $waarde = max(500, (int) round((int) $model['waarde'] * (1 - $schade / 100)));
+
+        q('INSERT INTO `garage` (`login`, `naam`, `waarde`, `damage`, `stad`) VALUES (?, ?, ?, ?, ?)',
+            [$user['login'], $model['naam'], $waarde, $schade, $user['stad']]);
+
+        $verhalen = [
+            'Je kreeg na lang sleutelen het portier open.',
+            'De tank was leeg, maar verderop vond je een jerrycan die nog halfvol was.',
+            'Een agent kwam kijken terwijl je aan het slot prutste. Je sloeg hem neer en reed weg.',
+            'De wagen was goed beveiligd. Van woede sloeg je tegen de deur — en die ging open.',
+            'Er lag een stel op de achterbank. Je trok ze eruit en reed weg.',
+            'Ze wilden de wagen wegslepen, dus nam je die er maar naast.',
+            'Het alarm ging af. Een voorbijganger zette het uit en zwaaide je uit.',
+            'Je kreeg de deur niet open en sloeg het raam in.',
+            'De eigenaar kwam net aanlopen. Je sloeg hem neer en reed weg.',
+        ];
+
+        return [
+            'tekst' => $verhalen[array_rand($verhalen)] . ' Je hebt een ' . $model['auto']
+                     . ' gestolen met ' . $schade . '% schade, waarde ' . money($waarde) . '.',
+            'type'  => 'ok',
+            'auto'  => $model,
+        ];
+    });
+}
+
+/** @return array{tekst:string, type:string, auto:?array} */
+function steel_van_speler(array $user): array
+{
+    $geslaagd = random_int(1, 100) <= garagekans($user);
+
+    return db_transaction(static function () use ($user, $geslaagd): array {
+        q('UPDATE `users` SET `xp` = `xp` + 1, `ac` = FROM_UNIXTIME(?), `nrofcar` = `nrofcar` + 1 WHERE `id` = ?',
+            [cooldown_until('auto'), $user['id']]);
+
+        // Vergrendel de wagen meteen: zonder FOR UPDATE kunnen twee dieven
+        // dezelfde wagen tegelijk uit de garage halen.
+        $wagen = q_row(
+            "SELECT * FROM `garage`
+              WHERE `stad` = ? AND `login` <> ? AND `safe` = 0
+           ORDER BY RAND() LIMIT 1
+           FOR UPDATE",
+            [$user['stad'], $user['login']]
+        );
+
+        if ($wagen === null) {
+            throw new SpelFout('Er staat hier geen wagen van een andere speler die je kunt stelen.');
+        }
+
+        if (!$geslaagd) {
+            return mislukking($user);
+        }
+
+        $model = q_row('SELECT * FROM `cars` WHERE `naam` = ?', [$wagen['naam']]);
+
+        q('UPDATE `garage` SET `login` = ? WHERE `id` = ?', [$user['login'], $wagen['id']]);
+
+        notify((string) $wagen['login'], 'Autodief',
+            $user['login'] . ' heeft je ' . $wagen['naam'] . ' met ' . (int) $wagen['damage']
+            . '% schade en een waarde van ' . money((int) $wagen['waarde']) . ' uit je garage gestolen.');
+
+        log_action((string) $user['login'], 'autodiefstal',
+            'Wagen gestolen: ' . $wagen['naam'], (int) $wagen['waarde'], (string) $wagen['login']);
+
+        return [
+            'tekst' => 'Je hebt een ' . $wagen['naam'] . ' uit de garage van ' . $wagen['login']
+                     . ' gestolen, met ' . (int) $wagen['damage'] . '% schade en een waarde van '
+                     . money((int) $wagen['waarde']) . '.',
+            'type'  => 'ok',
+            'auto'  => $model,
+        ];
+    });
+}
+
+/**
+ * Een mislukte poging, met soms gevangenisstraf of letsel.
+ *
+ * @return array{tekst:string, type:string, auto:?array}
+ */
+function mislukking(array $user): array
+{
+    $pech = [
+        ['De tank was leeg.', 'geen'],
+        ['Je kreeg de deur niet open.', 'geen'],
+        ['Je vernielde de wagen zo hard dat er niets meer van over was.', 'geen'],
+        ['Je reed meteen de muur van de gevangenis om. Je bent gearresteerd.', 'cel'],
+        ['Een agent kwam kijken terwijl je aan het slot prutste. Je bent weggelopen.', 'geen'],
+        ['De wagen was te goed beveiligd.', 'geen'],
+        ['Er lag een stel te vrijen op de achterbank. Je was sneller weg dan zij aangekleed waren.', 'geen'],
+        ['De wagen werd net weggesleept.', 'geen'],
+        ['Het alarm ging af; je kon maar net ontsnappen.', 'geen'],
+        ['De politie kwam achter je aan, maar je kon ontkomen.', 'geen'],
+        ['Je sloeg het raam in en sneed je duim open. Je liet de wagen maar staan.', 'gewond'],
+        ['Je koos de eerste de beste auto, maar had er toch geen zin meer in.', 'geen'],
+        ['Net toen je wilde wegrijden bleken de banden lek.', 'geen'],
+        ['De eigenaar kwam net aanlopen.', 'geen'],
+    ];
+
+    [$tekst, $gevolg] = $pech[array_rand($pech)];
+
+    if ($gevolg === 'cel') {
+        jail_put((string) $user['login'], (int) $user['xp'],
+            (string) $user['stad'], (string) $user['famillie']);
+    } elseif ($gevolg === 'gewond') {
+        q('UPDATE `users` SET `health` = GREATEST(1, `health` - 1) WHERE `id` = ?', [$user['id']]);
+        $tekst .= ' Je bent gezondheid kwijtgeraakt.';
+    }
+
+    return ['tekst' => $tekst, 'type' => 'fout', 'auto' => null];
+}
+
+// ==========================================================================
+
+function toon_formulier(array $user): void
+{
+    echo '<form method="post">' . csrf_field();
+    echo '<table class="lijst"><thead><tr><th></th><th>Waar</th><th class="getal">Slaagkans</th></tr></thead><tbody>';
+
+    $eerste = true;
+    foreach (steelplekken() as $sleutel => $def) {
+        $gekozen = $eerste ? ' checked' : '';
+        $eerste  = false;
+
+        echo '<tr>'
+           . '<td><input type="radio" id="p_' . e($sleutel) . '" name="waar" value="' . e($sleutel) . '"' . $gekozen . '></td>'
+           . '<td><label for="p_' . e($sleutel) . '">' . e($def['label']) . '</label></td>'
+           . '<td class="getal">' . steelkans($user, $sleutel) . '%</td>'
+           . '</tr>';
+    }
+
+    echo '<tr>'
+       . '<td><input type="radio" id="p_gebruiker" name="waar" value="gebruiker"></td>'
+       . '<td><label for="p_gebruiker">Steel uit de garage van een andere speler</label></td>'
+       . '<td class="getal">' . garagekans($user) . '%</td>'
+       . '</tr>';
+
+    echo '</tbody></table>';
+    echo captcha_field();
+    echo '<p><button type="submit">Steel een wagen</button></p>';
+    echo '</form>';
+}
