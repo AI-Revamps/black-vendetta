@@ -344,6 +344,25 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .captcha label { color: var(--tekst-dof); font-size: .85rem; }
 .captcha input { text-transform: uppercase; letter-spacing: .15em; font-family: ui-monospace, Consolas, monospace; }
 
+/* Tekst die spelers zelf geschreven hebben */
+.berichttekst {
+    padding: .8rem 1rem;
+    background: var(--paneel-op);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow-wrap: anywhere;
+}
+.berichttekst img { max-width: 100%; height: auto; }
+.berichttekst ul { margin: .4rem 0; padding-left: 1.5rem; }
+
+img.smilie {
+    display: inline-block;
+    vertical-align: text-bottom;
+    width: auto;
+    height: 1.1em;
+}
+
 /* Kraslot: zes vakjes in een raster van drie */
 .kraslot {
     display: grid;
