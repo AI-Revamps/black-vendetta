@@ -1,876 +1,450 @@
 <?php
-/*
-CREATE TABLE forum_reacties (
-  id int(10) unsigned NOT NULL auto_increment,
-  topic_id int(10) NOT NULL default '0',
-  user varchar(30) NOT NULL default '',
-  subject varchar(50) NOT NULL default '',
-  message text NOT NULL,
-  date datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (id)
-) TYPE=MyISAM;
+/**
+ * Forum: categorieën, topics en reacties.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De auteur van een topic kwam uit een verborgen formulierveld:
+ *    INSERT INTO forum_topics (user, ...) VALUES ('$_POST[user]', ...).
+ *    Iedereen kon dus posten onder de naam van een ander, inclusief die van
+ *    een beheerder. De auteur komt nu altijd uit de sessie.
+ *  - De categorie kwam eveneens ongecontroleerd uit het formulier, zodat er
+ *    topics in niet-bestaande categorieën konden belanden.
+ *  - Berichten werden getoond met nl2br(stripslashes(...)) zonder enige
+ *    escaping, en [img]...[/img] werd rechtstreeks omgezet naar een img-tag.
+ *    Beide leverden XSS op. Weergave loopt nu via bericht_html().
+ *  - Verwijderen en bewerken liepen via GET-links, dus een afbeelding in een
+ *    bericht kon andermans topic laten verwijderen.
+ *  - Het bewerkformulier zette de bestaande tekst ongeëscaped in een attribuut
+ *    met enkele aanhalingstekens, waardoor een apostrof het veld afbrak.
+ *  - Bij het verwijderen van een topic bevatte de query voor de reacties
+ *    een kolomnaam met spaties erin. Die query faalde altijd, dus de reacties
+ *    bleven als wezen in de database achter.
+ */
 
-CREATE TABLE forum_topics (
-  id int(10) unsigned NOT NULL auto_increment,
-  type varchar(255) NOT NULL default '',
-  user varchar(30) NOT NULL default '',
-  subject varchar(50) NOT NULL default '',
-  message text NOT NULL,
-  date datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (id)
-) TYPE=MyISAM;
-*/
-require("config.php");
-if(isset($_GET['p'])){$_GET['p']=$_GET['p'];}
-else {$_GET['p']=0;}
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-?>
-<html>
-<head>
-<title>Vendetta Forum</title>
-<link href="style.css" rel="stylesheet" type="text/css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<style>
-td.forumTxt		{ border: 1px solid #000000; background: #E1E1E1; font-family: "verdana"; font-size: 8pt; padding-left: 5px; }
-td.forumTitle	{ border: 1px solid #000000; background: #999999; font-family: "verdana"; font-size: 8pt; padding-left: 5px; }
-</style>
+declare(strict_types=1);
 
-<body>
-<?php
-error_reporting(E_ALL);
-$nrpp = 10; //posts per pagina
-$nrtpp = 20; //topics per pagina
-?>
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Forum</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?php
-if(isset($_GET['del']))
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/opmaak.php';
+
+const TOPICS_PER_PAGINA   = 20;
+const REACTIES_PER_PAGINA = 10;
+const ONDERWERP_MAX       = 80;
+const FORUM_BERICHT_MAX   = 10000;
+
+/** De vaste categorieën. Alleen deze sleutels komen in de database. */
+function categorieen(): array
 {
-$topics = mysql_query("SELECT id,user FROM forum_topics WHERE `id`='{$_GET['del']}'") or die(mysql_error());
-$object = mysql_fetch_object($topics);
-   if($data->login == $object->user || $data->level >= 255){
-   mysql_query("DELETE FROM `forum_topics` WHERE `id`='{$_GET['del']}'"); 
-   mysql_query("DELETE FROM `forum_reacties` WHERE ` topic_id `='{$_GET['del']}'"); 
-   echo "<br><br>Topic verwijderd!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
-   else {
-   echo"<br><br>Dit topic is niet door jou geplaatst!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
+    return [
+        'algemeen' => 'Algemeen',
+        'vragen'   => 'Vragen',
+        'tip'      => 'Tips',
+        'bug'      => 'Bugs',
+        'oc'       => 'Organised Crime',
+        'race'     => 'Races',
+        'familie'  => 'Families',
+        'varia'    => 'Varia',
+        'rip'      => 'In memoriam',
+    ];
 }
-elseif(isset($_GET['delr']))
+
+/** In deze categorie plaatst alleen het spel zelf berichten. */
+function is_alleen_lezen(string $type): bool
 {
-$reacties = mysql_query("SELECT id,user FROM forum_reacties WHERE `id`='{$_GET['delr']}'") or die(mysql_error());
-$object = mysql_fetch_object($reacties);
-   if($data->login == $object->user || $data->level >= 255){
-   mysql_query("DELETE FROM `forum_reacties` WHERE `id`='{$_GET['delr']}'"); 
-   echo "<br><br>Reactie verwijderd!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
-   else {
-   echo"<br><br>Deze reactie is niet door jou geplaatst!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
+    return $type === 'rip';
 }
-elseif(isset($_GET['edit']))
+
+$user = require_login();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+layout_header('Forum');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+if (int_input('topic') > 0) {
+    toon_topic($user, int_input('topic'), int_input('p', 0, 0));
+} elseif (isset(categorieen()[get('type')])) {
+    toon_categorie($user, get('type'), int_input('p', 0, 0));
+} elseif (get('bewerk') !== '') {
+    toon_bewerken($user, int_input('bewerk'));
+} else {
+    toon_overzicht();
+}
+
+layout_footer();
+
+// ==========================================================================
+// Verwerking
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
 {
-$reacties = mysql_query("SELECT message,subject,user FROM forum_topics WHERE `id`='{$_GET['edit']}'") or die(mysql_error());
-$object = mysql_fetch_object($reacties);
-   if($data->login == $object->user || $data->level >= 255){
-   if($_SERVER['REQUEST_METHOD'] != 'POST')   
-        {
-?>
-<form method="post">
-  <table width="100%">
-    <tr><td>&nbsp;&nbsp;</td></tr>
-	<tr>
-          <td colspan="2" align="center"><b>Verander je topic</b></td>
-    </tr>
-      <?php echo"<input name=user type=hidden size=50 maxlength=30 value='$data->login'>"; ?>
-    <tr>
-      <td align="right" width="30%">Onderwerp: </td>
-      <?php echo"<td align=left><input name=subject type=text size=50 maxlength=50 value='$object->subject'></td>"; ?>
-    </tr>
-    <tr>
-	<?php echo"<td colspan=2 align=center><textarea name=message cols=64 rows=5>$object->message</textarea></td>"; ?>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><input type="submit" name="Submit" value="Verzenden">
-      <input type="reset" name="Reset" value="Wis velden"></td>
-    </tr>
-  </table>
-</form>
-<?php
-        }
-        else
-        {
-            if($_POST['subject'] != "" AND $_POST['message'] != "")
-            {
-                if(strlen(str_replace(" ", "", $_POST['subject'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed onderwerp in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                elseif(strlen(str_replace(" ", "", $_POST['message'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed bericht in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                else
-                {
-				mysql_query("UPDATE `forum_topics` SET `subject`='".addslashes($_POST['subject'])."',`message`='".addslashes($_POST['message'])."' WHERE `id`='{$_GET['edit']}'");
-                echo "<script language=\"JavaScript\">top.location.href='javascript:history.go(-2)';</script>";
-                }
-            }
-            else
-            {
-            ?>
-            <br><br>Onderwerp en bericht zijn verplichte velden!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-        }
-   }
-   else {
-   echo"<br><br>Deze reactie is niet door jou geplaatst!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
+    return match ($actie) {
+        'nieuw_topic' => topic_plaatsen($user, get('type') !== '' ? get('type') : post('type'),
+                                        post('subject'), post('message')),
+        'reageer'     => reactie_plaatsen($user, int_input('topic'), post('message')),
+        'bewerk'      => topic_bewerken($user, int_input('id'), post('subject'), post('message')),
+        'verwijder'   => verwijderen($user, 'topic', int_input('id')),
+        'verwijder_reactie' => verwijderen($user, 'reactie', int_input('id')),
+        default       => throw new SpelFout('Onbekende handeling.'),
+    };
 }
-elseif(isset($_GET['editr']))
+
+/** Mag deze speler dit bericht beheren? */
+function mag_beheren(array $user, string $auteur): bool
 {
-$reacties = mysql_query("SELECT message,subject,user FROM forum_reacties WHERE `id`='{$_GET['editr']}'") or die(mysql_error());
-$object = mysql_fetch_object($reacties);
-   if($data->login == $object->user || $data->level >= 255){
-   if($_SERVER['REQUEST_METHOD'] != 'POST')   
-        {
-?>
-<form method="post">
-  <table width="100%">
-    <tr><td>&nbsp;&nbsp;</td></tr>
-	<tr>
-          <td colspan="2" align="center"><b>Verander je reactie</b></td>
-    </tr>
-      <?php echo"<input name=user type=hidden size=50 maxlength=30 value='$data->login'>"; ?>
-    <tr>
-      <td align="right" width="30%">Onderwerp: </td>
-      <?php echo"<td align=left><input name=subject type=text size=50 maxlength=50 value='$object->subject'></td>"; ?>
-    </tr>
-    <tr>
-	<?php echo"<td colspan=2 align=center><textarea name=message cols=64 rows=5>$object->message</textarea></td>"; ?>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><input type="submit" name="Submit" value="Verzenden">
-      <input type="reset" name="Reset" value="Wis velden"></td>
-    </tr>
-  </table>
-</form>
-<?php
-        }
-        else
-        {
-            if($_POST['subject'] != "" AND $_POST['message'] != "")
-            {
-                if(strlen(str_replace(" ", "", $_POST['subject'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed onderwerp in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                elseif(strlen(str_replace(" ", "", $_POST['message'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed bericht in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                else
-                {
-				mysql_query("UPDATE `forum_reacties` SET `subject`='".addslashes($_POST['subject'])."',`message`='".addslashes($_POST['message'])."' WHERE `id`='{$_GET['editr']}'");
-                echo "<script language=\"JavaScript\">top.location.href='javascript:history.go(-2)';</script>";
-                }
-            }
-            else
-            {
-            ?>
-            <br><br>Onderwerp en bericht zijn verplichte velden!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-        }
-   }
-   else {
-   echo"<br><br>Deze reactie is niet door jou geplaatst!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
-   }
+    return $auteur === $user['login'] || (int) $user['level'] >= LEVEL_ADMIN;
 }
-elseif(isset($_GET['topic']))
+
+/** @throws SpelFout */
+function controleer_tekst(string $onderwerp, string $tekst): array
 {
-// Voor de topic
-$topic = mysql_query("SELECT id,type,user,subject,message,date FROM forum_topics WHERE id = ".addslashes($_GET['topic'])) or die(mysql_error());
-$aantal_topics = mysql_num_rows($topic);
-    if($aantal_topics == 1)
-    {
-        while($object = mysql_fetch_assoc($topic))
-        {
-        $id = $object['id'];
-        $subject = stripslashes($object['subject']);
-		$user = $object['user'];
-		$type = $object['type'];
-		$familie = mysql_query("SELECT * FROM `famillie` WHERE `name`='$type'");
-		$familie = mysql_num_rows($familie);
-		if($familie == 1 && $data->famillie != $type){ echo"Deze pagina is niet voo jou toegankelijk, ze is enkel voor de $type familie.<br> &gt; <a href=\"javascript:history.go(-1)\">Ga terug</a><br><br>";exit;}	
-?>
-<table width="75%" align="center">
-  <tr> 
-    <td colspan="2" align="center"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <a href=<?php echo $_SERVER['PHP_SELF']."?type=".$object['type']; ?>><?php echo"{$object['type']}"; ?></a> - <?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
-  </tr>  
-  <tr> 
-    <td colspan="2" align="center"> <? $begin= ($_GET['p'] >= 0) ? $_GET['p']*$nrpp : 0;
-$nr = mysql_query("SELECT id,user,subject,message,date FROM forum_reacties WHERE topic_id = ".addslashes($_GET['topic'])) or die(mysql_error());
-     if(mysql_num_rows($nr) <= $nrpp)
-    print "&#60; 1 &#62;";
-  else {
-    if($begin/$nrpp == 0)
-      print "&#60;&#60; ";
-    else
-      print "<a href=\"?topic={$_GET['topic']}&p=". ($begin/$nrpp-1) ."\">&#60;&#60;</a> ";
+    $onderwerp = trim($onderwerp);
+    $tekst     = trim($tekst);
 
-    for($i=0; $i<mysql_num_rows($nr)/$nrpp; $i++) {
-      print "<a href=\"?topic={$_GET['topic']}&p=$i\">". ($i+1) ."</a> ";
+    if (mb_strlen(str_replace(' ', '', $onderwerp)) < 2) {
+        throw new SpelFout('Vul een duidelijk onderwerp in.');
+    }
+    if (mb_strlen(str_replace(' ', '', $tekst)) < 2) {
+        throw new SpelFout('Vul een bericht in.');
+    }
+    if (mb_strlen($tekst) > FORUM_BERICHT_MAX) {
+        throw new SpelFout('Je bericht mag hoogstens ' . num(FORUM_BERICHT_MAX) . ' tekens lang zijn.');
     }
 
-    if($begin+$nrpp >= mysql_num_rows($nr))
-      print "&#62;&#62; ";
-    else
-      print "<a href=\"?topic={$_GET['topic']}&p=". ($begin/$nrpp+1) ."\">&#62;&#62;</a>";
-  }
-  ?>
-     </td>
-  </tr> 
-  <? if($_GET['p'] == 0) {
-    $object['message'] = preg_replace("/\[img](.*?)\[\/img]/","<img src=\"\\1\">",$object['message']);
-	$object['message'] = eregi_replace("\\[url=([^\\[]*)\]([^\\[]*)\\[/url\\]","<a href=\"\\1\" target=_blank>\\2</a>",$object['message']); 
-	$object['message'] = eregi_replace("\[b\]","<b>",$object['message']);
-    $object['message'] = eregi_replace("\[/b\]","</b>",$object['message']);
-    $object['message'] = eregi_replace("\[i\]","<i>",$object['message']);
-    $object['message'] = eregi_replace("\[/i\]","</i>",$object['message']);
-    $object['message'] = eregi_replace("\[s\]","<s>",$object['message']);
-    $object['message'] = eregi_replace("\[/s\]","</s>",$object['message']);
-    $object['message'] = eregi_replace("\[move\]","<marquee>",$object['message']);
-    $object['message'] = eregi_replace("\[/move\]","</marquee>",$object['message']);
-    $object['message'] = eregi_replace("\[u\]","<u>",$object['message']);
-    $object['message'] = eregi_replace("\[/u\]","</u>",$object['message']);
-    $object['message'] = eregi_replace("\[list\]","<UL>",$object['message']);
-    $object['message'] = eregi_replace("\[/list\]","</UL>",$object['message']);
-    $object['message'] = eregi_replace("\[\*\]","<LI>",$object['message']);
-    $object['message'] = eregi_replace("\[small\]","<font size=1>",$object['message']);
-    $object['message'] = eregi_replace("\[/small\]","</font>",$object['message']); 
-    $object['message'] = eregi_replace("\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]","<font color=\\1>\\2</font>",$object['message']); 
-	    $object['message'] = eregi_replace("\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]","<font size=\\1>\\2</font>",$object['message']);
-$object['message'] = eregi_replace("\(b\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(B\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = eregi_replace(":d","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-D","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-O","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$object['message']);
-	$object['message'] = eregi_replace(":o","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$object['message']);
-	$object['message'] = eregi_replace(":p","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-P","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;-\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\'\(","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(h\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(H\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-@","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$object['message']);
-	$object['message'] = eregi_replace(":@","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$object['message']);
-	$object['message'] = eregi_replace(":s","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-S","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(k\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(K\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(l\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(L\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(u\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(U\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;-P","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;p","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(Y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(n\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(N\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(6\)","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(d\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(D\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = eregi_replace("_o_","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(g\)","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(G\)","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$object['message']);
-  ?>
-  <tr> 
-    <td colspan="2" class="forumTitle"><table width="100%">
-        <tr> 
-          <td width="20%">Door: </td>
-          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"?>
-            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;<a href=?edit=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?>
-          </td>
-        </tr>
-        <tr> 
-          <td>Titel:</td>
-          <td><b><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
-        </tr>
-        <tr> 
-          <td>Tijd:</td>
-          <td><?php echo $object['date']; ?></td>
-        </tr>
-      </table></td>
-  </tr>
-
-  <tr> 
-    <td class="forumTitle" width="20%">Bericht: </td>
-    <td class="forumTxt"><i><?php echo nl2br(stripslashes($object['message'])); ?></i></td>
-  </tr>
-</table>
-<?php
+    return [mb_substr($onderwerp, 0, ONDERWERP_MAX), $tekst];
 }
-        }
-    // Voor de reacties
-    $message = mysql_query("SELECT id,user,subject,message,date FROM forum_reacties WHERE topic_id = ".addslashes($_GET['topic'])." ORDER BY 'date' ASC LIMIT $begin,$nrpp") or die(mysql_error());
-    $aantal_messages = mysql_num_rows($message);
-        if($aantal_messages != 0)
-        {
-            while($object = mysql_fetch_assoc($message))
-            {
-	$user = $object['user'];
-	$object['message'] = preg_replace("/\[img](.*?)\[\/img]/","<img src=\"\\1\">",$object['message']);
-	$object['message'] = eregi_replace("\\[url=([^\\[]*)\]([^\\[]*)\\[/url\\]","<a href=\"\\1\" target=_blank>\\2</a>",$object['message']); 
-	$object['message'] = eregi_replace("\[b\]","<b>",$object['message']);
-    $object['message'] = eregi_replace("\[/b\]","</b>",$object['message']);
-    $object['message'] = eregi_replace("\[i\]","<i>",$object['message']);
-    $object['message'] = eregi_replace("\[/i\]","</i>",$object['message']);
-    $object['message'] = eregi_replace("\[s\]","<s>",$object['message']);
-    $object['message'] = eregi_replace("\[/s\]","</s>",$object['message']);
-    $object['message'] = eregi_replace("\[move\]","<marquee>",$object['message']);
-    $object['message'] = eregi_replace("\[/move\]","</marquee>",$object['message']);
-    $object['message'] = eregi_replace("\[u\]","<u>",$object['message']);
-    $object['message'] = eregi_replace("\[/u\]","</u>",$object['message']);
-    $object['message'] = eregi_replace("\[list\]","<UL>",$object['message']);
-    $object['message'] = eregi_replace("\[/list\]","</UL>",$object['message']);
-    $object['message'] = eregi_replace("\[\*\]","<LI>",$object['message']);
-    $object['message'] = eregi_replace("\[small\]","<font size=1>",$object['message']);
-    $object['message'] = eregi_replace("\[/small\]","</font>",$object['message']); 
-    $object['message'] = eregi_replace("\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]","<font color=\\1>\\2</font>",$object['message']); 
-		    $object['message'] = eregi_replace("\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]","<font size=\\1>\\2</font>",$object['message']);
-$object['message'] = eregi_replace("\(b\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(B\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$object['message']);
-	$object['message'] = eregi_replace(":d","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-D","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-O","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$object['message']);
-	$object['message'] = eregi_replace(":o","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$object['message']);
-	$object['message'] = eregi_replace(":p","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-P","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;-\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$object['message']);
-	$object['message'] = eregi_replace(":\'\(","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(h\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(H\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-@","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$object['message']);
-	$object['message'] = eregi_replace(":@","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$object['message']);
-	$object['message'] = eregi_replace(":s","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = eregi_replace(":-S","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(k\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(K\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(l\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(L\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(u\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(U\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;-P","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\;p","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(Y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(n\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(N\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(6\)","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(d\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(D\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$object['message']);
-	$object['message'] = eregi_replace("_o_","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(g\)","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$object['message']);
-	$object['message'] = eregi_replace("\(G\)","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$object['message']);
-?>
-<br>
-<table width="75%" align="center">
-  <tr> 
-    <td colspan="2" class="forumTitle"><table width="100%">
-        <tr> 
-          <td width="20%">Door: </td>
-          <td><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp; <?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"?>
-            <?php if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?delr=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;<a href=?editr=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?>
-          </td>
-        </tr>
-        <tr> 
-          <td>Titel:</td>
-          <td><b><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
-        </tr>
-        <tr> 
-          <td>Tijd:</td>
-          <td><?php echo $object['date']; ?></td>
-        </tr>
-      </table></td>
-  </tr>
-  <tr> 
-    <td class="forumTitle" width="20%" align="left">Bericht: </td>
-    <td class="forumTxt"><i><?php echo nl2br(stripslashes($object['message'])); ?></i></td>
-  </tr>
-</table>
-<?php
-            }
-     if(mysql_num_rows($nr) <= $nrpp)
-    print "&#60; 1 &#62;";
-  else {
-    if($begin/$nrpp == 0)
-      print "&#60;&#60; ";
-    else
-      print "<a href=\"?topic={$_GET['topic']}&p=". ($begin/$nrpp-1) ."\">&#60;&#60;</a> ";
 
-    for($i=0; $i<mysql_num_rows($nr)/$nrpp; $i++) {
-      print "<a href=\"?topic={$_GET['topic']}&p=$i\">". ($i+1) ."</a> ";
-    }
-
-    if($begin+$nrpp >= mysql_num_rows($nr))
-      print "&#62;&#62; ";
-    else
-      print "<a href=\"?topic={$_GET['topic']}&p=". ($begin/$nrpp+1) ."\">&#62;&#62;</a>";
-  }
-  		}
-		else
-        {
-?>
-<center><br><br>Er zijn geen reacties!<br><br></center>
-<?php
-        }
-        if($_SERVER['REQUEST_METHOD'] != 'POST')   
-        {
-?>
-<form method="post">
-  <table width="100%">
-    <tr><td>&nbsp;&nbsp;</td></tr>
-	<tr>
-          <td colspan="2" align="center"><b>Plaats een reactie</b></td>
-    </tr>
-      <?php echo"<input name=user type=hidden size=50 maxlength=30 value='$data->login'>"; ?>
-    <tr>
-      <td align="right" width="30%">Onderwerp: </td>
-      <td align="left"><input name="subject" type="text" value="Re: <?php echo $subject; ?>" size="50" maxlength="50"></td>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><textarea name="message" cols="64" rows="5"></textarea></td>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><input type="submit" name="Submit" value="Verzenden">
-      <input type="reset" name="Reset" value="Wis velden"></td>
-    </tr>
-  </table>
-</form>
-<?php
-        }
-        else
-        {
-            if($_POST['subject'] != "" AND $_POST['message'] != "")
-            {
-                if(strlen(str_replace(" ", "", $_POST['subject'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed onderwerp in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                elseif(strlen(str_replace(" ", "", $_POST['message'])) < 2)
-                {
-                ?>
-                <br><br>Vul een goed bericht in!<br>
-                > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-                <?php
-                }
-                else
-                {
-                mysql_query("INSERT INTO forum_reacties (topic_id,user,subject,message,date) VALUES (".$id.",'".addslashes($_POST['user'])."','".addslashes($_POST['subject'])."','".addslashes($_POST['message'])."',NOW())") or die(mysql_error());
-                echo "<META HTTP-EQUIV=refresh CONTENT=0; URL=forum.php?topic=".$id.">";
-                }
-            }
-            else
-            {
-            ?>
-            <br><br>Onderwerp en bericht zijn verplichte velden!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-        }                
-    }
-    else
-    {
-    echo "<META HTTP-EQUIV=refresh CONTENT=0; URL=forum.php>";
-    }
-}
-elseif (isset($_GET['type']))
+/** @throws SpelFout */
+function topic_plaatsen(array $user, string $categorie, string $onderwerp, string $tekst): string
 {
-$begin= ($_GET['p'] >= 0) ? $_GET['p']*$nrtpp : 0;
-$topics = mysql_query("SELECT id,subject,user,date FROM forum_topics WHERE `type`='{$_GET['type']}' ORDER by date DESC LIMIT $begin,$nrtpp") or die(mysql_error());
-$aantal = mysql_num_rows($topics);
-    if($aantal != 0)
-    {
-?>
-<table width="100%" align=center>
-  <tr>
-        <td colspan="4" align="center"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <?php echo"{$_GET['type']}"; ?></b></td>
-  </tr>
-  <tr> 
-    <td colspan="4" align="center"> <? 
-$nr = mysql_query("SELECT id FROM forum_topics WHERE `type`='{$_GET['type']}'") or die(mysql_error());
-     if(mysql_num_rows($nr) <= $nrtpp)
-    print "&#60; 1 &#62;";
-  else {
-    if($begin/$nrtpp == 0)
-      print "&#60;&#60; ";
-    else
-      print "<a href=\"?type={$_GET['type']}&p=". ($begin/$nrtpp-1) ."\">&#60;&#60;</a> ";
-
-    for($i=0; $i<mysql_num_rows($nr)/$nrtpp; $i++) {
-      print "<a href=\"?type={$_GET['type']}&p=$i\">". ($i+1) ."</a> ";
+    if (!isset(categorieen()[$categorie])) {
+        throw new SpelFout('Die categorie bestaat niet.');
+    }
+    if (is_alleen_lezen($categorie)) {
+        throw new SpelFout('In deze categorie plaatst alleen het spel berichten.');
+    }
+    if (is_dead()) {
+        throw new SpelFout('Je bent dood en kunt niet meer posten.');
     }
 
-    if($begin+$nrtpp >= mysql_num_rows($nr))
-      print "&#62;&#62; ";
-    else
-      print "<a href=\"?type={$_GET['type']}&p=". ($begin/$nrtpp+1) ."\">&#62;&#62;</a>";
-  }
-  ?>
-     </td>
-  </tr>
-  <tr>
-    <td width="40%" align="right">Onderwerp&nbsp;&nbsp;&nbsp;</td>
-	<td width="20" align="right">Door&nbsp;&nbsp;&nbsp;</td>
-	<td width="20" align="right">Posts&nbsp;&nbsp;&nbsp;</td>
-    <td align="left">Datum</td>
-  </tr>
-<?php
-        while($object = mysql_fetch_assoc($topics))
-        {
-		$posts = mysql_num_rows(mysql_query("SELECT id FROM `forum_reacties` WHERE `topic_id`='{$object['id']}'"));
-		$user = $object['user'];
-?>
-  <tr>
-    <td align="right"><a href="<?php echo $_SERVER['PHP_SELF']."?topic=".$object['id']; ?>"><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></a>&nbsp;&nbsp;&nbsp;</td>
-	<td align="right"><?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp;</td> 
-	<td align="right"><? echo $posts ?>&nbsp;&nbsp;&nbsp;</td>
-	<td align="left"><?php echo $object['date']; ?> &nbsp;&nbsp;&nbsp;<?php echo"<a href=message.php?p=new&to=$user><img border=0 src=http://members.lycos.nl/js6287/mail.gif height=11 width=11></a>&nbsp;"; if ($data->login == $object['user'] || $data->level >= 255){echo"<a href=?del=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/del.png height=11 width=11></a>&nbsp;&nbsp;<a href=?edit=".$object['id']."><img border=0 src=http://members.lycos.nl/js6287/edit.png height=11 width=11></a>";}?></td>
-  </tr>
-<?php
-        }
-?>
-<tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
-</table>
-<?php
-    if(mysql_num_rows($nr) <= $nrtpp)
-    print "&#60; 1 &#62;";
-  else {
-    if($begin/$nrtpp == 0)
-      print "&#60;&#60; ";
-    else
-      print "<a href=\"?type={$_GET['type']}&p=". ($begin/$nrtpp-1) ."\">&#60;&#60;</a> ";
+    [$onderwerp, $tekst] = controleer_tekst($onderwerp, $tekst);
 
-    for($i=0; $i<mysql_num_rows($nr)/$nrtpp; $i++) {
-      print "<a href=\"?type={$_GET['type']}&p=$i\">". ($i+1) ."</a> ";
-    }
+    // De auteur komt uit de sessie, nooit uit het formulier.
+    q(
+        'INSERT INTO `forum_topics` (`user`, `type`, `subject`, `message`, `date`)
+              VALUES (?, ?, ?, ?, NOW())',
+        [$user['login'], $categorie, $onderwerp, $tekst]
+    );
 
-    if($begin+$nrtpp >= mysql_num_rows($nr))
-      print "&#62;&#62; ";
-    else
-      print "<a href=\"?type={$_GET['type']}&p=". ($begin/$nrtpp+1) ."\">&#62;&#62;</a>";
-  }
-  }
-    else
-    {
-?>
-<br><br>Er zijn nog geen topics!<br><br>
-<?php
-    }
-    if($_SERVER['REQUEST_METHOD'] != 'POST')   
-    {
-?>
-<form method="post">
-  <table width="100%">
-  <tr><td>&nbsp;&nbsp;</td></tr>
-    <tr>
-    <td colspan="4" align="center"><b>Nieuw topic</b></td>
-    </tr>
-      <?php echo"<input name=user type=hidden size=50 maxlength=30 value='$data->login'>"; ?>
-    <tr>
-      <td align="right" width=30%>Onderwerp: </td>
-      <td align="left"><input name="subject" type="text" size="50" maxlength="50"></td>
-    </tr>
-	<tr>
-      <td align="right">Categorie: </td>
-      <td align="left"><select name=type>
-  <option value=algemeen>Algemeen</option>
-  <option value=tip>TIP</option>
-  <option value=bug>BUG</option>
-  <option value=vragen>Vragen</option>
-  <option value=route66>Route66</option>
-  <option value=oc>Georganiseerde Misdaad</option>
-  <option value=race>Race</option>
-  <option value=familie>Familie</option>
-<? if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
-  <option value=varia>Varia</option>
-</select></td>
-    </tr>
-    <tr>
-      <td colspan="4" align="center"><textarea name="message" cols="64" rows="5"></textarea></td>
-    </tr>
-    <tr>
-      <td colspan="4" align="center"><input type="submit" name="Submit" value="Verzenden">
-      <input type="reset" name="Reset" value="Wis velden"></td>
-    </tr>
-  </table>
-</form>
-<?php
-    }
-    else
-    {
-        if($_POST['user'] != "" AND $_POST['subject'] != "" AND $_POST['message'] != "")
-        {
-            if(strlen(str_replace(" ", "", $_POST['subject'])) < 2)
-            {
-            ?>
-            <br><br>Vul een goed onderwerp in!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-            elseif(strlen(str_replace(" ", "", $_POST['message'])) < 2)
-            {
-            ?>
-            <br><br>Vul een goed bericht in!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-            else
-            {
-            mysql_query("INSERT INTO forum_topics (user,type,subject,message,date) VALUES ('".addslashes($_POST['user'])."','".addslashes($_POST['type'])."','".addslashes($_POST['subject'])."','".addslashes($_POST['message'])."',NOW())") or die(mysql_error());
-            echo "<META HTTP-EQUIV=refresh CONTENT=0; URL=forum.php>";
-            }
-        }
-        else
-        {
-        ?>
-        <br><br>Onderwerp en bericht zijn verplichte velden!<br>
-        > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-        <?php
-        }
-    }
+    return 'Je topic is geplaatst.';
 }
-else
+
+/** @throws SpelFout */
+function reactie_plaatsen(array $user, int $topicId, string $tekst): string
 {
-?>
-<table width="100%">
-  <tr>
-    <td colspan="2" align="center"><b>Categorie&euml;n</b></td>
-  </tr>
-  <tr>
-    <td width="50%" align="right">Categorie&nbsp;&nbsp;&nbsp;</td>
-    <td align="left">Aantal</td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=algemeen>Algemeen</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='algemeen'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=tip>Tip</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='tip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=bug>Bug</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='bug'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=vragen>Vragen</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='vragen'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=route66>Route66</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='route66'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=oc>Georganiseerde Misdaad</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='oc'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=race>Race</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='race'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=familie>Familie</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='familie'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=rip>RIP</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='rip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=varia>Varia</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='varia'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-<? if($data->famillie != ""){echo"
-  <tr>
-    <td align=right><a href=?type=$data->famillie>$data->famillie</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align=left>"; 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='{$data->famillie}'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	echo"
-	</td>
-  </tr>"; }?>
-<tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
-</table>
-<?php
-    
-    if($_SERVER['REQUEST_METHOD'] != 'POST')   
-    {
-?>
-<form method="post">
-  <table width="100%">
-    <tr>
-    <td colspan="2"  align="center"><b>Nieuw topic</b></td>
-    </tr>
-      <?php echo"<input name=user type=hidden size=50 maxlength=30 value='$data->login'>"; ?>
-    <tr>
-      <td align="right" width="30%">Onderwerp: </td>
-      <td align="left"><input name="subject" type="text" size="50" maxlength="50"></td>
-    </tr>
-	<tr>
-      <td align="right">Categorie: </td>
-      <td align="left"><select name=type>
-  <option value=algemeen>Algemeen</option>
-  <option value=tip>TIP</option>
-  <option value=bug>BUG</option>
-  <option value=vragen>Vragen</option>
-  <option value=route66>Route66</option>
-  <option value=oc>Georganiseerde Misdaad</option>
-  <option value=race>Race</option>
-  <option value=familie>Familie</option>
-<? if($data->famillie != ""){echo"<option value=$data->famillie>$data->famillie</option>"; }?>
-  <option value=varia>Varia</option>
-</select></td>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><textarea name="message" cols="64" rows="5"></textarea></td>
-    </tr>
-    <tr>
-      <td colspan="2" align="center"><input type="submit" name="Submit" value="Verzenden">
-      <input type="reset" name="Reset" value="Wis velden"></td>
-    </tr>
-  </table>
-</form>
-<?php
+    if (is_dead()) {
+        throw new SpelFout('Je bent dood en kunt niet meer posten.');
     }
-    else
-    {
-        if($_POST['user'] != "" AND $_POST['subject'] != "" AND $_POST['message'] != "")
-        {
-            if(strlen(str_replace(" ", "", $_POST['subject'])) < 2)
-            {
-            ?>
-            <br><br>Vul een goed onderwerp in!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-            elseif(strlen(str_replace(" ", "", $_POST['message'])) < 2)
-            {
-            ?>
-            <br><br>Vul een goed bericht in!<br>
-            > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-            <?php
-            }
-            else
-            {
-            mysql_query("INSERT INTO forum_topics (user,type,subject,message,date) VALUES ('".addslashes($_POST['user'])."','".addslashes($_POST['type'])."','".addslashes($_POST['subject'])."','".addslashes($_POST['message'])."',NOW())") or die(mysql_error());
-            echo "<META HTTP-EQUIV=refresh CONTENT=0; URL=forum.php>";
-            }
+
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$topicId]);
+
+    if ($topic === null) {
+        throw new SpelFout('Dat topic bestaat niet.');
+    }
+    if (is_alleen_lezen((string) $topic['type'])) {
+        throw new SpelFout('In deze categorie kun je niet reageren.');
+    }
+
+    [, $tekst] = controleer_tekst('reactie', $tekst);
+
+    q(
+        'INSERT INTO `forum_reacties` (`topic_id`, `user`, `subject`, `message`, `date`)
+              VALUES (?, ?, ?, ?, NOW())',
+        [$topicId, $user['login'], mb_substr('Re: ' . $topic['subject'], 0, ONDERWERP_MAX), $tekst]
+    );
+
+    return 'Je reactie is geplaatst.';
+}
+
+/** @throws SpelFout */
+function topic_bewerken(array $user, int $id, string $onderwerp, string $tekst): string
+{
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$id]);
+
+    if ($topic === null) {
+        throw new SpelFout('Dat topic bestaat niet.');
+    }
+    if (!mag_beheren($user, (string) $topic['user'])) {
+        throw new SpelFout('Dit topic is niet van jou.');
+    }
+
+    [$onderwerp, $tekst] = controleer_tekst($onderwerp, $tekst);
+
+    q('UPDATE `forum_topics` SET `subject` = ?, `message` = ? WHERE `id` = ?',
+        [$onderwerp, $tekst, $id]);
+
+    return 'Je topic is bijgewerkt.';
+}
+
+/** @throws SpelFout */
+function verwijderen(array $user, string $wat, int $id): string
+{
+    $tabel = $wat === 'topic' ? 'forum_topics' : 'forum_reacties';
+
+    $rij = q_row("SELECT `id`, `user` FROM `{$tabel}` WHERE `id` = ?", [$id]);
+
+    if ($rij === null) {
+        throw new SpelFout('Dat bericht bestaat niet.');
+    }
+    if (!mag_beheren($user, (string) $rij['user'])) {
+        throw new SpelFout('Dit bericht is niet door jou geplaatst.');
+    }
+
+    return db_transaction(static function () use ($wat, $tabel, $id): string {
+        q("DELETE FROM `{$tabel}` WHERE `id` = ?", [$id]);
+
+        if ($wat === 'topic') {
+            q('DELETE FROM `forum_reacties` WHERE `topic_id` = ?', [$id]);
+            return 'Het topic en de bijbehorende reacties zijn verwijderd.';
         }
-        else
-        {
-        ?>
-        <br><br>Onderwerp en bericht zijn verplichte velden!<br>
-        > <a href="javascript:history.go(-1)">Ga terug</a><br><br>
-        <?php
+
+        return 'De reactie is verwijderd.';
+    });
+}
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function toon_overzicht(): void
+{
+    $tellingen = [];
+    foreach (q_all('SELECT `type`, COUNT(*) AS `aantal` FROM `forum_topics` GROUP BY `type`') as $rij) {
+        $tellingen[(string) $rij['type']] = (int) $rij['aantal'];
+    }
+
+    panel_open('Forum');
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Categorie</th><th class="getal">Topics</th><th>Laatste bericht</th></tr></thead><tbody>';
+
+    foreach (categorieen() as $sleutel => $naam) {
+        $laatste = q_row(
+            'SELECT `user`, `date` FROM `forum_topics` WHERE `type` = ? ORDER BY `date` DESC LIMIT 1',
+            [$sleutel]
+        );
+
+        echo '<tr>';
+        echo '<td><a href="' . e(url('forum.php?type=' . $sleutel)) . '">' . e($naam) . '</a>'
+           . (is_alleen_lezen($sleutel) ? ' <small>(alleen lezen)</small>' : '') . '</td>';
+        echo '<td class="getal">' . num($tellingen[$sleutel] ?? 0) . '</td>';
+        echo '<td>' . ($laatste === null ? '-'
+             : e((string) $laatste['user']) . ' &middot; ' . e(datetime_nl($laatste['date']))) . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+    panel_close();
+}
+
+function toon_categorie(array $user, string $categorie, int $pagina): void
+{
+    $naam   = categorieen()[$categorie];
+    $totaal = (int) q_val('SELECT COUNT(*) FROM `forum_topics` WHERE `type` = ?', [$categorie], 0);
+    $offset = max(0, $pagina) * TOPICS_PER_PAGINA;
+
+    $topics = q_all(
+        'SELECT t.*, (SELECT COUNT(*) FROM `forum_reacties` r WHERE r.`topic_id` = t.`id`) AS `reacties`
+           FROM `forum_topics` t
+          WHERE t.`type` = ?
+       ORDER BY t.`date` DESC
+          LIMIT ' . TOPICS_PER_PAGINA . ' OFFSET ' . $offset,
+        [$categorie]
+    );
+
+    panel_open('Forum — ' . $naam);
+    echo '<p><a href="' . e(url('forum.php')) . '">&larr; Alle categorieën</a></p>';
+
+    if ($topics === []) {
+        echo '<p>Er staan hier nog geen topics.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Onderwerp</th><th>Door</th><th class="getal">Reacties</th><th>Wanneer</th></tr></thead><tbody>';
+        foreach ($topics as $topic) {
+            echo '<tr>';
+            echo '<td><a href="' . e(url('forum.php?topic=' . (int) $topic['id'])) . '">'
+               . e((string) $topic['subject']) . '</a></td>';
+            echo '<td>' . e((string) $topic['user']) . '</td>';
+            echo '<td class="getal">' . num((int) $topic['reacties']) . '</td>';
+            echo '<td>' . e(datetime_nl($topic['date'])) . '</td>';
+            echo '</tr>';
         }
+        echo '</tbody></table></div>';
+    }
+
+    paginering(url('forum.php?type=' . $categorie), $pagina, $totaal, TOPICS_PER_PAGINA);
+    panel_close();
+
+    if (!is_alleen_lezen($categorie) && !is_dead()) {
+        panel_open('Nieuw topic in ' . $naam);
+        echo '<form method="post" action="' . e(url('forum.php?type=' . $categorie)) . '">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="nieuw_topic">';
+        echo '<div class="veldenraster">';
+        echo '<label for="subject">Onderwerp</label>';
+        echo '<input id="subject" name="subject" maxlength="' . ONDERWERP_MAX . '" required>';
+        echo '<label for="message">Bericht</label>';
+        echo '<textarea id="message" name="message" maxlength="' . FORUM_BERICHT_MAX . '" required></textarea>';
+        echo '<span></span><button type="submit">Plaatsen</button>';
+        echo '</div></form>';
+        panel_close();
     }
 }
-?>
-</body>
-</html> 
+
+function toon_topic(array $user, int $id, int $pagina): void
+{
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$id]);
+
+    if ($topic === null) {
+        panel_open('Forum');
+        notice('Dat topic bestaat niet.', 'fout');
+        panel_close();
+        return;
+    }
+
+    $categorie = (string) $topic['type'];
+    $naam      = categorieen()[$categorie] ?? $categorie;
+
+    panel_open((string) $topic['subject']);
+    echo '<p><a href="' . e(url('forum.php?type=' . rawurlencode($categorie))) . '">&larr; '
+       . e($naam) . '</a></p>';
+
+    bericht_blok($user, $topic, 'topic');
+    panel_close();
+
+    $totaal = (int) q_val('SELECT COUNT(*) FROM `forum_reacties` WHERE `topic_id` = ?', [$id], 0);
+    $offset = max(0, $pagina) * REACTIES_PER_PAGINA;
+
+    $reacties = q_all(
+        'SELECT * FROM `forum_reacties` WHERE `topic_id` = ? ORDER BY `date` ASC
+          LIMIT ' . REACTIES_PER_PAGINA . ' OFFSET ' . $offset,
+        [$id]
+    );
+
+    if ($reacties !== []) {
+        panel_open($totaal . ' ' . ($totaal === 1 ? 'reactie' : 'reacties'));
+        foreach ($reacties as $reactie) {
+            bericht_blok($user, $reactie, 'reactie');
+        }
+        paginering(url('forum.php?topic=' . $id), $pagina, $totaal, REACTIES_PER_PAGINA);
+        panel_close();
+    }
+
+    if (!is_alleen_lezen($categorie) && !is_dead()) {
+        panel_open('Reageren');
+        echo '<form method="post" action="' . e(url('forum.php?topic=' . $id)) . '">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="reageer">';
+        echo '<input type="hidden" name="topic" value="' . $id . '">';
+        echo '<textarea name="message" maxlength="' . FORUM_BERICHT_MAX . '" required '
+           . 'aria-label="Je reactie"></textarea>';
+        echo '<p><button type="submit">Plaats reactie</button></p>';
+        echo '</form>';
+        panel_close();
+    }
+}
+
+/** Eén bericht met kop, tekst en beheerknoppen. */
+function bericht_blok(array $user, array $bericht, string $soort): void
+{
+    echo '<div class="forumbericht">';
+    echo '<div class="forumkop"><strong><a href="'
+       . e(url('user.php?x=' . rawurlencode((string) $bericht['user']))) . '">'
+       . e((string) $bericht['user']) . '</a></strong> '
+       . '<span class="uitleg">' . e(datetime_nl($bericht['date'])) . '</span></div>';
+
+    echo '<div class="berichttekst">' . bericht_html((string) $bericht['message']) . '</div>';
+
+    if (mag_beheren($user, (string) $bericht['user'])) {
+        echo '<p>';
+        if ($soort === 'topic') {
+            echo '<a class="knop" href="' . e(url('forum.php?bewerk=' . (int) $bericht['id']))
+               . '">Bewerken</a> ';
+        }
+        echo '<form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="'
+           . ($soort === 'topic' ? 'verwijder' : 'verwijder_reactie') . '">'
+           . '<input type="hidden" name="id" value="' . (int) $bericht['id'] . '">'
+           . '<button type="submit">Verwijderen</button></form>';
+        echo '</p>';
+    }
+
+    echo '</div>';
+}
+
+function toon_bewerken(array $user, int $id): void
+{
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$id]);
+
+    panel_open('Topic bewerken');
+
+    if ($topic === null) {
+        notice('Dat topic bestaat niet.', 'fout');
+    } elseif (!mag_beheren($user, (string) $topic['user'])) {
+        notice('Dit topic is niet van jou.', 'fout');
+    } else {
+        echo '<form method="post">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="bewerk">';
+        echo '<input type="hidden" name="id" value="' . (int) $topic['id'] . '">';
+        echo '<div class="veldenraster">';
+        echo '<label for="subject">Onderwerp</label>';
+        // Geëscapet en tussen dubbele aanhalingstekens: in de oude versie stond
+        // hier een enkel aanhalingsteken zonder escaping, dus een apostrof in
+        // het onderwerp brak het veld af.
+        echo '<input id="subject" name="subject" maxlength="' . ONDERWERP_MAX . '" required value="'
+           . e((string) $topic['subject']) . '">';
+        echo '<label for="message">Bericht</label>';
+        echo '<textarea id="message" name="message" maxlength="' . FORUM_BERICHT_MAX . '" required>'
+           . e((string) $topic['message']) . '</textarea>';
+        echo '<span></span><button type="submit">Opslaan</button>';
+        echo '</div></form>';
+        echo '<p><a href="' . e(url('forum.php?topic=' . (int) $topic['id'])) . '">Terug naar het topic</a></p>';
+    }
+
+    panel_close();
+}
+
+function paginering(string $basis, int $pagina, int $totaal, int $perPagina): void
+{
+    $paginas = (int) ceil($totaal / $perPagina);
+
+    if ($paginas < 2) {
+        return;
+    }
+
+    $scheiding = str_contains($basis, '?') ? '&' : '?';
+
+    echo '<p class="paginering">';
+    for ($i = 0; $i < $paginas; $i++) {
+        if ($i === $pagina) {
+            echo '<strong>' . ($i + 1) . '</strong> ';
+        } else {
+            echo '<a href="' . e($basis . $scheiding . 'p=' . $i) . '">' . ($i + 1) . '</a> ';
+        }
+    }
+    echo '</p>';
+}

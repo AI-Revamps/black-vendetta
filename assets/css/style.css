@@ -356,6 +356,37 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .berichttekst img { max-width: 100%; height: auto; }
 .berichttekst ul { margin: .4rem 0; padding-left: 1.5rem; }
 
+.forumbericht { margin-bottom: 1.2rem; }
+.forumbericht:last-child { margin-bottom: 0; }
+.forumkop {
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+    padding: .35rem .6rem;
+    background: linear-gradient(#2c2c2c, #1e1e1e);
+    border: 1px solid var(--rand);
+    border-bottom: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-size: .85rem;
+}
+.forumbericht .berichttekst {
+    margin-bottom: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.paginering { margin: .8rem 0 0; font-size: .85rem; }
+.paginering a, .paginering strong {
+    display: inline-block;
+    min-width: 1.8rem;
+    padding: .2rem .4rem;
+    text-align: center;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    margin-right: .2rem;
+}
+.paginering strong { background: var(--paneel-op); color: var(--accent); }
+
 img.smilie {
     display: inline-block;
     vertical-align: text-bottom;
