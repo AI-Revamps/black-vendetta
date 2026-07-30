@@ -1,0 +1,50 @@
+<?PHP
+$rang1 = "Empty-Suit";
+$rang2 = "Deliveryboy";
+$rang2f = "Delivery Girl";
+$rang3 = "Picciotto";
+$rang4 = "Shoplifter";
+$rang5 = "Pickpocket";
+$rang6 = "Thief";
+$rang7 = "Associate";
+$rang8 = "Mobster";
+$rang9 = "Soldier";
+$rang10 = "Swindler";
+$rang11 = "Assassin";
+$rang12 = "Local Chief";
+$rang13 = "Chief";
+$rang14 = "Bruglione";
+$rang15 = "Godfather";
+$rang15g = "First Lady";
+if ($data->xp < 10) { $vordering = $data->xp*10; }
+elseif ($data->xp < 20) { $vordering = (($data->xp-10)*10); }
+elseif ($data->xp < 50) { $vordering = (($data->xp-20)*3.3333333); }
+elseif ($data->xp < 150) { $vordering = (($data->xp-50)*1); }
+elseif ($data->xp < 500) { $vordering = (($data->xp-150)*0.2857142); }
+elseif ($data->xp < 1000) { $vordering = (($data->xp-500)*0.2); }
+elseif ($data->xp < 2000) { $vordering = (($data->xp-1000)*0.1); }
+elseif ($data->xp < 3000) { $vordering = (($data->xp-2000)*0.1); }
+elseif ($data->xp < 4500) { $vordering = (($data->xp-3000)*0.0666666); }
+elseif ($data->xp < 6000) { $vordering = (($data->xp-4500)*0.0666666); }
+elseif ($data->xp < 8000) { $vordering = (($data->xp-6000)*0.05); }
+elseif ($data->xp < 11000) { $vordering = (($data->xp-8000)*0.0333333); }
+elseif ($data->xp < 15000) { $vordering = (($data->xp-11000)*0.025); }
+elseif ($data->xp < 20000) { $vordering = (($data->xp-15000)*0.02); }
+elseif ($data->xp == 20000) { $vordering = 0; }
+elseif ($data->xp > 20000) { $vordering = 100; }
+if ($data->xp < 10) { $rang = "$rang1"; }
+elseif ($data->xp < 20) { $rang = "$rang2"; }
+elseif ($data->xp < 50) { $rang = "$rang3"; }
+elseif ($data->xp < 150) { $rang = "$rang4"; }
+elseif ($data->xp < 500) { $rang = "$rang5"; }
+elseif ($data->xp < 1000) { $rang = "$rang6"; }
+elseif ($data->xp < 2000) { $rang = "$rang7"; }
+elseif ($data->xp < 3000) { $rang = "$rang8"; }
+elseif ($data->xp < 4500) { $rang = "$rang9"; }
+elseif ($data->xp < 6000) { $rang = "$rang10"; }
+elseif ($data->xp < 8000) { $rang = "$rang11"; }
+elseif ($data->xp < 11000) { $rang = "$rang12"; }
+elseif ($data->xp < 15000) { $rang = "$rang13"; }
+elseif ($data->xp < 20000) { $rang = "$rang14"; }
+elseif ($data->xp >= 20000) { $rang = "$rang15"; }
+?>
