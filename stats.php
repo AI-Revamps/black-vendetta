@@ -65,27 +65,28 @@ ranglijst('Minst geëerd', 'ASC');
 
 panel_open('Laatste tien doden');
 
+// De kolom `dader` staat er bewust niet bij. Wie een moord pleegde is geheim;
+// dat kom je alleen te weten via een ooggetuigenverklaring van de zwarte markt.
 $doden = q_all(
-    'SELECT v.`login`, v.`dader`, v.`date`
-       FROM `vermoord` v ORDER BY v.`date` DESC LIMIT 10'
+    'SELECT v.`login`, v.`date` FROM `vermoord` v ORDER BY v.`date` DESC LIMIT 10'
 );
 
 if ($doden === []) {
     echo '<p>Er is nog niemand vermoord.</p>';
 } else {
     echo '<div class="tabelwikkel"><table class="lijst">';
-    echo '<thead><tr><th>Slachtoffer</th><th>Door</th><th>Wanneer</th></tr></thead><tbody>';
+    echo '<thead><tr><th>Slachtoffer</th><th>Wanneer</th></tr></thead><tbody>';
 
     foreach ($doden as $dode) {
         echo '<tr>';
         echo '<td>' . spelerlink((string) $dode['login']) . '</td>';
-        echo '<td>' . ((string) $dode['dader'] === ''
-            ? '<em>onbekend</em>' : spelerlink((string) $dode['dader'])) . '</td>';
         echo '<td>' . e(datetime_nl($dode['date'])) . '</td>';
         echo '</tr>';
     }
 
     echo '</tbody></table></div>';
+    echo '<p class="uitleg">Wie de moorden pleegde staat er niet bij. Dat weten alleen '
+       . 'de ooggetuigen, en die zijn te vinden op de zwarte markt.</p>';
 }
 
 panel_close();

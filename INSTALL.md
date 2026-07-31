@@ -194,6 +194,30 @@ andere accounts vanaf hetzelfde adres actief zijn geweest.
 
 ---
 
+## Moord en ooggetuigen
+
+Een slachtoffer krijgt **niet** te horen wie hem omlegde. Dat staat nergens: niet
+op zijn overlijdenspagina, niet in de statistieken. Wie het deed weten alleen de
+ooggetuigen, en die kunnen hun verklaring op de zwarte markt verkopen. Zo is er
+een markt voor informatie in plaats van een mededeling.
+
+Op de beheerpagina **Ooggetuigen** kies je wie er getuige wordt:
+
+| Keuze | Wat het doet |
+|---|---|
+| **Twee die online zijn** *(standaard)* | twee willekeurige spelers die op dat moment online zijn in de stad van de moord |
+| **Twee willekeurige spelers** | twee willekeurige levende spelers in die stad, online of niet |
+| **Iedereen die online is in die stad** | álle online spelers in die stad; een moord wordt dan vrijwel meteen bekend |
+
+Bij de eerste twee wordt aangevuld met spelers van elders als de stad te weinig
+kandidaten heeft, zodat er altijd twee getuigen zijn. Bij de derde niet: is er
+niemand online in die stad, dan blijft de moord onopgemerkt.
+
+De pagina laat ook zien wat je keuze op dit moment zou opleveren, per stad. Een
+verklaring is twee dagen geldig.
+
+---
+
 ## Instellingen achteraf aanpassen
 
 Alles zit in `inc/config.php`. De belangrijkste:

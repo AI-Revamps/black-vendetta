@@ -591,6 +591,15 @@ CREATE TABLE IF NOT EXISTS `temp` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tijdstip waarop elke periodieke taak voor het laatst gedraaid heeft.
+-- Instellingen die een beheerder in het spel zelf kan omzetten, zonder in
+-- inc/config.php te hoeven duiken. Alles wat hier niet in staat valt terug op
+-- de standaardwaarde in de code.
+CREATE TABLE IF NOT EXISTS `instellingen` (
+  `naam`   varchar(40) NOT NULL,
+  `waarde` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`naam`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `cron` (
   `name` varchar(16) NOT NULL,
   `time` datetime NOT NULL DEFAULT '1970-01-01 00:00:01',

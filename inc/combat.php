@@ -24,6 +24,14 @@ const MAX_RANGVERSCHIL     = 2;      // hoeveel rangen je omhoog mag moorden
 const MOORDEN_PER_WEEK     = 10;
 const OOGGETUIGE_GELDIG    = 172800; // twee dagen
 
+// --- Ooggetuigen ------------------------------------------------------------
+// Het slachtoffer krijgt niet te horen wie hem omlegde. De enige manier om dat
+// te weten te komen is een ooggetuigenverklaring, die op de zwarte markt te
+// koop staat. Daarom krijgt elke moord getuigen.
+const GETUIGEN_AANTAL          = 2;   // bij de wijzen 'online' en 'willekeurig'
+const GETUIGEN_ONLINE_MINUTEN  = 5;   // wanneer geldt iemand als online
+const GETUIGEN_STANDAARD       = 'online';
+
 /** Effect van een item, of 1.0 als het niet bestaat. */
 function item_effect(string $type, int $nr): float
 {
@@ -268,31 +276,153 @@ function familie_opvolging(string $familie, string $dodeDon): array
 }
 
 /**
- * Wijs een willekeurige ooggetuige aan die de moord gezien heeft.
- * Die kan de verklaring later op de zwarte markt verkopen.
+ * De manieren waarop ooggetuigen aangewezen kunnen worden. Een beheerder kiest
+ * er een op adm-getuigen.php.
  */
-function ooggetuige_aanwijzen(string $dader, string $slachtoffer): void
+function getuigenwijzen(): array
 {
-    $getuige = q_row(
-        "SELECT `login` FROM `users`
-          WHERE `online` > DATE_SUB(NOW(), INTERVAL 12 HOUR)
-            AND `status` = 'levend'
-            AND `login` NOT IN (?, ?)
-       ORDER BY RAND() LIMIT 1",
-        [$dader, $slachtoffer]
-    );
+    return [
+        'online' => [
+            'naam'    => 'Twee die online zijn',
+            'uitleg'  => 'Twee willekeurige spelers die op dat moment online zijn in de '
+                       . 'stad waar de moord plaatsvindt. Zijn er te weinig, dan wordt er '
+                       . 'aangevuld met online spelers elders.',
+        ],
+        'willekeurig' => [
+            'naam'    => 'Twee willekeurige spelers',
+            'uitleg'  => 'Twee willekeurige levende spelers in die stad, of ze nu online '
+                       . 'zijn of niet. Zijn er te weinig, dan wordt er aangevuld met '
+                       . 'spelers elders.',
+        ],
+        'stad' => [
+            'naam'    => 'Iedereen die online is in die stad',
+            'uitleg'  => 'Alle spelers die op dat moment online zijn in de stad krijgen een '
+                       . 'verklaring. Bij een drukke stad zijn dat er veel, en wordt een '
+                       . 'moord dus vrijwel meteen bekend.',
+        ],
+    ];
+}
 
-    if ($getuige === null) {
-        return;
+/** De ingestelde manier, of de standaard als er niets gekozen is. */
+function getuigenwijze(): string
+{
+    $wijze = instelling('getuigen_wijze', GETUIGEN_STANDAARD);
+
+    return isset(getuigenwijzen()[$wijze]) ? $wijze : GETUIGEN_STANDAARD;
+}
+
+/**
+ * Wijs de ooggetuigen van een moord aan.
+ *
+ * Elke getuige krijgt een bericht en een verklaring die hij op de zwarte markt
+ * te koop kan zetten. Omdat het slachtoffer zelf niet te horen krijgt wie hem
+ * omlegde, is zo'n verklaring de enige manier om daarachter te komen.
+ *
+ * @return int Hoeveel getuigen er zijn aangewezen.
+ */
+function ooggetuigen_aanwijzen(string $dader, string $slachtoffer, string $stad): int
+{
+    $wijze    = getuigenwijze();
+    $getuigen = getuigen_kiezen($wijze, $dader, $slachtoffer, $stad);
+
+    foreach ($getuigen as $getuige) {
+        q(
+            'INSERT INTO `ws` (`login`, `victim`, `suspect`, `prijs`, `status`, `time`)
+                  VALUES (?, ?, ?, 0, 0, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+            [$getuige, $slachtoffer, $dader, OOGGETUIGE_GELDIG]
+        );
+
+        notify($getuige, 'Je bent getuige van een moord',
+            'In ' . $stad . ' heb je gezien hoe ' . $slachtoffer . ' werd omgelegd. Je weet '
+            . "wie het deed.\n\n"
+            . 'Je verklaring is ' . round(OOGGETUIGE_GELDIG / 86400) . ' dagen geldig. Je kunt '
+            . 'hem op de zwarte markt te koop zetten, of hem voor jezelf houden.');
     }
 
-    q(
-        'INSERT INTO `ws` (`login`, `victim`, `suspect`, `prijs`, `status`, `time`)
-              VALUES (?, ?, ?, 0, 0, DATE_ADD(NOW(), INTERVAL ? SECOND))',
-        [$getuige['login'], $slachtoffer, $dader, OOGGETUIGE_GELDIG]
-    );
+    return count($getuigen);
+}
 
-    notify((string) $getuige['login'], 'Ooggetuige',
-        'Je hebt gezien hoe ' . $slachtoffer . ' werd vermoord. Je kunt je verklaring '
-        . 'te koop zetten op de zwarte markt.');
+/**
+ * Kies de getuigen volgens de ingestelde manier.
+ *
+ * @return string[] Gebruikersnamen.
+ */
+function getuigen_kiezen(string $wijze, string $dader, string $slachtoffer, string $stad): array
+{
+    // Iedereen die online is in de stad. Geen aanvulling van elders: de keuze
+    // is nadrukkelijk "wie er in die stad rondliep".
+    if ($wijze === 'stad') {
+        return array_column(
+            q_all(
+                "SELECT `login` FROM `users`
+                  WHERE `stad` = ? AND `status` = 'levend' AND `activated` = 1
+                    AND `online` > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                    AND `login` NOT IN (?, ?)",
+                [$stad, GETUIGEN_ONLINE_MINUTEN, $dader, $slachtoffer]
+            ),
+            'login'
+        );
+    }
+
+    $alleenOnline = $wijze === 'online';
+
+    // Eerst in de stad zelf zoeken.
+    $getuigen = getuigen_zoeken($dader, $slachtoffer, $stad, $alleenOnline, GETUIGEN_AANTAL);
+
+    // Te weinig? Dan aanvullen met spelers buiten de stad, zodat er toch twee
+    // getuigen zijn. Anders zou een moord in een lege stad nooit bekend worden.
+    if (count($getuigen) < GETUIGEN_AANTAL) {
+        $tekort = GETUIGEN_AANTAL - count($getuigen);
+        $extra  = getuigen_zoeken($dader, $slachtoffer, null, $alleenOnline,
+            $tekort, $getuigen);
+
+        $getuigen = array_merge($getuigen, $extra);
+    }
+
+    return $getuigen;
+}
+
+/**
+ * Zoek kandidaat-getuigen.
+ *
+ * @param string|null $stad     Beperk tot deze stad, of null voor het hele spel.
+ * @param string[]    $behalve  Namen die al gekozen zijn.
+ * @return string[]
+ */
+function getuigen_zoeken(
+    string $dader,
+    string $slachtoffer,
+    ?string $stad,
+    bool $alleenOnline,
+    int $aantal,
+    array $behalve = []
+): array {
+    if ($aantal < 1) {
+        return [];
+    }
+
+    $waar   = ["`status` = 'levend'", '`activated` = 1', '`login` <> ?', '`login` <> ?'];
+    $params = [$dader, $slachtoffer];
+
+    if ($stad !== null) {
+        $waar[]   = '`stad` = ?';
+        $params[] = $stad;
+    }
+    if ($alleenOnline) {
+        $waar[]   = '`online` > DATE_SUB(NOW(), INTERVAL ? MINUTE)';
+        $params[] = GETUIGEN_ONLINE_MINUTEN;
+    }
+    foreach ($behalve as $naam) {
+        $waar[]   = '`login` <> ?';
+        $params[] = $naam;
+    }
+
+    return array_column(
+        q_all(
+            'SELECT `login` FROM `users` WHERE ' . implode(' AND ', $waar)
+            . ' ORDER BY RAND() LIMIT ' . (int) $aantal,
+            $params
+        ),
+        'login'
+    );
 }

@@ -113,6 +113,7 @@ function menu_groups(array $user): array
             'adm-items.php'    => 'Items',
             'adm-shame.php'    => 'Wall of Shame',
             'adm-poll.php'     => 'Poll',
+            'adm-getuigen.php' => 'Ooggetuigen',
         ];
     }
 

@@ -535,6 +535,36 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
     text-align: center;
 }
 
+/* --- Keuzelijst met toelichting (bv. de getuigeninstelling) --------------- */
+
+.keuzelijst {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.keuzelijst .keuze {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .15rem .6rem;
+    align-items: start;
+    padding: .7rem .9rem;
+    border: 1px solid var(--rand);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.keuzelijst .keuze:hover { border-color: var(--accent); }
+
+.keuzelijst .keuze.gekozen {
+    border-color: var(--accent);
+    background: rgba(255, 153, 0, .07);
+}
+
+.keuzelijst .keuze input { margin-top: .25rem; }
+.keuzelijst .keuze .uitleg { grid-column: 2; }
+
 /* --- Smallere schermen --------------------------------------------------- */
 
 @media (max-width: 1100px) {

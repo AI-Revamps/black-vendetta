@@ -73,17 +73,32 @@ echo '<p><img src="' . e(url('images/rip.gif')) . '" alt="" style="float:right;m
 echo '<strong>' . e((string) $user['login']) . '</strong> is niet meer. Je bent omgelegd.</p>';
 
 if ($moord !== null) {
-    echo '<p>Vermoord op ' . e(datetime_nl($moord['date']));
-    if (($moord['dader'] ?? '') !== '') {
-        echo ' door <strong>' . e((string) $moord['dader']) . '</strong>';
-    }
-    echo '.</p>';
+    echo '<p>Vermoord op ' . e(datetime_nl($moord['date'])) . '.</p>';
+
+    // Wie het deed staat er nadrukkelijk niet bij. Dat kom je alleen te weten
+    // via een ooggetuige, en die verklaring staat op de zwarte markt.
+    echo '<p>Je hebt niet gezien wie het was.</p>';
 
     // Het bericht van de dader is tekst van een speler: eerst escapen, dan pas
     // de regelovergangen omzetten.
     if (($moord['msg'] ?? '') !== '') {
-        echo '<p>Bericht van de dader:</p><blockquote>'
+        echo '<p>Er lag wel een briefje:</p><blockquote>'
            . nl2br(e((string) $moord['msg'])) . '</blockquote>';
+    }
+
+    $getuigen = (int) q_val(
+        'SELECT COUNT(*) FROM `ws` WHERE `victim` = ? AND `time` > NOW()',
+        [$user['login']],
+        0
+    );
+
+    if ($getuigen > 0) {
+        echo '<p>' . ($getuigen === 1 ? 'Eén iemand' : num($getuigen) . ' mensen')
+           . ' ' . ($getuigen === 1 ? 'heeft' : 'hebben') . ' het zien gebeuren. '
+           . 'Op de <a href="' . e(url('mshop.php?x=ws')) . '">zwarte markt</a> wordt zo\'n '
+           . 'verklaring wel eens te koop aangeboden.</p>';
+    } else {
+        echo '<p>Voor zover je weet heeft niemand het zien gebeuren.</p>';
     }
 }
 

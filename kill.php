@@ -193,7 +193,11 @@ function aanslag_plegen(
 
         // --- Het doelwit sterft ---
         if ($doelLeven < 1) {
-            $ondertekening = $anoniem ? $bericht : $dader['login'] . ': ' . $bericht;
+            // Het slachtoffer mag niet zien wie hem omlegde: dat is nu juist
+            // wat een ooggetuigenverklaring waard maakt. Het bericht gaat dus
+            // altijd zonder naam mee. Wie wil opscheppen, zet zijn naam zelf
+            // in de tekst.
+            $ondertekening = $bericht;
 
             $regels[] = $doel['login'] . ' is dood. Je hebt ' . money((int) $doel['zak'])
                       . ' uit zijn zakken gehaald.';
@@ -209,7 +213,16 @@ function aanslag_plegen(
             q('UPDATE `users` SET `nrofkill` = `nrofkill` + 1, `xp` = `xp` + 10, `se` = LEAST(100, `se` + 1) WHERE `id` = ?',
                 [$dader['id']]);
 
-            ooggetuige_aanwijzen((string) $dader['login'], (string) $doel['login']);
+            $aantalGetuigen = ooggetuigen_aanwijzen(
+                (string) $dader['login'], (string) $doel['login'], $stad);
+
+            if ($aantalGetuigen > 0) {
+                $regels[] = 'Er ' . ($aantalGetuigen === 1 ? 'was één getuige' : 'waren '
+                    . num($aantalGetuigen) . ' getuigen') . '. Die kunnen je verklappen.';
+            } else {
+                $regels[] = 'Niemand heeft het gezien.';
+            }
+
             log_action((string) $dader['login'], 'kill', 'Doelwit gedood', 1, (string) $doel['login']);
 
             $type = 'ok';
@@ -282,13 +295,18 @@ function toon_formulier(array $user): void
 
     echo '<label for="message">Afscheidsbericht</label>';
     echo '<input id="message" name="message" maxlength="255">';
-    echo '<span></span><small>Dit ziet je slachtoffer op zijn overlijdenspagina.</small>';
+    echo '<span></span><small>Dit ziet je slachtoffer op zijn overlijdenspagina. '
+       . 'Je naam komt daar niet bij te staan: wie je bent hoort hij alleen als een '
+       . 'ooggetuige zijn verklaring doorspeelt. Wil je toch dat hij het weet, zet het '
+       . 'dan zelf in je bericht.</small>';
 
     $anoniem = post('ano') !== 'no';
     echo '<span>Ondertekening</span><div>'
        . '<label><input type="radio" name="ano" value="yes"' . ($anoniem ? ' checked' : '') . '> Anoniem</label> '
        . '<label><input type="radio" name="ano" value="no"' . ($anoniem ? '' : ' checked') . '> Met mijn naam</label>'
        . '</div>';
+    echo '<span></span><small>Deze keuze geldt voor het rouwbericht op het forum, niet '
+       . 'voor je slachtoffer.</small>';
 
     echo '<span></span>' . captcha_field();
     echo '<span></span><button type="submit">Vermoord</button>';

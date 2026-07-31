@@ -28,6 +28,7 @@ function beheerpaginas(): array
         'adm-forum.php'    => ['Forum opruimen',  LEVEL_ADMIN],
         'adm-addnews.php'  => ['Nieuws',          LEVEL_ADMIN],
         'adm-poll.php'     => ['Polls',           LEVEL_ADMIN],
+        'adm-getuigen.php' => ['Ooggetuigen',     LEVEL_ADMIN],
         'adm-items.php'    => ['Items',           LEVEL_OWNER],
         'adm-drdrpr.php'   => ['Drank en drugs',  LEVEL_OWNER],
         'adm-bo.php'       => ['Speler bewerken', LEVEL_OWNER],

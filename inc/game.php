@@ -263,6 +263,46 @@ function bijschrijven(int $userId, int $bedrag, string $veld = 'zak'): void
     q("UPDATE `users` SET `{$veld}` = `{$veld}` + ? WHERE `id` = ?", [$bedrag, $userId]);
 }
 
+// --- Instellingen die een beheerder in het spel kan omzetten ---------------
+
+/**
+ * Lees een instelling uit de tabel `instellingen`.
+ *
+ * Anders dan config() in inc/config.php gaat dit over keuzes die een beheerder
+ * tijdens het spelen wil kunnen omzetten. De hele tabel wordt één keer per
+ * verzoek gelezen; het zijn er een handvol.
+ */
+function instelling(string $naam, string $standaard = ''): string
+{
+    static $alles = null;
+
+    if ($alles === null) {
+        $alles = [];
+
+        // Bij een installatie die nog van vóór deze tabel komt, valt alles
+        // terug op de standaardwaarden in plaats van de pagina te breken.
+        if (db_table_exists('instellingen')) {
+            foreach (q_all('SELECT `naam`, `waarde` FROM `instellingen`') as $rij) {
+                $alles[(string) $rij['naam']] = (string) $rij['waarde'];
+            }
+        }
+    }
+
+    return $alles[$naam] ?? $standaard;
+}
+
+/** Zet een instelling. Geeft de nieuwe waarde terug. */
+function instelling_zetten(string $naam, string $waarde): string
+{
+    q(
+        'INSERT INTO `instellingen` (`naam`, `waarde`) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE `waarde` = VALUES(`waarde`)',
+        [$naam, $waarde]
+    );
+
+    return $waarde;
+}
+
 // --- Opnieuw beginnen na de dood ------------------------------------------
 
 /**
