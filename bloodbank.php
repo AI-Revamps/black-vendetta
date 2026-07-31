@@ -1,67 +1,117 @@
-<?php /* ------------------------- */
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-  if(! check_login()) {
-    header("Location: login.php");
-    exit;
-  }
+<?php
+/**
+ * Bloedbank: koop bloedzakjes om je gezondheid aan te vullen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Betalen en de gezondheid ophogen gebeurde in twee losse queries zonder
+ *    transactie. Ging de tweede mis, dan was je je geld kwijt zonder resultaat.
+ *  - De nieuwe gezondheid werd berekend uit de waarde die bij het laden van de
+ *    pagina was opgehaald. Tussen laden en versturen kon die veranderd zijn,
+ *    bijvoorbeeld door een aanslag, waardoor je boven de 100% uit kon komen.
+ *  - Er stond een controle op een negatief aantal, maar die kon nooit vuren
+ *    omdat de invoer daarvoor al op alleen cijfers gecontroleerd was.
+ */
 
-if ($jisin == 1) { header("Location: jisin.php"); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-print <<<ENDHTML
-<table width="100%" align=center>
-<tr> 
-    <td class="subTitle"><b>Bloedbank</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<center>
-<html>
-ENDHTML;
-if($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['aantal'])) {
-$aantal = $_POST['aantal'];
-$prijs = $aantal*1000;
-$nhealth = $data->health+$aantal;
+declare(strict_types=1);
 
-if ($nhealth > 100) {
-echo "Je kan niet meer dan 100% health hebben.";
-return;
+require __DIR__ . '/inc/bootstrap.php';
+
+const BLOEDZAKJE_PRIJS = 1000;
+const GEZONDHEID_MAX   = 100;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-if ($aantal < 0) {
-echo "Je kan niet meer dan 100% health hebben.";
-return;
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = kopen($user, int_input('aantal', 0));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-if ($prijs > $data->zak) {
-echo "Je hebt niet genoeg geld op zak.";
-return;
+
+$tekort    = GEZONDHEID_MAX - (int) $user['health'];
+$betaalbaar = intdiv((int) $user['zak'], BLOEDZAKJE_PRIJS);
+
+layout_header('Bloedbank');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-	if (!Empty($aantal)) {
-			mysql_query("UPDATE `users` SET `zak`=`zak`-{$prijs} WHERE `login`= '{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `users` SET `health`=`health` +{$aantal} WHERE `login` = '{$data->login}'") or die (mysql_error());
-			echo "Je hebt $aantal bloedzakjes gekocht voor &euro; {$prijs}. Je hebt nu {$nhealth}% health"; exit;
-			} 
-	else { echo "Je moet een aantal bloedzakjes invullen."; exit; }
-	}
-print <<<ENDHTML
-<br><br><br>
-Je hebt momenteel $data->health health.
-<form method='post'>
-	Koop hier bloedzakjes voor &euro; 1000 per stuk.<br><br>
-	<input type='text' name='aantal' value='' size='20' maxlength=3>
-<br>
-<br>
-	<p><input type='submit' value='Koop' name=submit></p>
-ENDHTML;
-?>
-</table></table>
+
+panel_open('Bloedbank');
+
+echo '<p>Je gezondheid is <strong>' . (int) $user['health'] . '%</strong>. '
+   . 'Een bloedzakje kost ' . money(BLOEDZAKJE_PRIJS) . ' en geeft 1% terug.</p>';
+
+if ($tekort < 1) {
+    echo '<p>Je bent kerngezond. Je hebt geen bloed nodig.</p>';
+} elseif ($betaalbaar < 1) {
+    echo '<p>Je hebt niet genoeg geld voor een bloedzakje.</p>';
+} else {
+    $max = min($tekort, $betaalbaar);
+
+    echo '<p>Je kunt er nu <strong>' . $max . '</strong> kopen: je mist ' . $tekort
+       . '% en kunt er ' . $betaalbaar . ' betalen.</p>';
+
+    echo '<form method="post">' . csrf_field();
+    echo '<div class="veldenraster">';
+    echo '<label for="aantal">Aantal zakjes</label>';
+    echo '<input id="aantal" name="aantal" type="number" min="1" max="' . $max . '" step="1" required>';
+    echo '<span></span><button type="submit">Kopen</button>';
+    echo '</div></form>';
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function kopen(array $user, int $aantal): string
+{
+    if ($aantal < 1) {
+        throw new SpelFout('Vul een aantal van minstens 1 in.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal): string {
+        // Binnen de transactie opnieuw ophalen: de gezondheid kan sinds het
+        // laden van de pagina veranderd zijn.
+        $speler = lock_user((int) $user['id']);
+        $ruimte = GEZONDHEID_MAX - (int) $speler['health'];
+
+        if ($ruimte < 1) {
+            throw new SpelFout('Je gezondheid staat al op ' . GEZONDHEID_MAX . '%.');
+        }
+        if ($aantal > $ruimte) {
+            throw new SpelFout('Je mist maar ' . $ruimte . '%, dus meer dan '
+                . $ruimte . ' zakjes hebben geen zin.');
+        }
+
+        $prijs = $aantal * BLOEDZAKJE_PRIJS;
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `users` SET `health` = LEAST(?, `health` + ?) WHERE `id` = ?',
+            [GEZONDHEID_MAX, $aantal, $speler['id']]);
+
+        $nieuw = min(GEZONDHEID_MAX, (int) $speler['health'] + $aantal);
+
+        return 'Je hebt ' . $aantal . ' ' . ($aantal === 1 ? 'bloedzakje' : 'bloedzakjes')
+             . ' gekocht voor ' . money($prijs) . '. Je gezondheid is nu ' . $nieuw . '%.';
+    });
+}
