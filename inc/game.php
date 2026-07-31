@@ -161,9 +161,20 @@ function jail_sentence(int $xp): array
 function jail_put(string $login, int $xp, string $stad, string $famillie = ''): void
 {
     $s = jail_sentence($xp);
+
+    // `jail`.`login` is uniek. Een verlopen cel wordt pas door de crontaak
+    // opgeruimd, dus tot die tijd zou een kale INSERT vastlopen op een
+    // dubbele sleutel. `bo` gaat terug naar nul: een nieuwe straf, een nieuwe
+    // reeks uitbraakpogingen.
     q(
-        'INSERT INTO `jail` (`login`, `boete`, `stad`, `famillie`, `time`)
-              VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+        'INSERT INTO `jail` (`login`, `boete`, `stad`, `famillie`, `time`, `bo`)
+              VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0)
+         ON DUPLICATE KEY UPDATE
+              `boete`    = VALUES(`boete`),
+              `stad`     = VALUES(`stad`),
+              `famillie` = VALUES(`famillie`),
+              `time`     = VALUES(`time`),
+              `bo`       = 0',
         [$login, $s['boete'], $stad, $famillie, $s['seconden']]
     );
 }

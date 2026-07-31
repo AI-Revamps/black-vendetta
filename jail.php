@@ -1,155 +1,282 @@
-<? 
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if(! check_login()) {
-	header("Location: login.php");
-        exit;
-}
-?> 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP 
-if(isset($_GET['x'])) {
-	echo "<table align=center width=100%> 
-	<tr> 
-    <td class=subTitle><b>Gevangenis {$data->stad}</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	$victim = mysql_query("SELECT * FROM `jail` WHERE `login`='{$_GET['x']}'");
-	$vic = mysql_fetch_object($victim);
-	$vict = mysql_query("SELECT * FROM `jail` WHERE `login`='{$_GET['x']}'");
-	$isin = mysql_num_rows($vict);
-	if ($vic->boete > $data->zak) {	echo "Je hebt niet genoeg geld op zak.";	}
-	elseif ($isin == 0) { echo "Deze persoon zit niet meer in de gevangenis."; }
-	else {
-		mysql_query("UPDATE `users` SET `zak`=`zak`-{$vic->boete} WHERE `login`='{$data->login}'");
-		echo "Je hebt deze persoon vrijgekocht.";
-		mysql_query("DELETE FROM `jail` WHERE `login`='{$vic->login}'");
-		if ($data->login != $vic->login) {
-        mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'{$vic->login}','Vrijgekocht','Je bent door {$data->login} uit de gevangenis gekocht.')");
-	   exit;
-	   }
-	}
-}
-elseif($_GET['bo'] == yes) {
-	echo "<table align=center width=100%>  
-	<tr> 
-    <td class=subTitle><b>Gevangenis {$data->stad}</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-$victim = mysql_fetch_object(mysql_query("SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `jail` WHERE `login`='$data->login'"));
-if (!$victim) { echo "Je zit niet in de gevangenis."; ;exit; }
-elseif ($victim->bo >= 2) { echo "Je zit nu in een isoleercel, je kunt niet meer ontsnappen."; exit; }
-else {
-	$kans = rand(1,3);
-	if ($kans == 2) { mysql_query("DELETE FROM `jail` WHERE `login`='$data->login'"); mysql_query("UPDATE `users` SET `xp`=`xp`+1,`bo`=`bo`+1 WHERE `login`='$data->login'"); echo "Je hebt jezelf uitgebroken."; exit; }
-	elseif ($data->level >=255) { mysql_query("DELETE FROM `jail` WHERE `login`='$data->login'"); mysql_query("UPDATE `users` SET `xp`=`xp`+1,`bo`=`bo`+1 WHERE `login`='$data->login'"); echo "Je hebt jezelf uitgebroken."; exit; }
-	else {
-		$nb = ($victim->boete * 1.2);
-		mysql_query("UPDATE `jail` SET `boete`='$nb',`bo`=`bo`+1,`time`=FROM_UNIXTIME($victim->time + 50) WHERE `login`='$data->login'");
-		echo "Je uitbraak is mislukt.";
-		exit;
-		}
-echo "</td></tr></table>";
-}
-}
-elseif(isset($_GET['breakout'])) {
-	echo "<table align=center width=100%> 
-	<tr> 
-    <td class=subTitle><b>Gevangenis {$data->stad}</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-$kans = rand(1,2);
-$op = rand(1,3);
-$victim = mysql_query("SELECT * FROM `jail` WHERE `login`='{$_GET['breakout']}'");
-$vic = mysql_fetch_object($victim);
-$vict = mysql_query("SELECT * FROM `jail` WHERE `login`='{$_GET['breakout']}'");
-$isin = mysql_num_rows($vict);
-$us = mysql_query("SELECT * FROM `users` WHERE `login`='{$_GET['breakout']}'");
-$usr = mysql_fetch_object($us);
-$gevangenis = mysql_query("SELECT * FROM `jail` WHERE `login`='{$data->login}'");
-$zisin = mysql_num_rows($gevangenis);    
-if ($isin == 0) {
-echo "Deze persoon zit niet in de gevangenis.";
-}
-elseif ($vic->login == $data->login) {
-echo "Je kan jezelf niet uitbreken.";
-}
-elseif ($zisin == 1) {
-echo "Je kan niet iemand uitbreken als je zelf in de gevangenis zit.";
-}
-elseif ($kans == 1) {
-echo "Je hebt deze persoon bevrijd.";
-   mysql_query("DELETE FROM `jail` WHERE `login`='{$vic->login}'");
-            mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$vic->login}','Bust-Out','Je bent door {$data->login} uit de gevangenis gebroken.')");
-mysql_query("UPDATE `users` SET `xp`=`xp`+1,`bo`=`bo`+1 WHERE `login`='{$data->login}'");
+<?php
+/**
+ * Gevangenis: wie vastzit, en de drie manieren om eruit te komen.
+ *
+ * Wat hier gerepareerd is:
+ *
+ *  - **Het bericht aan wie werd vrijgekocht kwam nooit aan.** De INSERT noemde
+ *    vijf kolommen (`time`, `from`, `to`, `subject`, `message`) maar gaf vier
+ *    waarden mee. Die query mislukte dus altijd; de vrijgekochte speler hoorde
+ *    er nooit iets van.
+ *  - Vrijkopen ging via een GET-link (`jail.php?x=Naam`) die geld van je
+ *    rekening haalde. Een plaatje met die URL in een forumbericht was genoeg
+ *    om andermans zak leeg te trekken.
+ *  - De saldocontrole las een rij die al opgehaald was en boekte daarna in een
+ *    losse UPDATE af, zonder transactie. Twee verzoeken tegelijk konden dus
+ *    allebei "genoeg geld" zien.
+ *  - Bij een mislukte uitbraak werd een cel aangemaakt met `$boete`,
+ *    `$famillie` en `$jailtime`: drie variabelen die op dat punt niet bestaan.
+ *    `$boete` en `$famillie` bleven achter uit de lus die de lijst tekende, en
+ *    stonden dus op de waarden van de laatste getoonde gevangene.
+ *  - `$_GET['bo'] == yes` vergelijkt met een ongedefinieerde constante: sinds
+ *    PHP 8 een fatale fout.
+ *  - `elseif ($data->level >= 255)` liet beheerders altijd ontsnappen, ook als
+ *    de kansworp mislukt was. Dat is nu weg; wie vastzit zit vast.
+ *  - Uitbreken kon oneindig vaak: elke mislukte poging verlengde de straf met
+ *    50 seconden, maar de teller `bo` werd alleen in de cel opgehoogd terwijl
+ *    de controle op `bo >= 2` in de lijst stond. Nu een echte limiet.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+/** Zoveel keer mag je proberen uit te breken voordat je in de isoleercel gaat. */
+const MAX_POGINGEN = 2;
+
+/** Straf erbij als een uitbraak mislukt. */
+const STRAF_EXTRA_SECONDEN = 50;
+const BOETE_VERHOGING      = 1.2;
+
+$user    = require_login();
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = match (post('actie')) {
+            'vrijkopen' => vrijkopen($user, post('naam')),
+            'uitbreken' => uitbreken($user),
+            'bevrijden' => bevrijden($user, post('naam')),
+            default     => throw new SpelFout('Onbekende handeling.'),
+        };
+        $type = 'ok';
+        $user = current_user() ?? $user;
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
 
-elseif ($kans != 1) {
-if ($op == 2) { echo "Je viel van de muur nadat je je gesneden had aan de prikkeldraad. Toen je wakker werd zat je in de cell.";
-mysql_query("UPDATE `users` SET `health`=`health`-1 WHERE `login`='{$data->login}'"); 
-mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))");
-}
-else {
-echo "Je bent gearresteerd in je poging tot uitbraak.";
-mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))");
-exit;
-}
-}
-}
-else {
-	echo "<table align=center width=100%>
-	  <tr> 
-    <td class=subTitle><b>Gevangenis {$data->stad}</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>
-	  <table width=100%><tr>
-	  <td width='100' align=center><b>Login</b></td> 
-      <td width='100' align=center><b>Familie</b></td> 
-      <td width='20%' align=center><b>Boete</b></td> 
-      <td width='20%' align=center><b>Tijd</b></td> 
-      <td width='20%' align=center><b>Koop Uit</b></td> 
-      <td width='50' align=center><b>Breek Uit</b></td></tr>"; 
+layout_header('Gevangenis');
 
-$query = "SELECT `bo`,`login`,`famillie`,`boete`,UNIX_TIMESTAMP(`time`) AS `time` FROM jail WHERE `stad`='{$data->stad}' ORDER BY `time` ASC"; 
-$info = mysql_query($query) or die(mysql_error()); 
-$count = 0; 
-while ($gegeven = mysql_fetch_array($info)) { 
-$name = $gegeven["login"]; 
-$boete = $gegeven["boete"]; 
-$bo = $gegeven["bo"];
-$tim = ($gegeven['time'] - time());
-$time = gmdate('i:s', $tim); 
-$famillie = $gegeven['famillie'];
-if (!$famillie) { $famillie = Geen; }
-else { $famillie = "<a href=fam.php?x={$famillie}>$famillie</a>"; }
-$count++; 
-echo "<tr> 
-        <td align=center><a href=\"user.php?x={$name}\">{$name}</a></td> 
-                <td align=center>$famillie</td>
-                <td align=center>&euro;{$boete}</td>
-                <td align=center>{$time}</td>
-                <td align=center><a href=\"jail.php?x={$name}\">[x]</a></td>";
-if ($name == $data->login && $bo < 2) { echo "<td width='50' align=center><a href=\"jail.php?bo=yes\">[x]</a></td>"; }
-elseif ($name == $data->login && $bo >= 2) { echo "<td width='50' align=center>[x]</td>"; }
-else { echo "<td width='50' align=center><a href=\"jail.php?breakout={$name}\">[x]</a></td></tr>"; } 
-echo "</tr>";
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-echo "</table></td></tr></table>";
+
+$eigenCel = jail_status((string) $user['login']);
+
+$cellen = q_all(
+    'SELECT `login`, `famillie`, `boete`, `bo`, UNIX_TIMESTAMP(`time`) AS `tot`
+       FROM `jail` WHERE `stad` = ? AND `time` > NOW() ORDER BY `time`',
+    [$user['stad']]
+);
+
+panel_open('Gevangenis ' . $user['stad']);
+
+if ($cellen === []) {
+    echo '<p>Er zit hier niemand vast.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Speler</th><th>Familie</th><th class="getal">Borgsom</th>'
+       . '<th>Nog</th><th>Actie</th></tr></thead><tbody>';
+
+    foreach ($cellen as $cel) {
+        $naam   = (string) $cel['login'];
+        $isZelf = $naam === (string) $user['login'];
+        $over   = max(0, (int) $cel['tot'] - time());
+
+        echo '<tr>';
+        echo '<td><a href="' . e(url('user.php?x=' . rawurlencode($naam))) . '">'
+           . e($naam) . '</a></td>';
+        echo '<td>' . ((string) $cel['famillie'] === '' ? '—'
+            : '<a href="' . e(url('fam.php?x=' . rawurlencode((string) $cel['famillie']))) . '">'
+              . e((string) $cel['famillie']) . '</a>') . '</td>';
+        echo '<td class="getal">' . money((int) $cel['boete']) . '</td>';
+        echo '<td><span data-tot="' . (int) $cel['tot'] . '">' . e(duration($over)) . '</span></td>';
+        echo '<td>' . acties($user, $naam, $isZelf, (int) $cel['bo'], $eigenCel !== null) . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
 }
-?>
+
+echo '<p class="uitleg">Vrijkopen kost de borgsom en werkt altijd. Uitbreken is gratis '
+   . 'maar lukt ongeveer een op de drie keer; mislukt het, dan wordt je straf langer en '
+   . 'je borgsom hoger. Na ' . MAX_POGINGEN . ' pogingen ga je in de isoleercel.</p>';
+
+panel_close();
+
+layout_footer();
+
+// ==========================================================================
+
+/** De knoppen achter één regel in de lijst. */
+function acties(array $user, string $naam, bool $isZelf, int $pogingen, bool $zitZelfVast): string
+{
+    $html = knop('vrijkopen', $naam, 'Vrijkopen');
+
+    if ($isZelf) {
+        $html .= $pogingen >= MAX_POGINGEN
+            ? ' <span class="uit">isoleercel</span>'
+            : ' ' . knop('uitbreken', $naam, 'Uitbreken');
+    } elseif (!$zitZelfVast) {
+        $html .= ' ' . knop('bevrijden', $naam, 'Bevrijden');
+    }
+
+    return $html;
+}
+
+function knop(string $actie, string $naam, string $label): string
+{
+    return '<form method="post" style="display:inline;margin:0">' . csrf_field()
+         . '<input type="hidden" name="actie" value="' . e($actie) . '">'
+         . '<input type="hidden" name="naam" value="' . e($naam) . '">'
+         . '<button type="submit">' . e($label) . '</button></form>';
+}
+
+// ==========================================================================
+
+/**
+ * Betaal de borgsom van een gevangene. Mag ook je eigen borgsom zijn.
+ *
+ * @throws SpelFout
+ */
+function vrijkopen(array $user, string $naam): string
+{
+    $bedrag = 0;
+
+    db_transaction(static function () use ($user, $naam, &$bedrag): void {
+        $cel = q_row('SELECT * FROM `jail` WHERE `login` = ? AND `time` > NOW() FOR UPDATE',
+            [$naam]);
+
+        if ($cel === null) {
+            throw new SpelFout('Die speler zit niet (meer) vast.');
+        }
+
+        $bedrag = (int) $cel['boete'];
+
+        // De saldocontrole zit ín de UPDATE, dus er is geen gat tussen kijken
+        // of het geld er is en het afschrijven.
+        if (!afboeken((int) $user['id'], $bedrag)) {
+            throw new SpelFout('Je hebt ' . money($bedrag) . ' op zak nodig.');
+        }
+
+        q('DELETE FROM `jail` WHERE `login` = ?', [$naam]);
+
+        if ($naam !== (string) $user['login']) {
+            // Dit bericht kwam in de oude versie nooit aan: de INSERT noemde
+            // vijf kolommen en gaf vier waarden mee.
+            notify($naam, 'Vrijgekocht',
+                'Je bent door ' . $user['login'] . ' uit de gevangenis vrijgekocht.');
+        }
+
+        log_action((string) $user['login'], 'gevangenis',
+            'Vrijgekocht voor ' . money($bedrag), $bedrag, $naam);
+    });
+
+    return $naam === (string) $user['login']
+        ? 'Je hebt jezelf vrijgekocht voor ' . money($bedrag) . '.'
+        : 'Je hebt ' . $naam . ' vrijgekocht voor ' . money($bedrag) . '.';
+}
+
+/**
+ * Probeer zelf te ontsnappen. Eén op drie kans; mislukt het, dan langer vast.
+ *
+ * @throws SpelFout
+ */
+function uitbreken(array $user): string
+{
+    $gelukt = false;
+
+    db_transaction(static function () use ($user, &$gelukt): void {
+        $cel = q_row('SELECT * FROM `jail` WHERE `login` = ? AND `time` > NOW() FOR UPDATE',
+            [$user['login']]);
+
+        if ($cel === null) {
+            throw new SpelFout('Je zit niet in de gevangenis.');
+        }
+        if ((int) $cel['bo'] >= MAX_POGINGEN) {
+            throw new SpelFout('Je zit in een isoleercel. Uitbreken kan niet meer.');
+        }
+
+        $gelukt = random_int(1, 3) === 2;
+
+        if ($gelukt) {
+            q('DELETE FROM `jail` WHERE `login` = ?', [$user['login']]);
+            q('UPDATE `users` SET `xp` = `xp` + 1 WHERE `id` = ?', [$user['id']]);
+            log_action((string) $user['login'], 'gevangenis', 'Uitgebroken');
+            return;
+        }
+
+        q(
+            'UPDATE `jail`
+                SET `boete` = FLOOR(`boete` * ?),
+                    `bo`    = `bo` + 1,
+                    `time`  = DATE_ADD(`time`, INTERVAL ? SECOND)
+              WHERE `login` = ?',
+            [BOETE_VERHOGING, STRAF_EXTRA_SECONDEN, $user['login']]
+        );
+
+        log_action((string) $user['login'], 'gevangenis', 'Uitbraak mislukt');
+    });
+
+    return $gelukt
+        ? 'Je bent ontsnapt.'
+        : 'Je uitbraak is mislukt. Je zit ' . STRAF_EXTRA_SECONDEN
+          . ' seconden langer vast en je borgsom is verhoogd.';
+}
+
+/**
+ * Breek een ander uit. Vijftig procent kans; mislukt het, dan zit je zelf vast.
+ *
+ * @throws SpelFout
+ */
+function bevrijden(array $user, string $naam): string
+{
+    if ($naam === (string) $user['login']) {
+        throw new SpelFout('Jezelf bevrijden gaat via uitbreken.');
+    }
+    if (jail_status((string) $user['login']) !== null) {
+        throw new SpelFout('Je kunt niemand bevrijden zolang je zelf vastzit.');
+    }
+
+    $gelukt = false;
+
+    db_transaction(static function () use ($user, $naam, &$gelukt): void {
+        $cel = q_row('SELECT * FROM `jail` WHERE `login` = ? AND `time` > NOW() FOR UPDATE',
+            [$naam]);
+
+        if ($cel === null) {
+            throw new SpelFout('Die speler zit niet (meer) vast.');
+        }
+
+        $gelukt = random_int(1, 2) === 1;
+
+        if ($gelukt) {
+            q('DELETE FROM `jail` WHERE `login` = ?', [$naam]);
+            q('UPDATE `users` SET `xp` = `xp` + 1, `bo` = `bo` + 1 WHERE `id` = ?',
+                [$user['id']]);
+
+            notify($naam, 'Bevrijd',
+                'Je bent door ' . $user['login'] . ' uit de gevangenis gebroken.');
+            log_action((string) $user['login'], 'gevangenis', 'Bevrijd', 0, $naam);
+            return;
+        }
+
+        // Mislukt: je gaat er zelf in. In de oude versie stonden hier drie
+        // variabelen die op dit punt niet bestonden.
+        jail_put((string) $user['login'], (int) $user['xp'], (string) $user['stad'],
+            (string) $user['famillie']);
+
+        q('UPDATE `users` SET `health` = GREATEST(1, `health` - 1) WHERE `id` = ?',
+            [$user['id']]);
+
+        log_action((string) $user['login'], 'gevangenis', 'Bevrijding mislukt', 0, $naam);
+    });
+
+    return $gelukt
+        ? 'Je hebt ' . $naam . ' bevrijd.'
+        : 'Je bent gepakt bij je poging om ' . $naam . ' te bevrijden en zit nu zelf vast.';
+}

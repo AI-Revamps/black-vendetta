@@ -1,71 +1,57 @@
-<?PHP
-include("config.php");
-$dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'");
-$data = mysql_fetch_object($dbres);
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link href="style.css" rel="stylesheet" type="text/css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
+<?php
+/**
+ * Nieuwsarchief.
+ *
+ * Wat hier gerepareerd is: het totaal werd geteld met `SELECT id FROM news`
+ * gevolgd door mysql_num_rows() — alle rijen ophalen om alleen het aantal te
+ * weten. De pagineerlus liep bovendien over `$rows/$pp` zonder afronding,
+ * waardoor de laatste pagina bij een niet-rond aantal ontbrak. De nieuwstekst
+ * ging ongefilterd naar de browser.
+ */
 
-<body>
-<table width="100%">
-  <tr>
-    <td class="subTitle"><b>Nieuws</b></td>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
-  </tr>
-  <tr>
-    <td class="mainTxt">**********<br>
-	  <?
-	  $pp = 10;
-	  $start= ($_GET['p'] >= 0) ? $_GET['p']*$pp : 0;
-	  $sql = mysql_query("SELECT id FROM `news`");
-	  $rows = mysql_num_rows($sql);	  
-	  if($start > $rows){
-	    $start = 0;
-	  }
-	  $sql = mysql_query("SELECT * FROM `news` ORDER BY time DESC LIMIT $start,$pp");
-	  while($news = mysql_fetch_object($sql)){
-	    $time = date('d/m/Y', $news->time);
-	    $title = $news->title;
-		$text = $news->text;
-	    echo"<i><b>$title</b></i> $time<br><br>$text<br><br>**********<br><br>";
-	  }
-	  print "  <tr><td align=\"center\">";
-      if($rows <= $pp){
-        print "&#60;&#60; &#60; 1 &#62; &#62;&#62;";
-	  }
-      else {
-        if($start/$pp == 0){
-          print "&#60;&#60; &#60; ";
-		}
-        else{
-          print "<a href=\"?p=0\">&#60;&#60;</a> <a href=\"?p=". ($start/$pp-1) ."\">&#60;</a> ";
-		}
-        for($i=0; $i<$rows/$pp; $i++) {
-		  if($i == $start/$pp){
-		    print "<u>". ($i+1) ."</u> ";
-		  }
-		  else{
-            print "<a href=\"?p=$i\">". ($i+1) ."</a> ";
-		  }
-        }
-        if($start+$pp >= $rows){
-          print " &#62; &#62;&#62; ";
-		}
-        else{
-          print "<a href=\"?p=". ($start/$pp+1) ."\">&#62;</a> <a href=\"?p=". (ceil($rows/$pp)-1) ."\">&#62;&#62;</a>";
-		}
-      }
-	  ?>
-	</td>
-  </tr>  
-</table>
-</body>
-</html>
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/opmaak.php';
+
+const PER_PAGINA = 10;
+
+$user = require_login();
+
+$totaal  = (int) q_val('SELECT COUNT(*) FROM `news`', [], 0);
+$paginas = max(1, (int) ceil($totaal / PER_PAGINA));
+$pagina  = min(int_input('p', 0, 0), $paginas - 1);
+
+$berichten = q_all(
+    'SELECT * FROM `news` ORDER BY `time` DESC LIMIT ' . PER_PAGINA
+    . ' OFFSET ' . ($pagina * PER_PAGINA)
+);
+
+layout_header('Nieuws');
+
+panel_open('Nieuws');
+
+if ($berichten === []) {
+    echo '<p>Er is nog geen nieuws.</p>';
+}
+
+foreach ($berichten as $bericht) {
+    echo '<article class="nieuwsbericht">';
+    echo '<h3>' . e((string) $bericht['title']) . '</h3>';
+    echo '<p class="klein">' . e(timestamp_nl((int) $bericht['time'])) . '</p>';
+    echo '<div>' . bericht_html((string) $bericht['text']) . '</div>';
+    echo '</article>';
+}
+
+if ($paginas > 1) {
+    echo '<p class="paginering">';
+    for ($i = 0; $i < $paginas; $i++) {
+        echo $i === $pagina
+            ? '<strong>' . ($i + 1) . '</strong> '
+            : '<a href="' . e(url('news.php?p=' . $i)) . '">' . ($i + 1) . '</a> ';
+    }
+    echo '</p>';
+}
+
+panel_close();
+layout_footer();
