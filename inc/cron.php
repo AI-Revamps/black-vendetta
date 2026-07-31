@@ -63,6 +63,13 @@ function cron_tasks(): array
             q('DELETE FROM `temp`     WHERE `time` < DATE_SUB(NOW(), INTERVAL 2 DAY)');
         }],
 
+        // Detectives die klaar zijn met zoeken melden zich.
+        // In de oude versie stond dit midden in config.php en draaide het dus
+        // bij elk paginabezoek van elke speler opnieuw.
+        'detective' => [60, static function (): void {
+            detectives_afhandelen();
+        }],
+
         // Opbrengst van de kogelfabriek.
         'uur' => [3600, static function (): void {
             q("UPDATE `casino` SET `winst` = `winst` + 100 WHERE `spel` = 'kogelfabriek'");
@@ -100,6 +107,40 @@ function cron_tasks(): array
             loterij_trekken();
         }],
     ];
+}
+
+/**
+ * Handel afgelopen detectiveopdrachten af.
+ *
+ * Een detective zoekt in één stad. Blijkt het doelwit daar te zijn wanneer hij
+ * terugkomt, dan meldt hij dat aan zijn opdrachtgever. Daarna verdwijnt de
+ * opdracht, gevonden of niet.
+ */
+function detectives_afhandelen(): void
+{
+    $klaar = q_all(
+        'SELECT d.*, u.`stad` AS `huidige_stad`, u.`status`
+           FROM `detectives` d
+      LEFT JOIN `users` u ON u.`login` = d.`naar`
+          WHERE d.`time` <= NOW()'
+    );
+
+    foreach ($klaar as $opdracht) {
+        if (($opdracht['huidige_stad'] ?? null) === $opdracht['stad']
+            && ($opdracht['status'] ?? '') === 'levend') {
+
+            notify((string) $opdracht['van'], 'Detective',
+                'Je detective heeft ' . $opdracht['naar'] . ' gevonden in ' . $opdracht['stad'] . '.');
+
+            // Bij een treffer hebben de andere detectives op hetzelfde doelwit
+            // geen zin meer.
+            q('DELETE FROM `detectives` WHERE `van` = ? AND `naar` = ?',
+                [$opdracht['van'], $opdracht['naar']]);
+        }
+    }
+
+    // Wat over is, is zonder resultaat teruggekomen.
+    q('DELETE FROM `detectives` WHERE `time` <= NOW()');
 }
 
 /**

@@ -571,8 +571,9 @@ INSERT IGNORE INTO `cron` (`name`, `time`) VALUES
   ('kogels',  '1970-01-01 00:00:01'),
   ('uur',     '1970-01-01 00:00:01'),
   ('day',     '1970-01-01 00:00:01'),
-  ('week',    '1970-01-01 00:00:01'),
-  ('loterij', '1970-01-01 00:00:01');
+  ('week',      '1970-01-01 00:00:01'),
+  ('loterij',   '1970-01-01 00:00:01'),
+  ('detective', '1970-01-01 00:00:01');
 
 INSERT IGNORE INTO `stad` (`stad`, `kogels`, `prijs`, `drugs`, `drank`, `drugsp`, `drankp`, `transp`, `grond`) VALUES
   ('Brussel',   100, 1273,  32, 464, 14903, 3402, 2000, 1000),
