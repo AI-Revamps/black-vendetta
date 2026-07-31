@@ -53,9 +53,20 @@ function captcha_check(string $invoer): bool
     );
 }
 
-/** Is er beeldondersteuning? Zo niet, dan tonen we een rekensom in plaats van een plaatje. */
+/**
+ * Tonen we een plaatje of een rekensom?
+ *
+ * Zonder de gd-uitbreiding kan er geen plaatje gemaakt worden. Daarnaast kun
+ * je in de configuratie `captcha` op `'tekst'` zetten. Dat is nodig op hosts
+ * waar gd wel aanwezig is maar geen bruikbaar lettertype heeft — dan komt er
+ * een leeg of onleesbaar plaatje uit en kan niemand meer een misdaad plegen.
+ */
 function captcha_beschikbaar(): bool
 {
+    if (config('captcha') === 'tekst') {
+        return false;
+    }
+
     return function_exists('imagecreatetruecolor') && function_exists('imagepng');
 }
 

@@ -382,7 +382,30 @@ verdwenen met de `mysql_*`-aanroepen waar ze in stonden.
 | ⬜ | `display_errors` uit, logging naar bestand buiten de webroot |
 | ⬜ | Installer verwijderen of vergrendelen na gebruik |
 | ⬜ | `INSTALL.md`: uploaden, database aanmaken, installer draaien, cron instellen |
-| ⬜ | Volledige speelsessie van registratie tot rang 15 op een verse database |
+| ✅ | Volledige speelsessie op een verse database |
+
+### De speelsessie
+
+Van een lege database naar een gespeeld account, via de echte formulieren —
+geen directe database-aanroepen om ergens te komen.
+
+| Onderdeel | Resultaat |
+|---|---|
+| Registreren | account aangemaakt met bcrypt-hash, €1.000 startkapitaal, willekeurige startstad |
+| Inloggen en `home.php` | rang "Empty-Suit" op de statusbalk |
+| 40 misdaden | 5 gelukt, 25 mislukt, 10 keer opgepakt; XP en `nrofcrime` lopen mee |
+| Bank | €60.000 storten en €20.000 opnemen komt exact uit; te veel opnemen wordt geweigerd |
+| Winkel | wapen, bescherming en vervoer gekocht en weer verkocht, met de juiste bedragen |
+| Lijfwacht | gekocht voor €25.000 |
+| Fruitmachine, 15 keer | speler €985.000 + casinokas €15.000 = **precies €1.000.000** |
+| Moord | slachtoffer's €777.777 gaat naar de dader, zijn €222.222 op de bank verdwijnt; totaal daalt met exact dat bedrag, geen duplicatie |
+| Cron | alle zes taken draaien één keer en zetten hun tijdstempel |
+| Rooktest | alleen de beheerpagina's geven 403, en dat hoort: de testspeler is niveau 1 |
+
+Onderweg bevestigde het spel drie regels die het hoort te handhaven: je kunt
+niet moorden zolang jij of je doelwit nog beginnersbescherming heeft, niet in
+een andere stad, en er kan niet gegokt worden als de kas van de casinobaas een
+uitbetaling niet zou dekken.
 
 ---
 

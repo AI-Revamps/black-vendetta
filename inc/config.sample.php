@@ -76,6 +76,15 @@ return [
     // Verander dit in een willekeurige reeks tekens.
     'cron_key' => 'verander-dit-in-iets-willekeurigs',
 
+    // --- Beveiligingscode ---------------------------------------------------
+    // 'plaatje' = een plaatje met vijf tekens (heeft de gd-uitbreiding nodig)
+    // 'tekst'   = een eenvoudige rekensom
+    //
+    // Zonder gd wordt automatisch de rekensom gebruikt. Zet dit op 'tekst' als
+    // gd wel aanwezig is maar het plaatje leeg of onleesbaar blijft; dat komt
+    // voor op hosts zonder bruikbaar lettertype.
+    'captcha' => 'plaatje',
+
     // --- Ontwikkeling -----------------------------------------------------
     // In productie ALTIJD op false: anders zien bezoekers PHP-foutmeldingen
     // inclusief database-details.
