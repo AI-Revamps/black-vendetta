@@ -599,22 +599,29 @@ INSERT IGNORE INTO `items` (`id`, `nr`, `type`, `naam`, `aprijs`, `vprijs`, `eff
   (16, 2, 'def',   'Kogelvrije vest',  100000,   75000,    4.00),
   (17, 1, 'def',   'Kogelvrij schild',  30000,   20000,    2.00);
 
+-- `naam` is de sleutel waarmee garage-, race- en marktcode een wagen opzoekt;
+-- `auto` is de naam die de speler ziet. Ze zijn hier bewust gelijk gehouden.
+--
+-- In de oude sql.sql stond in `naam` de prijs als tekst ('45000') en alleen in
+-- `auto` de echte naam. Code die op naam opzocht en code die auto toonde,
+-- verwezen daardoor naar verschillende dingen. Twee namen voor hetzelfde ding
+-- levert alleen maar verwarring op.
 INSERT IGNORE INTO `cars` (`auto`, `naam`, `url`, `waarde`) VALUES
-  ('Pontiac',                      'Pontiac',      'images/autos/pontiac.jpg',                     10000),
-  ('Caddillac Sedan',              'Caddillac',    'images/autos/caddillac_sedan.jpg',             15000),
-  ('Dodge Kingsway',               'Kingsway',     'images/autos/dodge_kingsway.jpg',              25000),
-  ('Ford Fairlane',                'Fairlane',     'images/autos/ford_fairlane.jpg',               30000),
-  ('Aston Martin DB3S',            'DB3S',         'images/autos/aston_martin_db3s.jpg',           40000),
-  ('Buick Cabrio',                 'Buick',        'images/autos/buick_cabrio.jpg',                45000),
-  ('Chrysler Converible',          'Chrysler',     'images/autos/chrysler_converible.jpg',         60000),
-  ('Pontiac Bonneville',           'Bonneville',   'images/autos/pontiac_bonneville.jpg',          65000),
-  ('Dodge Dart',                   'Dart',         'images/autos/dodge_dart.jpg',                  80000),
-  ('Mercury Cougar',               'Cougar',       'images/autos/mercury_cougar.jpg',              95000),
-  ('Chevy Camaro SS',              'Camaro',       'images/autos/chevy_camaro_ss.jpg',            125000),
-  ('Ford Mustang',                 'Mustang',      'images/autos/ford_mustang.jpg',               150000),
-  ('Alfa Romeo FNM 2000 JK',       'Alfa Romeo',   'images/autos/alfa_romeo _fnm_2000_jk.jpg',    175000),
-  ('Porsche 356B Cabriolet',       'Porsche',      'images/autos/porsche_356b_cabriolet.jpg',     200000),
-  ('Mercedes W124 Avus Streamling','Streamliner',  'images/autos/streamliner.jpg',                400000);
+  ('Pontiac',                      'Pontiac',                       'images/autos/pontiac.jpg',                  10000),
+  ('Caddillac Sedan',              'Caddillac Sedan',               'images/autos/caddillac_sedan.jpg',          15000),
+  ('Dodge Kingsway',               'Dodge Kingsway',                'images/autos/dodge_kingsway.jpg',           25000),
+  ('Ford Fairlane',                'Ford Fairlane',                 'images/autos/ford_fairlane.jpg',            30000),
+  ('Aston Martin DB3S',            'Aston Martin DB3S',             'images/autos/aston_martin_db3s.jpg',        40000),
+  ('Buick Cabrio',                 'Buick Cabrio',                  'images/autos/buick_cabrio.jpg',             45000),
+  ('Chrysler Converible',          'Chrysler Converible',           'images/autos/chrysler_converible.jpg',      60000),
+  ('Pontiac Bonneville',           'Pontiac Bonneville',            'images/autos/pontiac_bonneville.jpg',       65000),
+  ('Dodge Dart',                   'Dodge Dart',                    'images/autos/dodge_dart.jpg',               80000),
+  ('Mercury Cougar',               'Mercury Cougar',                'images/autos/mercury_cougar.jpg',           95000),
+  ('Chevy Camaro SS',              'Chevy Camaro SS',               'images/autos/chevy_camaro_ss.jpg',         125000),
+  ('Ford Mustang',                 'Ford Mustang',                  'images/autos/ford_mustang.jpg',            150000),
+  ('Alfa Romeo FNM 2000 JK',       'Alfa Romeo FNM 2000 JK',        'images/autos/alfa_romeo _fnm_2000_jk.jpg', 175000),
+  ('Porsche 356B Cabriolet',       'Porsche 356B Cabriolet',        'images/autos/porsche_356b_cabriolet.jpg',  200000),
+  ('Mercedes W124 Avus Streamling','Mercedes W124 Avus Streamling', 'images/autos/streamliner.jpg',             400000);
 
 INSERT IGNORE INTO `casino` (`spel`, `owner`, `stad`, `winst`, `inzet`, `status`) VALUES
   ('kogelfabriek', '', '', 0, 1000, 1);
