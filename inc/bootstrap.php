@@ -76,6 +76,7 @@ require BV_INC . '/game.php';
 require BV_INC . '/mail.php';
 require BV_INC . '/cron.php';
 require BV_INC . '/layout.php';
+require BV_INC . '/premium.php';
 
 // --- Beveiligingsheaders ---------------------------------------------------
 if (!headers_sent()) {
@@ -90,17 +91,23 @@ if (!headers_sent()) {
     //
     // img-src staat wél extern toe: spelers zetten zelf een profielplaatje in,
     // en dat mag overal vandaan komen. Een plaatje kan geen code uitvoeren.
-    header(
-        "Content-Security-Policy: "
-        . "default-src 'self'; "
-        . "script-src 'self'; "
-        . "style-src 'self' 'unsafe-inline'; "
-        . "img-src 'self' data: https: http:; "
-        . "form-action 'self'; "
-        . "frame-ancestors 'self'; "
-        . "base-uri 'self'; "
-        . "object-src 'none'"
-    );
+    //
+    // Op advertentie.php geldt een ruimer beleid: daar staat code van een
+    // advertentienetwerk die anders geweigerd wordt. Die pagina zet zijn eigen
+    // header vóórdat bootstrap.php geladen is, en dan slaan we deze over.
+    if (!defined('BV_ADVERTENTIEPAGINA')) {
+        header(
+            "Content-Security-Policy: "
+            . "default-src 'self'; "
+            . "script-src 'self'; "
+            . "style-src 'self' 'unsafe-inline'; "
+            . "img-src 'self' data: https: http:; "
+            . "form-action 'self'; "
+            . "frame-ancestors 'self'; "
+            . "base-uri 'self'; "
+            . "object-src 'none'"
+        );
+    }
 }
 
 session_boot();
@@ -129,4 +136,10 @@ if (($user = current_user()) !== null) {
 // alsof de cronjob niets deed.
 if (!defined('BV_CRON_ENDPOINT')) {
     cron_run();
+}
+
+// Advertentie tonen aan wie geen premium heeft. Staat bewust helemaal
+// onderaan: pas nadat de sessie, de ban-controle en de cron gedaan zijn.
+if (!defined('BV_ADVERTENTIEPAGINA') && !defined('BV_CRON_ENDPOINT')) {
+    advertentie_check($user ?? null);
 }

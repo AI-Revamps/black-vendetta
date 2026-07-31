@@ -7,9 +7,10 @@
  *
  * Wat hier gerepareerd is ten opzichte van de oude versie:
  *
- *  - De donateursbonus werd gecontroleerd met `$data->paid == 1`. Sinds `paid`
- *    het aantal actieve donaties bijhoudt, verloor je met twee of drie
- *    donaties juist je bonus. Nu telt elke donateur mee.
+ *  - De donateursbonus werd gecontroleerd met `$data->paid == 1`, terwijl `paid`
+ *    het aantal actieve donaties bijhield: met twee of drie donaties verloor je
+ *    je bonus juist. Die telling is inmiddels vervangen door één premiumtermijn,
+ *    dus de controle is nu simpelweg is_premium().
  *  - Betalen en de voorraad afboeken gebeurde in twee losse queries zonder
  *    transactie, zodat de stadsvoorraad negatief kon worden bij gelijktijdige
  *    aankopen.
@@ -50,7 +51,7 @@ if (is_post()) {
 
 $stad      = q_row('SELECT * FROM `stad` WHERE `stad` = ?', [$user['stad']]);
 $wacht     = cooldown_left((int) $user['slaap_ts']);
-$donateur  = (int) $user['paid'] >= 1;
+$donateur  = is_premium($user);
 $voorraad  = beschikbaar($stad, $donateur);
 $prijs     = (int) ($stad['prijs'] ?? 0);
 $betaalbaar = $prijs > 0 ? intdiv((int) $user['zak'], $prijs) : 0;
@@ -124,7 +125,7 @@ function kopen(array $user, int $aantal): string
             throw new SpelFout('Er is hier geen kogelfabriek.');
         }
 
-        $donateur = (int) $speler['paid'] >= 1;
+        $donateur = is_premium($speler);
 
         if ($aantal > beschikbaar($stad, $donateur)) {
             throw new SpelFout('Zoveel kogels zijn er niet in voorraad.');

@@ -50,7 +50,7 @@ function bewerkbare_velden(): array
         'guard'     => ['label' => 'Lijfwachten',     'soort' => 'getal', 'min' => 0, 'max' => 5],
         'bo'        => ['label' => 'Uitbraken',       'soort' => 'getal', 'min' => 0, 'max' => 100000],
         'rijbewijs' => ['label' => 'Rijbewijs',       'soort' => 'getal', 'min' => 0, 'max' => 1],
-        'paid'      => ['label' => 'Donaties actief', 'soort' => 'getal', 'min' => 0, 'max' => 3],
+        'diamanten' => ['label' => 'Diamanten',       'soort' => 'getal', 'min' => 0, 'max' => 10000000],
         'testament' => ['label' => 'Testament',       'soort' => 'tekst', 'max' => 16],
         'huwelijk'  => ['label' => 'Getrouwd met',    'soort' => 'tekst', 'max' => 16],
         'famillie'  => ['label' => 'Familie',         'soort' => 'tekst', 'max' => 20],

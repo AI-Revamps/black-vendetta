@@ -194,6 +194,52 @@ andere accounts vanaf hetzelfde adres actief zijn geweest.
 
 ---
 
+## Premium, diamanten en advertenties
+
+Het spel verdient op twee manieren, allebei in te stellen op de beheerpagina
+**Premium** (alleen voor de eigenaar).
+
+**Diamanten** zijn de munt. Spelers vinden ze bij toeval tijdens een geslaagde
+misdaad of autodiefstal — standaard één op de 500 pogingen. Die kans stel je
+zelf in.
+
+**Premium** duurt 14 dagen en is er in één soort. Een speler sluit het af met
+250 diamanten, of met een code die hij buiten het spel om gekocht heeft.
+Verlengen telt de dagen erbij op, dus niemand verliest iets door op tijd te
+zijn.
+
+Wat premium doet: **geen advertenties**, plus de dubbele kogelvoorraad bij de
+kogelfabriek die er al was.
+
+**Advertenties.** Wie geen premium heeft, komt om de zoveel paginabezoeken
+(standaard 25) op een tussenpagina met een knop "ga door". Je kunt daar een
+controlecode bij zetten. De inhoud van die pagina is HTML die jij zelf inplakt,
+dus je kiest je eigen advertentienetwerk.
+
+> **Let op:** dat veld gaat ongefilterd naar de browser van je spelers — anders
+> werkt geen enkel advertentienetwerk. Wie erbij kan, kan dus script laten
+> draaien bij iedereen. Daarom staat de pagina op eigenaarsniveau en niet op
+> adminniveau. Plak alleen code waarvan je weet waar hij vandaan komt.
+>
+> De advertentiepagina heeft een eigen, ruimere Content-Security-Policy. Op de
+> rest van het spel blijft het strikte beleid staan.
+
+Zet je het interval op 0, of laat je het codeveld leeg, dan ziet niemand ooit
+een advertentie.
+
+### Betalingen aannemen
+
+Er zit geen betaalprovider in. De werkwijze is: iemand betaalt je via Ko-fi (of
+wat je ook kiest), jij maakt op de beheerpagina een code aan op zijn naam, en
+hij krijgt die meteen als bericht in het spel. Het koopadres dat je daar invult
+verschijnt als knop op de premiumpagina.
+
+Wil je het later automatiseren, dan is `premium_code_maken()` in
+`adm-premium.php` het aanknopingspunt: roep die aan zodra een betaling
+bevestigd is.
+
+---
+
 ## Moord en ooggetuigen
 
 Een slachtoffer krijgt **niet** te horen wie hem omlegde. Dat staat nergens: niet

@@ -41,6 +41,7 @@ function menu_groups(array $user): array
             'stats.php'                 => 'Statistieken',
             'hitlist.php?watch'         => 'Premielijst',
             'members.php?filter=levend' => 'Spelers',
+            'premium.php'               => 'Premium',
         ],
         'Plaatsen' => [
             'shop.php'            => 'Winkel / Markt',
@@ -114,6 +115,7 @@ function menu_groups(array $user): array
             'adm-shame.php'    => 'Wall of Shame',
             'adm-poll.php'     => 'Poll',
             'adm-getuigen.php' => 'Ooggetuigen',
+            'adm-premium.php'  => 'Premium',
         ];
     }
 
@@ -277,6 +279,7 @@ function status_panel(array $user): void
         'Op zak'     => money((int) $user['zak']),
         'Bank'       => money((int) $user['bank']),
         'Kogels'     => num((int) $user['kogels']),
+        'Diamanten'  => num((int) ($user['diamanten'] ?? 0)),
         'Gezondheid' => (int) $user['health'] . '%',
         'Energie'    => num((float) $user['energie'], 1) . '%',
         'Moordervaring' => num((float) $user['se'], 1) . '%',
@@ -294,6 +297,11 @@ function status_panel(array $user): void
     if ($stat['ongelezen'] > 0) {
         echo '<a class="knop knop-nadruk" href="' . e(url('message.php')) . '">'
            . $stat['ongelezen'] . ' nieuw bericht' . ($stat['ongelezen'] === 1 ? '' : 'en') . "</a>\n";
+    }
+
+    if (is_premium($user)) {
+        echo '<p class="premium">Premium tot ' . e(datetime_nl((string) $user['premium_tot']))
+           . "</p>\n";
     }
 
     echo '<p class="online">' . num($stat['online']) . " spelers online</p>\n";

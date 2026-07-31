@@ -179,9 +179,18 @@ function steel_op_straat(array $user, string $plek): array
             'De eigenaar kwam net aanlopen. Je sloeg hem neer en reed weg.',
         ];
 
+        $tekst = $verhalen[array_rand($verhalen)] . ' Je hebt een ' . $model['auto']
+               . ' gestolen met ' . $schade . '% schade, waarde ' . money($waarde) . '.';
+
+        // In het handschoenenkastje kan iets liggen.
+        $diamanten = diamant_vondst($user, 'een autodiefstal');
+
+        if ($diamanten > 0) {
+            $tekst .= ' In het handschoenenkastje lag een diamant.';
+        }
+
         return [
-            'tekst' => $verhalen[array_rand($verhalen)] . ' Je hebt een ' . $model['auto']
-                     . ' gestolen met ' . $schade . '% schade, waarde ' . money($waarde) . '.',
+            'tekst' => $tekst,
             'type'  => 'ok',
             'auto'  => $model,
         ];

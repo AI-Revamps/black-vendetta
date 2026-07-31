@@ -90,10 +90,15 @@ CREATE TABLE IF NOT EXISTS `users` (
   `huwelijk`   varchar(16) NOT NULL DEFAULT '',
   `lang`       char(2) NOT NULL DEFAULT 'nl',
 
-  `paid`       tinyint unsigned NOT NULL DEFAULT 0,
-  `paidtime1`  int unsigned NOT NULL DEFAULT 0,
-  `paidtime2`  int unsigned NOT NULL DEFAULT 0,
-  `paidtime3`  int unsigned NOT NULL DEFAULT 0,
+  -- Premium: één model, per veertien dagen. Zolang `premium_tot` in de
+  -- toekomst ligt is het account premium. Opnieuw afsluiten telt de dagen
+  -- erbij op, dus verlengen kan zonder eerst te wachten.
+  `premium_tot` datetime NULL DEFAULT NULL,
+  -- Diamanten: de betaalde munt. Te vinden bij misdaden, of te koop.
+  `diamanten`   int unsigned NOT NULL DEFAULT 0,
+  -- Hoeveel diamanten dit account ooit gevonden heeft. Alleen voor de sier
+  -- en om te zien of de vindkans klopt.
+  `diamanten_gevonden` int unsigned NOT NULL DEFAULT 0,
   `ah`         tinyint unsigned NOT NULL DEFAULT 0,
   `dh`         tinyint unsigned NOT NULL DEFAULT 0,
   `gstart`     tinyint unsigned NOT NULL DEFAULT 0,
@@ -590,16 +595,18 @@ CREATE TABLE IF NOT EXISTS `temp` (
   KEY `opruimen` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tijdstip waarop elke periodieke taak voor het laatst gedraaid heeft.
 -- Instellingen die een beheerder in het spel zelf kan omzetten, zonder in
 -- inc/config.php te hoeven duiken. Alles wat hier niet in staat valt terug op
 -- de standaardwaarde in de code.
+-- `waarde` is een TEXT en geen varchar: de advertentiecode van de beheerder
+-- staat er ook in, en die kan een heel scriptblok zijn.
 CREATE TABLE IF NOT EXISTS `instellingen` (
   `naam`   varchar(40) NOT NULL,
-  `waarde` varchar(255) NOT NULL DEFAULT '',
+  `waarde` text NOT NULL,
   PRIMARY KEY (`naam`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Tijdstip waarop elke periodieke taak voor het laatst gedraaid heeft.
 CREATE TABLE IF NOT EXISTS `cron` (
   `name` varchar(16) NOT NULL,
   `time` datetime NOT NULL DEFAULT '1970-01-01 00:00:01',

@@ -535,6 +535,27 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
     text-align: center;
 }
 
+/* --- Premium en advertenties --------------------------------------------- */
+
+.statuspaneel .premium {
+    margin: .5rem 0 0;
+    padding: .35rem .5rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: .8rem;
+    text-align: center;
+}
+
+.advertentie {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px dashed var(--rand);
+    border-radius: 5px;
+    min-height: 6rem;
+    overflow-x: auto;
+}
+
 /* --- Keuzelijst met toelichting (bv. de getuigeninstelling) --------------- */
 
 .keuzelijst {

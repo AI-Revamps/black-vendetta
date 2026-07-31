@@ -206,10 +206,21 @@ function misdaad_plegen(array $user, string $keuze, string $captcha): array
             [cooldown_until('crime'), $user['id']]
         );
 
-        if ($geslaagd) {
-            return misdaad_geslaagd($user, $keuze, $def);
+        if (!$geslaagd) {
+            return misdaad_mislukt($user, $def);
         }
-        return misdaad_mislukt($user, $def);
+
+        $uitslag = misdaad_geslaagd($user, $keuze, $def);
+
+        // Bij een geslaagde misdaad kun je een diamant vinden. De kans staat
+        // in de beheerinstellingen; standaard één op vijfhonderd.
+        $diamanten = diamant_vondst($user, 'een misdaad');
+
+        if ($diamanten > 0) {
+            $uitslag['tekst'] .= ' ' . diamant_melding($diamanten);
+        }
+
+        return $uitslag;
     });
 }
 
