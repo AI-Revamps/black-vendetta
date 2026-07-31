@@ -373,16 +373,26 @@ verdwenen met de `mysql_*`-aanroepen waar ze in stonden.
 
 ---
 
-## Fase 5 — Live zetten 🔄 bezig
+## Fase 5 — Live zetten ✅ afgerond in code
+
+| | Stap | Waar |
+|---|---|---|
+| ✅ | Cron werkt zowel op paginabezoeken als via een echte cronjob | `inc/cron.php`, `cron.php`, instelling `cron_mode` |
+| ✅ | Mail via `mail()` met correcte headers en afzender uit config | `inc/mail.php` |
+| ✅ | Foutmeldingen uit, met logging via `error_log()` | `inc/bootstrap.php`, instelling `debug` |
+| ✅ | Installer vergrendelt zichzelf na gebruik | `install/.geinstalleerd` |
+| ✅ | `INSTALL.md` | zeven stappen plus veelgestelde vragen |
+| ✅ | Volledige speelsessie op een verse database | zie hieronder |
+
+**Wat de eigenaar zelf moet doen bij het live zetten** — het staat allemaal in
+`INSTALL.md`, maar het kan niet vanaf hier:
 
 | | Stap |
 |---|---|
-| ⬜ | Cronjob instellen bij de host, met de request-fallback als vangnet |
-| ✅ | Mail via `mail()` met correcte headers en afzender uit config |
-| ⬜ | `display_errors` uit, logging naar bestand buiten de webroot |
-| ⬜ | Installer verwijderen of vergrendelen na gebruik |
-| ⬜ | `INSTALL.md`: uploaden, database aanmaken, installer draaien, cron instellen |
-| ✅ | Volledige speelsessie op een verse database |
+| ⬜ | Bestanden uploaden en de database aanmaken bij de host |
+| ⬜ | De cronjob in het configuratiescherm van de host zetten (of `cron_mode` op `request` laten) |
+| ⬜ | De map `install/` verwijderen na de installatie |
+| ⬜ | `cron_key` veranderen en controleren dat `debug` op `false` staat |
 
 ### De speelsessie
 
