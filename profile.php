@@ -1,198 +1,342 @@
 <?php
-  include('config.php');
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($data->bf == 0) { $hbf = Geen; }
-elseif ($data->bf == 1) { $hbf = "De Helft"; }
-elseif ($data->bf == 2) { $hbf = "Zelfde Aantal"; }
-elseif ($data->bf == 3) { $hbf = "Dubbele Aantal"; }
-else { $hbf = $data->bf; }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-<script language="javascript">
-function textCounter( field, countfield, maxlimit ) { if ( field.value.length > maxlimit ) { field.value = field.value.substring( 0, maxlimit ); return false; }
-else { countfield.value = maxlimit - field.value.length; } } </script>
-</head>
-<?php /* ------------------------- */
-print "<table width=100%><tr> 
-    <td class=subTitle><b>Profiel:</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-  if(isset($_POST['profile'])) {
-	$info = $_POST['info'];
-    mysql_query("UPDATE `users` SET `info`='{$info}' WHERE `login`='{$data->login}'");
-    mysql_query("UPDATE `users` SET `pic`='{$_POST['pic']}' WHERE `login`='{$data->login}'");
-    echo "Je profiel is veranderd.<br><br><meta http-equiv=Refresh content=0;url=profile.php>";
-  }
-    elseif($_POST['testa']) {
-$tname = strtolower($_POST['testament']);
-$zelf = strtolower($data->login);
-$exis = mysql_query("SELECT * FROM `users` WHERE `login`='{$tname}'");
-$exist = mysql_num_rows($exis);
-if ($tname == $zelf) { echo "Je kan jezelf niet in je testament zetten.<br><br>";}
-elseif ($exist == 0) { echo "Deze gebruiker bestaat niet.<br><br>"; }
-else {
-      mysql_query("UPDATE `users` SET `testament`='{$tname}' WHERE `login`='{$data->login}'");
-      echo "Je testament is veranderd.<meta http-equiv=Refresh content=0;url=profile.php><br><br>"; 
-		}
-    }
-elseif($_POST['friend']) {
-$fname = strtolower($_POST['friends']);
-$zelf = strtolower($data->login);
-$exis = mysql_query("SELECT * FROM `users` WHERE `login`='{$fname}'");
-$exist = mysql_num_rows($exis);
-$bl = mysql_query("SELECT * FROM `friends` WHERE `login`='{$data->login}'");
-$bla = mysql_num_rows($bl);
-$bl = mysql_query("SELECT * FROM `friends` WHERE `login`='{$data->login}' AND `friend`='{$fname}'");
-$alr = mysql_num_rows($bl);
-if ($fname == $zelf) { echo "Je kan jezelf niet in je vriendenlijst zetten.<br><br>";}
-elseif ($exist == 0) { echo "Deze gebruiker bestaat niet.<br><br>"; }
-elseif ($alr != 0) { echo "Deze gebruiker staat al in je vriendenlijst.<br><br>"; }
-elseif ($bla >= 20) { echo "Je kan maximaal 20 gebruikers in je vriendenlijst zetten.<br><br>"; }
-else {
-      mysql_query("INSERT INTO `friends`(`login`,`friend`) values('{$data->login}','{$fname}')");
-      echo "Deze persoon is aan je vriendenlijst toegevoegd.<br><br>"; 
-		}
-    }
-elseif(isset($_GET['delfr'])) {
-mysql_query("DELETE FROM `friends` WHERE `friend`='{$_GET['delfr']}' AND `login`='{$data->login}'"); echo "Deze persoon is uit je vriendenlijst verwijderd.";
-    }
-elseif(isset($_GET['addfr'])) {
-$fname = strtolower($_GET['addfr']);
-$zelf = strtolower($data->login);
-$exis = mysql_query("SELECT * FROM `users` WHERE `login`='{$fname}'");
-$exist = mysql_num_rows($exis);
-$bl = mysql_query("SELECT * FROM `friends` WHERE `login`='{$data->login}'");
-$bla = mysql_num_rows($bl);
-$bl = mysql_query("SELECT * FROM `friends` WHERE `login`='{$data->login}' AND `friend`='{$fname}'");
-$alr = mysql_num_rows($bl);
-if ($fname == $zelf) { echo "Je kan jezelf niet in je vriendenlijst zetten.<br><br>";}
-elseif ($exist == 0) { echo "Deze gebruiker bestaat niet.<br><br>"; }
-elseif ($alr != 0) { echo "Deze gebruiker staat al in je vriendenlijst.<br><br>"; }
-elseif ($bla >= 20) { echo "Je kan maximaal 20 gebruikers in je vriendenlijst zetten.<br><br>"; }
-else {
- mysql_query("INSERT INTO `friends`(`login`,`friend`) values('{$data->login}','{$_GET['addfr']}')"); echo "Deze persoon is aan je vriendenlijst toegevoegd.";
-    }
-}
-elseif($_POST['subkogels']) {
-	if ($_POST['standaard'] == ander && preg_match('/^[0-9]+$/',$_POST['anders'])) { 
-		if ($_POST['anders'] < 100) { echo "Het minimum kogels is 100.<br><br>";}
-		elseif ($_POST['anders'] > $data->kogels) { echo "Zoveel kogels heb je niet.<br><br>"; }
-		else {
-		      mysql_query("UPDATE `users` SET `bf`='{$_POST['anders']}' WHERE `login`='{$data->login}'"); echo "Je backfire is veranderd.<br><br><meta http-equiv=Refresh content=0;url=profile.php>";
-		}
-	}	
-	else { mysql_query("UPDATE `users` SET `bf`='{$_POST['standaard']}' WHERE `login`='{$data->login}'"); echo "Je backfire is veranderd.<br><br><meta http-equiv=Refresh content=0;url=profile.php>"; }
-}
-  else if(isset($_POST['password'])) {
- $pass                = $_POST['oldpw'];
+/**
+ * Eigen instellingen: profieltekst, wachtwoord, testament, backfire, vrienden.
+ *
+ * Wat hier gerepareerd is:
+ *
+ *  - **Het wachtwoord werd als kale MD5 opgeslagen** (`SET pass = MD5(...)`)
+ *    en met `$data->pass != MD5($pass)` gecontroleerd. Dat is in 2026 in
+ *    seconden te kraken en de vergelijking was bovendien niet in constante
+ *    tijd. Nu password_hash()/password_verify() via inc/auth.php.
+ *  - Er stond geen enkele eis aan het nieuwe wachtwoord; één teken mocht.
+ *  - `$_POST['standaard'] == ander` vergelijkt met een ongedefinieerde
+ *    constante: sinds PHP 8 een fatale fout, dus de backfire-instelling deed
+ *    het al niet meer.
+ *  - Profieltekst, plaatje, testament en vriendennaam gingen ongefilterd in
+ *    de query.
+ *  - Vrienden toevoegen en verwijderen liep via GET-links, zonder token.
+ *  - Testament en vriendennaam werden met strtolower() opgeslagen, waardoor
+ *    ze in het profiel in kleine letters verschenen terwijl de speler zelf
+ *    hoofdletters gebruikt.
+ *  - Bij het toevoegen van een vriend werd op de kleine letters gecontroleerd
+ *    maar de originele invoer weggeschreven, zodat dezelfde persoon twee keer
+ *    in de lijst kon belanden.
+ *  - De referrerlink stond hardcoded op vendettagame.be.
+ */
 
-    if($data->pass != MD5($pass)){
-      echo "Fout wachtwoord.<br><br>"; 
-    }
-    elseif($_POST['pass'] != "" && $_POST['pass'] == $_POST['confirm']) {
-      mysql_query("UPDATE `users` SET `pass`=MD5('{$_POST['pass']}') WHERE `login`='{$data->login}'");
-      unset($_SESSION['login']); echo "<script language=\"javascript\">setTimeout('parent.window.location.reload()',0)</script>"; exit;
-    }
-    else
-      echo "De twee wachtwoorden waren niet identiek.<br><br>"; 
-}
-  $data->info				= stripslashes($data->info);
-  print <<<ENDHTML
-	<form method="post"><table align="center">
-	  <tr><td width=100>Referrerlink: <a href=help.php#refer>[?]</a></td>	<td><a href=http://www.vendettagame.be/register.php?refer={$data->id}>http://www.vendettagame.be/register.php?refer={$data->id}</a></td></tr>
-	  <tr><td width=100>E-Mail:</td>	<td>{$data->email}</td></tr>
- 	  <tr><td width=100>Plaatje:</td>	<td><input type=text name=pic value='$data->pic' maxlength=255></td></tr>
-	  <tr><td width=100 valign="top">Info:</td>
-						<td><TEXTAREA NAME=info ROWS=10	COLS=50 onkeypress=textCounter(this,this.form.counter,999);>$data->info</TEXTAREA></td></tr>
-	  <tr><td></td><td align="right"><input type="submit" name="profile" value="Verander"></td></tr>
-	</table></form>
-  </td></tr>
-<tr>
-          <td>&nbsp;</td>
-        </tr>
-  <tr> 
-    <td class="subTitle"><b>Wachtwoord</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	<form method="post"><table width=100% align="center">
-	  <tr><td width=100>Oud:</td>		<td><input type="password" name="oldpw" maxlength=16></td></tr>
-	  <tr><td width=100>Nieuw:</td>		<td><input type="password" name="pass" maxlength=16></td></tr>
-	  <tr><td width=100>Herhaal:</td>	<td><input type="password" name="confirm" maxlength=16></td></tr>
-	  <tr><td></td>				<td align="right"><input type="submit" name="password" value="Verander"></td></tr>
-	</table></form>
-  </td></tr>
-  <tr>
-          <td>&nbsp;</td>
-        </tr><tr> 
-    <td class="subTitle"><b>Testament</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	<form method="post"><table width=100% align="center">
-<b>In jou testament: $data->testament</b><br>
-	  <tr><td width=100>Testament:</td>		<td><input type="text" name="testament" maxlength=16></td></tr>
-	  <tr><td></td>				<td align="right"><input type="submit" name="testa" value="Verander"></td></tr>
-	</table></form>
-  </td></tr>
-  <tr>
-          <td>&nbsp;</td>
-        </tr><tr> 
-    <td class="subTitle"><b>Backfire</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-	<form method="post"><table width=100% align="center">
-<b>Vul hier je backfire in.</b><br>
-	  <tr><td width=100>Huidig Aantal kogels:</td>		<td>{$hbf}</td></tr>
-	  <tr><td width=100><select name=standaard><option value=0>Geen</option><option value=1>De helft</option><option value=2>Zelfde aantal kogels</option><option value=3>Dubbele aantal kogels</option><option value=ander>Anders...</option></td><td><input type=text name=anders maxlength=5></td></tr>
-	  <tr><td></td>				<td align="right"><input type="submit" name="subkogels" value="Verander"></td></tr>
-	</table></form>
-  </td></tr>
-  <tr>
-          <td>&nbsp;</td>
-        </tr><tr> 
-    <td class="subTitle"><b>Vrienden</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<b>Voeg hier mensen toe aan je vriendenlijst. Je mag maar 20 mensen in je vriendenlijst zetten.</b><br>
-	<form method="post"><table width=100% align="center">
-	  <tr><td width=100>Voeg toe:</td>		<td><input type="text" name="friends" maxlength=16></td></tr>
-	  <tr><td></td>				<td align="right"><input type="submit" name="friend" value="Voeg toe"></td></tr>
-	</table></form><br><br>
-ENDHTML;
-print"Volgende spelers staan al in je vriendenlijst.<br><br>";
-$fre = mysql_query("SELECT * FROM `friends` WHERE `login`='{$data->login}'");
-$nr = mysql_num_rows($fre);
-if ($nr == 0) {	  echo"* Geen *";}
-else{
-	  while($fr = mysql_fetch_object($fre)) {
-		print "\n $fr->friend &nbsp;&nbsp;<a href=user.php?x=$fr->friend>Profiel</a>&nbsp;&nbsp;&nbsp;<a href=profile.php?delfr=$fr->friend>Delete</a><br>";
-      }
-	 }
-print"</td></tr>";
+declare(strict_types=1);
 
-/* ------------------------- */ ?>
-</table>
-</body>
-</html>
-</table>
-<br>
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/opmaak.php';   // veilige_url() voor het profielplaatje
+
+const MAX_VRIENDEN  = 20;
+const INFO_MAX      = 1000;
+const WACHTWOORD_MIN = 8;
+
+$user    = require_login();
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = match (post('actie')) {
+            'profiel'     => profiel_opslaan($user),
+            'wachtwoord'  => wachtwoord_wijzigen($user),
+            'testament'   => testament_zetten($user, post('testament')),
+            'backfire'    => backfire_zetten($user),
+            'vriend'      => vriend_toevoegen($user, post('vriend')),
+            'vriend_weg'  => vriend_verwijderen($user, post('vriend')),
+            default       => throw new SpelFout('Onbekende handeling.'),
+        };
+        $type = 'ok';
+        $user = current_user() ?? $user;
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+layout_header('Profiel');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+// --- Profieltekst ----------------------------------------------------------
+
+panel_open('Profiel');
+echo '<p>Je referrerlink: <code>' . e(url('register.php?refer=' . (int) $user['id']))
+   . '</code></p>';
+echo '<p>E-mailadres: ' . e((string) $user['email']) . '</p>';
+
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="profiel">';
+echo '<div class="veldenraster">';
+echo '<label for="pic">Plaatje (URL)</label>';
+echo '<input id="pic" name="pic" maxlength="255" value="' . e((string) $user['pic']) . '">';
+echo '<label for="info">Info</label>';
+echo '<textarea id="info" name="info" rows="10" maxlength="' . INFO_MAX . '">'
+   . e((string) ($user['info'] ?? '')) . '</textarea>';
+echo '<span></span><button type="submit">Opslaan</button>';
+echo '</div></form>';
+echo '<p class="uitleg">Je kunt opmaak gebruiken: [b], [i], [u], [color=rood], [url=…]…[/url] '
+   . 'en de tellers [crime], [oc], [auto], [race], [route], [kill] en [bo].</p>';
+panel_close();
+
+// --- Wachtwoord ------------------------------------------------------------
+
+panel_open('Wachtwoord');
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="wachtwoord">';
+echo '<div class="veldenraster">';
+echo '<label for="oud">Huidig wachtwoord</label>';
+echo '<input id="oud" type="password" name="oud" autocomplete="current-password" required>';
+echo '<label for="nieuw">Nieuw wachtwoord</label>';
+echo '<input id="nieuw" type="password" name="nieuw" minlength="' . WACHTWOORD_MIN
+   . '" autocomplete="new-password" required>';
+echo '<label for="herhaal">Herhaal</label>';
+echo '<input id="herhaal" type="password" name="herhaal" minlength="' . WACHTWOORD_MIN
+   . '" autocomplete="new-password" required>';
+echo '<span></span><button type="submit">Wijzigen</button>';
+echo '</div></form>';
+echo '<p class="uitleg">Minstens ' . WACHTWOORD_MIN . ' tekens.</p>';
+panel_close();
+
+// --- Testament -------------------------------------------------------------
+
+panel_open('Testament');
+echo '<p>Wie erft, krijgt de helft van je banksaldo en je wagens. Nu ingesteld: <strong>'
+   . ((string) $user['testament'] === '' ? 'niemand' : e((string) $user['testament']))
+   . '</strong>.</p>';
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="testament">';
+echo '<div class="veldenraster">';
+echo '<label for="testament">Erfgenaam</label>';
+echo '<input id="testament" name="testament" maxlength="16" value="'
+   . e((string) $user['testament']) . '">';
+echo '<span></span><button type="submit">Opslaan</button>';
+echo '</div></form>';
+echo '<p class="uitleg">Laat het veld leeg om je testament in te trekken.</p>';
+panel_close();
+
+// --- Backfire --------------------------------------------------------------
+
+panel_open('Backfire');
+echo '<p>Hoeveel kogels je terugschiet als iemand op je schiet. Nu ingesteld: <strong>'
+   . e(backfire_omschrijving((int) $user['bf'])) . '</strong>.</p>';
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="backfire">';
+echo '<div class="veldenraster">';
+echo '<label for="keuze">Instelling</label>';
+echo '<select id="keuze" name="keuze">';
+foreach ([0 => 'Geen', 1 => 'De helft', 2 => 'Hetzelfde aantal', 3 => 'Het dubbele',
+          'vast' => 'Een vast aantal…'] as $waarde => $label) {
+    echo '<option value="' . e((string) $waarde) . '"'
+       . ((string) $waarde === (string) $user['bf'] ? ' selected' : '') . '>'
+       . e($label) . '</option>';
+}
+echo '</select>';
+echo '<label for="aantal">Vast aantal</label>';
+echo '<input id="aantal" name="aantal" inputmode="numeric" maxlength="7">';
+echo '<span></span><button type="submit">Opslaan</button>';
+echo '</div></form>';
+panel_close();
+
+// --- Vrienden --------------------------------------------------------------
+
+$vrienden = q_all('SELECT `friend` FROM `friends` WHERE `login` = ? ORDER BY `friend`',
+    [$user['login']]);
+
+panel_open('Vrienden (' . count($vrienden) . ' van ' . MAX_VRIENDEN . ')');
+
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="vriend">';
+echo '<div class="veldenraster">';
+echo '<label for="vriend">Toevoegen</label>';
+echo '<input id="vriend" name="vriend" maxlength="16" required>';
+echo '<span></span><button type="submit">Toevoegen</button>';
+echo '</div></form>';
+
+if ($vrienden === []) {
+    echo '<p>Je vriendenlijst is leeg.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst"><tbody>';
+
+    foreach ($vrienden as $vriend) {
+        $naam = (string) $vriend['friend'];
+
+        echo '<tr>';
+        echo '<td><a href="' . e(url('user.php?x=' . rawurlencode($naam))) . '">'
+           . e($naam) . '</a></td>';
+        echo '<td><form method="post" style="margin:0">' . csrf_field()
+           . '<input type="hidden" name="actie" value="vriend_weg">'
+           . '<input type="hidden" name="vriend" value="' . e($naam) . '">'
+           . '<button type="submit">Verwijderen</button></form></td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function profiel_opslaan(array $user): string
+{
+    $info = mb_substr(post('info'), 0, INFO_MAX);
+    $pic  = trim(post('pic'));
+
+    if ($pic !== '' && veilige_url($pic) === null) {
+        throw new SpelFout('Dat is geen geldige http- of https-adres voor een plaatje.');
+    }
+
+    q('UPDATE `users` SET `info` = ?, `pic` = ? WHERE `id` = ?',
+        [$info, mb_substr($pic, 0, 255), $user['id']]);
+
+    return 'Je profiel is opgeslagen.';
+}
+
+/** @throws SpelFout */
+function wachtwoord_wijzigen(array $user): string
+{
+    $oud     = post('oud');
+    $nieuw   = post('nieuw');
+    $herhaal = post('herhaal');
+
+    if (!password_verify($oud, (string) $user['pass'])) {
+        throw new SpelFout('Je huidige wachtwoord klopt niet.');
+    }
+    if (mb_strlen($nieuw) < WACHTWOORD_MIN) {
+        throw new SpelFout('Het nieuwe wachtwoord moet minstens ' . WACHTWOORD_MIN
+            . ' tekens lang zijn.');
+    }
+    if ($nieuw !== $herhaal) {
+        throw new SpelFout('De twee wachtwoorden zijn niet gelijk.');
+    }
+    if ($nieuw === $oud) {
+        throw new SpelFout('Kies een ander wachtwoord dan je huidige.');
+    }
+
+    q('UPDATE `users` SET `pass` = ? WHERE `id` = ?', [auth_hash($nieuw), $user['id']]);
+
+    // Nieuw sessie-id: wie je sessie eventueel had overgenomen, ligt eruit.
+    session_regenerate_id(true);
+
+    log_action((string) $user['login'], 'account', 'Wachtwoord gewijzigd');
+
+    return 'Je wachtwoord is gewijzigd.';
+}
+
+/** @throws SpelFout */
+function testament_zetten(array $user, string $naam): string
+{
+    $naam = trim($naam);
+
+    if ($naam === '') {
+        q("UPDATE `users` SET `testament` = '' WHERE `id` = ?", [$user['id']]);
+        return 'Je testament is ingetrokken.';
+    }
+    if (strcasecmp($naam, (string) $user['login']) === 0) {
+        throw new SpelFout('Je kunt jezelf niet in je testament zetten.');
+    }
+
+    // De naam zoals hij écht geschreven is, niet zoals hij is ingetypt.
+    $echt = q_val('SELECT `login` FROM `users` WHERE `login` = ?', [$naam]);
+
+    if ($echt === null) {
+        throw new SpelFout('Die speler bestaat niet.');
+    }
+
+    q('UPDATE `users` SET `testament` = ? WHERE `id` = ?', [$echt, $user['id']]);
+
+    return $echt . ' staat nu in je testament.';
+}
+
+/** @throws SpelFout */
+function backfire_zetten(array $user): string
+{
+    $keuze = post('keuze');
+
+    if ($keuze === 'vast') {
+        $aantal = int_input('aantal', -1);
+
+        if ($aantal < 100) {
+            throw new SpelFout('Een vast aantal moet minstens 100 kogels zijn.');
+        }
+        if ($aantal > 1_000_000) {
+            throw new SpelFout('Dat is meer kogels dan er ooit in omloop zijn.');
+        }
+
+        q('UPDATE `users` SET `bf` = ? WHERE `id` = ?', [$aantal, $user['id']]);
+
+        return 'Je schiet voortaan ' . num($aantal) . ' kogels terug.';
+    }
+
+    if (!in_array($keuze, ['0', '1', '2', '3'], true)) {
+        throw new SpelFout('Die instelling bestaat niet.');
+    }
+
+    q('UPDATE `users` SET `bf` = ? WHERE `id` = ?', [(int) $keuze, $user['id']]);
+
+    return 'Je backfire staat op: ' . backfire_omschrijving((int) $keuze) . '.';
+}
+
+/** @throws SpelFout */
+function vriend_toevoegen(array $user, string $naam): string
+{
+    $naam = trim($naam);
+
+    if (strcasecmp($naam, (string) $user['login']) === 0) {
+        throw new SpelFout('Jezelf toevoegen heeft weinig zin.');
+    }
+
+    $echt = q_val('SELECT `login` FROM `users` WHERE `login` = ?', [$naam]);
+
+    if ($echt === null) {
+        throw new SpelFout('Die speler bestaat niet.');
+    }
+
+    $aantal = (int) q_val('SELECT COUNT(*) FROM `friends` WHERE `login` = ?',
+        [$user['login']], 0);
+
+    if ($aantal >= MAX_VRIENDEN) {
+        throw new SpelFout('Je vriendenlijst is vol; er passen er ' . MAX_VRIENDEN . ' in.');
+    }
+
+    $bestaat = (int) q_val('SELECT COUNT(*) FROM `friends` WHERE `login` = ? AND `friend` = ?',
+        [$user['login'], $echt], 0);
+
+    if ($bestaat > 0) {
+        throw new SpelFout($echt . ' staat al in je vriendenlijst.');
+    }
+
+    q('INSERT INTO `friends` (`login`, `friend`) VALUES (?, ?)', [$user['login'], $echt]);
+
+    return $echt . ' staat nu in je vriendenlijst.';
+}
+
+/** @throws SpelFout */
+function vriend_verwijderen(array $user, string $naam): string
+{
+    if (q_count('DELETE FROM `friends` WHERE `login` = ? AND `friend` = ?',
+            [$user['login'], $naam]) === 0) {
+        throw new SpelFout('Die speler staat niet in je vriendenlijst.');
+    }
+
+    return $naam . ' is uit je vriendenlijst verwijderd.';
+}
+
+function backfire_omschrijving(int $bf): string
+{
+    return match ($bf) {
+        0       => 'geen',
+        1       => 'de helft',
+        2       => 'hetzelfde aantal',
+        3       => 'het dubbele',
+        default => num($bf) . ' kogels',
+    };
+}

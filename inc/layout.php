@@ -40,8 +40,7 @@ function menu_groups(array $user): array
             'getmarried.php'            => 'Trouwen',
             'stats.php'                 => 'Statistieken',
             'hitlist.php?watch'         => 'Premielijst',
-            'members.php?status=levend' => 'Members',
-            'klikmissie.php'            => 'Klikmissie',
+            'members.php?filter=levend' => 'Spelers',
         ],
         'Plaatsen' => [
             'shop.php'            => 'Winkel / Markt',
