@@ -93,8 +93,12 @@ CREATE TABLE IF NOT EXISTS `users` (
   `ah`         tinyint unsigned NOT NULL DEFAULT 0,
   `dh`         tinyint unsigned NOT NULL DEFAULT 0,
   `gstart`     tinyint unsigned NOT NULL DEFAULT 0,
-  `rijbewijs`  tinyint unsigned NOT NULL DEFAULT 0,
-  `rijvord`    smallint unsigned NOT NULL DEFAULT 0,
+  -- Rijbewijs. In de oude sql.sql ontbraken deze kolommen volledig, terwijl
+  -- rijbewijs.php ze wel gebruikte; dat bestand kon dus nooit werken.
+  `rijbewijs`     tinyint unsigned NOT NULL DEFAULT 0,
+  `rijvord`       decimal(5,1) NOT NULL DEFAULT 0.0,   -- vordering in procenten
+  `lessen`        int unsigned NOT NULL DEFAULT 0,     -- gekochte rijlessen
+  `rijbewijstijd` datetime NULL DEFAULT NULL,          -- afkoeltijd tussen lessen
 
   -- Tellers voor de statistiekenpagina.
   `nrofcrime`  int unsigned NOT NULL DEFAULT 0,
