@@ -414,6 +414,48 @@ img.smilie {
 
 .getrokken { text-align: center; font-size: 1.1rem; }
 
+/* Roulette */
+.bal {
+    display: inline-grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    color: #fff;
+    vertical-align: middle;
+}
+.bal-rood  { background: #b3241f; }
+.bal-zwart { background: #1a1a1a; border: 1px solid var(--rand); }
+.bal-groen { background: #1f7a34; }
+
+.rouletteveld {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: .3rem;
+    margin-bottom: 1rem;
+}
+.rouletteveld .vak {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .25rem;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+}
+.rouletteveld .vak span {
+    display: grid;
+    place-items: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    font-size: .75rem;
+    color: #fff;
+}
+.rouletteveld .vak-rood span  { background: #b3241f; }
+.rouletteveld .vak-zwart span { background: #000; }
+.rouletteveld .vak-groen span { background: #1f7a34; }
+.rouletteveld .vak input { min-width: 0; flex: 1; padding: .2rem .3rem; font-size: .8rem; }
+
 /* Kraslot: zes vakjes in een raster van drie */
 .kraslot {
     display: grid;
