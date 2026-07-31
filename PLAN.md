@@ -195,10 +195,10 @@ Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
 | ✅ | **Geld** | `bank.php`, `hitlist.php`, `mshop.php`, `donate.php` |
 | ✅ | **Gevechten** | `kill.php`, `oc.php`, `inc/combat.php` |
 | ✅ | **Bezit en handel** | `garage.php`, `transport.php`, `drank.php`, `drugs.php`, `inc/handel.php` |
-| ⬜ | Misdaad | `nickacar.php`, `heist.php`, `carrace.php`, `shop.php` |
-| ⬜ | Casino | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
-| ⬜ | Sociaal | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
-| ⬜ | Beheer | de vijftien `adm-*.php` bestanden plus de herbouw van `admin.php` |
+| ✅ | **Misdaad** | `nickacar.php`, `heist.php`, `carrace.php`, `shop.php` |
+| ✅ | **Casino** | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
+| ✅ | **Sociaal** | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
+| ✅ | **Beheer** | de veertien `adm-*.php` bestanden plus de herbouw van `admin.php` |
 | ⬜ | Overig | `stats.php`, `members.php`, `news.php`, `help.php`, `jail.php`, `respect.php`, … |
 
 Bij elk blok geldt: `SELECT … FOR UPDATE` binnen `db_transaction()` zodra er geld of items van eigenaar wisselen. Dat sluit de verdubbelingstrucs die met MyISAM sowieso niet te voorkomen waren.
@@ -266,6 +266,45 @@ In `inc/game.php` staan nu de bouwstenen die elke module gebruikt:
 | Volledige OC met 4 spelers | balans klopt: €20.000.000 − €465.000 + €2.568.260 = €22.103.260 |
 | −100.000 kogels / −50 bommen | geweigerd met duidelijke melding |
 | Reis, reparatie, verscheping, drugshandel | balans klopt: €100.000 − €1.500 + €10.000 − €28.464 = €80.036 |
+
+### Wat het beheerblok repareerde (Fase 3t en 3u)
+
+De rechtencontrole stond in elk bestand apart, met alle gevolgen van dien. Die
+staat nu op één plek: `beheerpaginas()` in `inc/beheer.php` voedt zowel het menu
+als de toegangscontrole, zodat een pagina niet meer per ongeluk zonder controle
+kan blijven.
+
+| Bestand | Probleem |
+|---|---|
+| `adm-cleandb.php` | **Geen inlogcontrole en geen rechtencontrole.** Wie de URL kende wiste rijen uit vier tabellen. Was bovendien een opruimtaak, geen beheerpagina — verplaatst naar de dagelijkse cron, bestand weg |
+| `admin.php` | Losse gastenboekbeheerder met een eigen wachtwoord uit `config.php`, geen koppeling met de rechten van het spel. Leunde op `$HTTP_POST_VARS`, `session_register()` en `register_globals` — alle drie verwijderd uit PHP |
+| `adm-search.php` | Inloggen als een andere speler via `$_SESSION['login'] = $_GET['login']` — een gewone link, zonder token en zonder weg terug |
+| `adm-search.php` | Het zoekveld werd als kolomnaam gebruikt: `WHERE $need = $gegevens`, beide uit het formulier |
+| `adm-msg.php` | De niveaucontrole zat in de `else`-tak: versturen gebeurde er buitenom. Een moderator kon wel versturen maar het formulier niet zien |
+| `adm-bo.php` | Het controlespoor ging als privébericht naar de hardcoded naam `JanuS`; bestond die speler niet, dan was er geen spoor |
+| `adm-bo.php` | Alle velden ongefilterd uit `$_POST`, inclusief `login` en `level`. Je eigen niveau ophogen kon |
+| `adm-forum.php` | `DELETE … WHERE ` `` topic_id `` ` — spaties binnen de backticks maken er een andere kolomnaam van. Reacties bleven dus altijd staan als een topic verdween |
+| `adm-poll.php` | `$_GET['x'] == u` vergelijkt met een ongedefinieerde constante: sinds PHP 8 een fatale fout, dus de pagina deed het niet meer |
+| `adm-poll.php` | Er konden meerdere polls tegelijk actief zijn; `poll.php` koos er dan willekeurig een |
+| `adm-items.php` | Twee items met hetzelfde soort en nummer waren mogelijk, waarna de winkel er willekeurig een van pakte |
+| `adm-drdrpr.php` | Acht bijna identieke blokken met de stadsnaam hardcoded; een stad die niet in `stad` stond werd stil overgeslagen |
+| `adm-addnews.php` | Rechtencontrole was `if ($data->level == 1) exit;` — elk niveau daarboven kwam erdoor |
+| overal | Verwijderen, bannen en waarschuwen liepen via GET-links, zonder token |
+
+### Getest met drie accounts (speler, moderator, eigenaar)
+
+| Test | Resultaat |
+|---|---|
+| Toegangsmatrix over veertien pagina's | 403 waar het hoort, toegang waar het hoort |
+| POST zonder token | 419 op elke pagina |
+| Moderator POST naar `adm-ban.php` | 403 |
+| Staflid bannen / opsluiten | geweigerd; gewone speler lukt |
+| Geld toekennen via `adm-bo.php` | komt correct in de database én in het logboek, met oude en nieuwe waarde |
+| Eigen account bewerken, niveau ≥ eigen niveau, gezondheid 500, stad "Atlantis" | alle vier geweigerd met een leesbare melding |
+| Topic met drie reacties verwijderen | reacties achteraf 0 |
+| Poll activeren terwijl er al een open stond | aantal open polls blijft 1 |
+| Item met verkoopprijs boven koopprijs | geweigerd |
+| Rooktest over alle 91 pagina's | alleen de vier nog niet gemigreerde bestanden geven fouten |
 
 ---
 
