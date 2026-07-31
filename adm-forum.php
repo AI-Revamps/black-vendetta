@@ -1,243 +1,236 @@
-<?PHP
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
-?>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Vendetta Forum</title>
-<link href="style.css" rel="stylesheet" type="text/css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
+<?php
+/**
+ * Forum opruimen: topics en reacties verwijderen.
+ *
+ * Wat hier gerepareerd is:
+ *
+ *  - De rechtencontrole stond er twee keer en tegenstrijdig: bovenaan `level <
+ *    200` afbreken, verderop `level < 255` afbreken. Het eerste blok draaide
+ *    voor de HTML, het tweede erna, dus een moderator kreeg een halve pagina.
+ *  - Verwijderen ging via ?del= en ?delr= in de URL, zonder token. Een
+ *    beheerder die een geprepareerde link opende wiste een topic.
+ *  - Bij het verwijderen van een topic bleven de reacties staan: de query
+ *    luidde WHERE ` topic_id ` = ..., met spaties binnen de backticks. Dat is
+ *    een andere kolomnaam, dus die query mislukte altijd stil. Het forum liep
+ *    vol met reacties op topics die niet meer bestonden.
+ *  - De hele pagina was verder een kopie van forum.php met leeslogica erin;
+ *    dat hoort daar thuis, hier alleen het opruimen.
+ */
 
-<body>
-<?php
-error_reporting(E_ALL);
-?>
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Forum</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?php
-if($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}
-if(isset($_GET['del']))
-{
-$topics = mysql_query("SELECT id,user FROM forum_topics WHERE `id`='{$_GET['del']}'") or die(mysql_error());
-$object = mysql_fetch_object($topics);
-   mysql_query("DELETE FROM `forum_topics` WHERE `id`='{$_GET['del']}'"); 
-   mysql_query("DELETE FROM `forum_reacties` WHERE ` topic_id `='{$_GET['del']}'"); 
-   echo "<br><br>Topic verwijderd!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/beheer.php';
+require BV_INC . '/opmaak.php';
+
+const PER_PAGINA = 25;
+
+$user    = require_level(beheerpaginas()['adm-forum.php'][1]);
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = match (post('actie')) {
+            'topic'   => topic_verwijderen($user, int_input('id')),
+            'reactie' => reactie_verwijderen($user, int_input('id')),
+            default   => throw new SpelFout('Onbekende handeling.'),
+        };
+        $type = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-elseif(isset($_GET['delr']))
-{
-$reacties = mysql_query("SELECT id,user FROM forum_reacties WHERE `id`='{$_GET['delr']}'") or die(mysql_error());
-$object = mysql_fetch_object($reacties);
-   mysql_query("DELETE FROM `forum_reacties` WHERE `id`='{$_GET['delr']}'"); 
-   echo "<br><br>Reactie verwijderd!<br>
-                > <a href=javascript:history.go(-1)>Ga terug</a><br><br>";
+
+layout_header('Beheer');
+beheer_menu($user, 'adm-forum.php');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-elseif(isset($_GET['topic']))
+
+$categorie = get('type');
+$topicId   = int_input('topic');
+
+if ($topicId > 0) {
+    toon_topic($topicId);
+} else {
+    toon_topics(isset(forum_categorieen()[$categorie]) ? $categorie : '', int_input('p', 0, 0));
+}
+
+beheer_logregels('forum');
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function topic_verwijderen(array $user, int $id): string
 {
-// Voor de topic
-$topic = mysql_query("SELECT id,type,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE id = ".addslashes($_GET['topic'])) or die(mysql_error());
-$aantal_topics = mysql_num_rows($topic);
-    if($aantal_topics == 1)
-    {
-        while($object = mysql_fetch_assoc($topic))
-        {
-        $id = $object['id'];
-        $subject = stripslashes($object['subject']);
-		$user = $object['user'];
-?>
-<table width="50%" align="center" >
-  <tr> 
-    <td colspan="2"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <a href=<?php echo $_SERVER['PHP_SELF']."?type=".$object['type']; ?>><?php echo"{$object['type']}"; ?></a> - <?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
-  </tr>  
-  <tr> 
-    <td width="35%">&nbsp;</td>
-    <td width="65%">&nbsp;</td>
-  </tr>
-  <tr> 
-    <td>Door: <?php echo "<a href=user.php?x=$user>$user</a>";?></td>
-    <td width="65%" rowspan="3"><i><?php echo nl2br(stripslashes(htmlspecialchars($object['message']))); ?></i></td>
-  </tr>
-  <tr> 
-    <td>Tijd: <?php echo $object['date']; ?></td>
-  </tr>
-  <tr> 
-    <td>Bericht:</td>
-  </tr>
-</table>
-<?php
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$id]);
+
+    if ($topic === null) {
+        throw new SpelFout('Dat topic bestaat niet.');
+    }
+
+    $reacties = 0;
+
+    db_transaction(static function () use ($id, &$reacties): void {
+        // Deze regel stond er ook, maar met spaties in de kolomnaam, waardoor
+        // hij nooit iets deed en de reacties bleven rondzwerven.
+        $reacties = q_count('DELETE FROM `forum_reacties` WHERE `topic_id` = ?', [$id]);
+        q('DELETE FROM `forum_topics` WHERE `id` = ?', [$id]);
+    });
+
+    log_action((string) $user['login'], 'forum',
+        'Topic ' . $id . ' verwijderd: ' . $topic['subject'], 0, (string) $topic['user']);
+
+    return 'Het topic is verwijderd, samen met ' . num($reacties)
+         . ($reacties === 1 ? ' reactie.' : ' reacties.');
+}
+
+/** @throws SpelFout */
+function reactie_verwijderen(array $user, int $id): string
+{
+    $reactie = q_row('SELECT * FROM `forum_reacties` WHERE `id` = ?', [$id]);
+
+    if ($reactie === null) {
+        throw new SpelFout('Die reactie bestaat niet.');
+    }
+
+    q('DELETE FROM `forum_reacties` WHERE `id` = ?', [$id]);
+
+    log_action((string) $user['login'], 'forum',
+        'Reactie ' . $id . ' in topic ' . $reactie['topic_id'] . ' verwijderd',
+        0, (string) $reactie['user']);
+
+    return 'De reactie is verwijderd.';
+}
+
+// ==========================================================================
+
+function toon_topics(string $categorie, int $pagina): void
+{
+    $waar   = $categorie !== '' ? 'WHERE t.`type` = ?' : '';
+    $params = $categorie !== '' ? [$categorie] : [];
+
+    $totaal = (int) q_val('SELECT COUNT(*) FROM `forum_topics` t ' . $waar, $params, 0);
+    $start  = max(0, $pagina) * PER_PAGINA;
+
+    $rijen = q_all(
+        'SELECT t.*, (SELECT COUNT(*) FROM `forum_reacties` r WHERE r.`topic_id` = t.`id`) AS `reacties`
+           FROM `forum_topics` t ' . $waar . '
+          ORDER BY t.`date` DESC LIMIT ' . PER_PAGINA . ' OFFSET ' . $start,
+        $params
+    );
+
+    panel_open('Categorie kiezen');
+    echo '<p>';
+    echo '<a href="' . e(url('adm-forum.php')) . '">Alles</a>';
+    foreach (forum_categorieen() as $sleutel => $naam) {
+        echo ' &middot; <a href="' . e(url('adm-forum.php?type=' . rawurlencode($sleutel))) . '">'
+           . e($naam) . '</a>';
+    }
+    echo '</p>';
+    panel_close();
+
+    panel_open('Topics (' . num($totaal) . ')');
+
+    if ($rijen === []) {
+        echo '<p>Geen topics gevonden.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th class="getal">Nr</th><th>Onderwerp</th><th>Categorie</th>'
+           . '<th>Door</th><th>Wanneer</th><th class="getal">Reacties</th><th></th></tr></thead><tbody>';
+
+        foreach ($rijen as $rij) {
+            echo '<tr>';
+            echo '<td class="getal">' . (int) $rij['id'] . '</td>';
+            echo '<td><a href="' . e(url('adm-forum.php?topic=' . (int) $rij['id'])) . '">'
+               . e((string) $rij['subject']) . '</a></td>';
+            echo '<td>' . e(forum_categorieen()[$rij['type']] ?? (string) $rij['type']) . '</td>';
+            echo '<td>' . e((string) $rij['user']) . '</td>';
+            echo '<td>' . e(datetime_nl($rij['date'])) . '</td>';
+            echo '<td class="getal">' . num((int) $rij['reacties']) . '</td>';
+            echo '<td>' . verwijderknop('topic', (int) $rij['id']) . '</td>';
+            echo '</tr>';
         }
-    // Voor de reacties
-    $message = mysql_query("SELECT id,user,subject,message,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_reacties WHERE topic_id = ".addslashes($_GET['topic'])) or die(mysql_error());
-    $aantal_messages = mysql_num_rows($message);
-        if($aantal_messages != 0)
-        {
-            while($object = mysql_fetch_assoc($message))
-            {
-			$user = $object['user'];
-?>
-<br>
-<table width="50%" align="center">
-    <tr> 
-    <td colspan="2"><b><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></b></td>
-  </tr>  
-  <tr> 
-    <td width="35%">&nbsp;</td>
-    <td width="65%">&nbsp;</td>
-  </tr>
-  <tr> 
-    <td>Door: <?php echo "<a href=user.php?x=$user>$user</a>";?> &nbsp;&nbsp;&nbsp;<?php if ($data->login == $object['user']){echo"<a href=".$_SERVER['PHP_SELF']."?delr=".$object['id'].">[Del]</a>";}?></td>
-    <td width="65%" rowspan="3"><i><?php echo nl2br(stripslashes(htmlspecialchars($object['message']))); ?></i></td>
-  </tr>
-  <tr> 
-    <td>Tijd: <?php echo $object['date']; ?></td>
-  </tr>
-  <tr> 
-    <td>Bericht:</td>
-  </tr>
-</table>
-<?php
-            }
-        }
-        else
-        {
-?>
-<br><br>Er zijn geen reacties!<br><br>
-<?php
-        }                
+
+        echo '</tbody></table></div>';
     }
-    else
-    {
-    echo "<script language=\"JavaScript\">top.location.href='".$_SERVER['PHP_SELF']."';</script>";
-    }
+
+    paginabalk($categorie, $pagina, $totaal);
+    panel_close();
 }
-elseif (isset($_GET['type']))
+
+function toon_topic(int $id): void
 {
-$topics = mysql_query("SELECT id,subject,user,DATE_FORMAT(date,'%d-%m-%Y om %H:%i') AS date FROM forum_topics WHERE `type`='{$_GET['type']}' ORDER by id DESC") or die(mysql_error());
-$aantal = mysql_num_rows($topics);
-    if($aantal != 0)
-    {
-?>
-<table width="100%">
-  <tr>
-        <td colspan="2"><b><a href=<?php echo $_SERVER['PHP_SELF'] ?>>Categorie&euml;n</a> - <?php echo"{$_GET['type']}"; ?></b></td>
-  </tr>
-  <tr>
-    <td width="50%" class="blok_tekst" align="right">Onderwerp&nbsp;&nbsp;&nbsp;</td>
-    <td align="left">Datum</td>
-  </tr>
-<?php
-        while($object = mysql_fetch_assoc($topics))
-        {
-?>
-  <tr>
-    <td align="right"><a href="<?php echo $_SERVER['PHP_SELF']."?topic=".$object['id']; ?>"><?php echo stripslashes(htmlspecialchars($object['subject'])); ?></a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php echo $object['date']; ?> &nbsp;&nbsp;&nbsp;<?php if ($data->login == $object['user']){echo"<a href=".$_SERVER['PHP_SELF']."?del=".$object['id'].">Delete</a>";}?></td>
-  </tr>
-<?php
+    $topic = q_row('SELECT * FROM `forum_topics` WHERE `id` = ?', [$id]);
+
+    if ($topic === null) {
+        panel_open('Topic');
+        notice('Dat topic bestaat niet.', 'fout');
+        panel_close();
+        return;
+    }
+
+    panel_open('Topic ' . $id . ': ' . $topic['subject']);
+    echo '<p><a href="' . e(url('adm-forum.php?type=' . rawurlencode((string) $topic['type'])))
+       . '">&larr; Terug naar de lijst</a></p>';
+    echo '<p><strong>' . e((string) $topic['user']) . '</strong> &middot; '
+       . e(datetime_nl($topic['date'])) . '</p>';
+    echo '<div class="forumbericht">' . bericht_html((string) $topic['message']) . '</div>';
+    echo verwijderknop('topic', $id, 'Topic en alle reacties verwijderen');
+    panel_close();
+
+    $reacties = q_all(
+        'SELECT * FROM `forum_reacties` WHERE `topic_id` = ? ORDER BY `date`',
+        [$id]
+    );
+
+    panel_open('Reacties (' . count($reacties) . ')');
+
+    if ($reacties === []) {
+        echo '<p>Er zijn geen reacties.</p>';
+    } else {
+        foreach ($reacties as $reactie) {
+            echo '<div class="forumreactie">';
+            echo '<p><strong>' . e((string) $reactie['user']) . '</strong> &middot; '
+               . e(datetime_nl($reactie['date'])) . ' '
+               . verwijderknop('reactie', (int) $reactie['id']) . '</p>';
+            echo '<div class="forumbericht">' . bericht_html((string) $reactie['message']) . '</div>';
+            echo '</div>';
         }
-?>
-<tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
-</table>
-<?php
     }
-    else
-    {
-?>
-<br><br>Er zijn nog geen topics!<br><br>
-<?php
-    }
+
+    panel_close();
 }
-else
+
+function verwijderknop(string $soort, int $id, string $label = 'Verwijderen'): string
 {
-?>
-<table width="100%">
-  <tr>
-    <td colspan="2"><b>Categorie&euml;n</b></td>
-  </tr>
-  <tr>
-    <td width="50%" align="right">Categorie&nbsp;&nbsp;&nbsp;</td>
-    <td align="left">Aantal</td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=algemeen>Algemeen</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='algemeen'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=tip>Tip</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='tip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=route66>Route66</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='route66'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=oc>Georganiseerde Misdaad</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='oc'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=race>Race</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='race'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=familie>Familie</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='familie'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=rip>RIP</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='rip'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-  <tr>
-    <td align="right"><a href=?type=varia>Varia</a>&nbsp;&nbsp;&nbsp;</td>
-    <td align="left"><?php 
-	$topics = mysql_query("SELECT * FROM forum_topics WHERE `type`='varia'") or die(mysql_error());
-    $aantal = mysql_num_rows($topics); 
-	echo"$aantal";
-	?></td>
-  </tr>
-<tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
-</table>
-<?php
+    return '<form method="post" style="display:inline;margin:0">' . csrf_field()
+         . '<input type="hidden" name="actie" value="' . e($soort) . '">'
+         . '<input type="hidden" name="id" value="' . $id . '">'
+         . '<button type="submit">' . e($label) . '</button></form>';
 }
-?>
-</body>
-</html> 
+
+function paginabalk(string $categorie, int $pagina, int $totaal): void
+{
+    $paginas = (int) ceil($totaal / PER_PAGINA);
+
+    if ($paginas < 2) {
+        return;
+    }
+
+    $basis = 'adm-forum.php?' . ($categorie !== '' ? 'type=' . rawurlencode($categorie) . '&' : '');
+
+    echo '<p class="paginering">';
+    for ($i = 0; $i < $paginas; $i++) {
+        echo $i === $pagina
+            ? '<strong>' . ($i + 1) . '</strong> '
+            : '<a href="' . e(url($basis . 'p=' . $i)) . '">' . ($i + 1) . '</a> ';
+    }
+    echo '</p>';
+}

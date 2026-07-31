@@ -32,26 +32,15 @@ const REACTIES_PER_PAGINA = 10;
 const ONDERWERP_MAX       = 80;
 const FORUM_BERICHT_MAX   = 10000;
 
-/** De vaste categorieën. Alleen deze sleutels komen in de database. */
+/** De categorieën en de leesrechten staan in inc/game.php: het beheer gebruikt ze ook. */
 function categorieen(): array
 {
-    return [
-        'algemeen' => 'Algemeen',
-        'vragen'   => 'Vragen',
-        'tip'      => 'Tips',
-        'bug'      => 'Bugs',
-        'oc'       => 'Organised Crime',
-        'race'     => 'Races',
-        'familie'  => 'Families',
-        'varia'    => 'Varia',
-        'rip'      => 'In memoriam',
-    ];
+    return forum_categorieen();
 }
 
-/** In deze categorie plaatst alleen het spel zelf berichten. */
 function is_alleen_lezen(string $type): bool
 {
-    return $type === 'rip';
+    return forum_alleen_lezen($type);
 }
 
 $user = require_login();

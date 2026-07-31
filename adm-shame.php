@@ -1,68 +1,125 @@
-<?PHP
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table align=center width=100%>
-  <tr> 
-    <td class="subTitle"><b>Wall Of Shame</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?
-if ($data->level < 1000) {echo"Je hebt niet genoeg rechten";exit;}
-if (isset($_GET['del'])) { mysql_query("DELETE FROM `shame` WHERE `id`='{$_GET['del']}'")or die (mysql_error()); echo "Verwijderd"; }
+<?php
+/**
+ * Wall of Shame: spelers die betrapt zijn op vals spel.
+ *
+ * Wat hier gerepareerd is: verwijderen ging via een GET-link, de toelichting
+ * ging ongefilterd in de query, en er werd niet gecontroleerd of de genoemde
+ * speler bestond.
+ */
 
-$dbres	= mysql_query("SELECT `login` FROM `users` WHERE `status`='levend' ORDER BY `login`")or die (mysql_error());
-      echo "<form method=\"post\">Speler: <select name=\"p\">";
-     while($person = mysql_fetch_object($dbres)) {
-        
-        print "	<option value=\"{$person->login}\">{$person->login}</option>\n";}
-        print "  </select> <br><input type=text name=com value=Reden><br><input type=\"submit\" name=\"post\" value=\"Spijker op schandpaal\"></form><br><br>";
-		
-		
-if ($_POST['post']) {
-$vict = mysql_query("SELECT * FROM `shame` WHERE `cheater`='{$_POST['p']}'")or die (mysql_error());
-	$isin = mysql_num_rows($vict);
-if ($isin != 0) { echo "Deze persoon hangt al aan de schandpaal."; }
-elseif ($_POST['com']) { mysql_query("INSERT INTO `shame`(`com`,`time`,`cheater`,`person`) values('{$_POST['com']}',NOW(),'{$_POST['p']}','{$data->login}')")or die (mysql_error()); echo "De persoon is op de schandpaal gespijkerd!"; }
-else { echo "Je moet een bericht opgeven"; }
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/beheer.php';
+
+$user    = require_level(beheerpaginas()['adm-shame.php'][1]);
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = match (post('actie')) {
+            'toevoegen'   => toevoegen($user, post('naam'), post('com')),
+            'verwijderen' => verwijderen(int_input('id')),
+            default       => throw new SpelFout('Onbekende handeling.'),
+        };
+        $type = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-print <<<ENDHTML
-<table width=100%><tr>	  <td align=center><b>Persoon</b></td> 
-      <td align=center><b>Tijd</b></td> 
-            <td align=center><b>Reden</b></td>
-			<td align=center><b>Door</b></td>
-			<td align=center><b>Delete</b></td> </tr>
 
-ENDHTML;
-$query = "SELECT * FROM `shame` ORDER BY `id` ASC"; 
-$info = mysql_query($query) or die(mysql_error()); 
-$count = 0; 
-while ($gegeven = mysql_fetch_object($info)) { 
-$time = $gegeven->time; 
-$cheater = $gegeven->cheater;
-$com = $gegeven->com;
-$door = $gegeven->person;
-$id = $gegeven->id;
-$count++; 
-print <<<ENDHTML
+layout_header('Beheer');
+beheer_menu($user, 'adm-shame.php');
 
-<tr>      	<td align=center>$cheater</td> 
-      <td align=center>$time</td> 
-            <td align=center>$com</td>
-			<td align=center>$door</td>
-          	<td align=center><a href=adm-shame.php?del={$id}>[x]</a></td></tr>
-ENDHTML;
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-?>
+
+panel_open('Iemand op de schandpaal zetten');
+echo '<p>De vermelding is voor alle spelers zichtbaar op de schandpaal.</p>';
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="toevoegen">';
+echo '<div class="veldenraster">';
+echo '<label for="naam">Speler</label>';
+echo '<input id="naam" name="naam" maxlength="16" required>';
+echo '<label for="com">Toelichting</label>';
+echo '<input id="com" name="com" maxlength="255" required>';
+echo '<span></span><button type="submit">Toevoegen</button>';
+echo '</div></form>';
+panel_close();
+
+$lijst = q_all('SELECT * FROM `shame` ORDER BY `time` DESC LIMIT 100');
+
+panel_open('Op de schandpaal (' . count($lijst) . ')');
+
+if ($lijst === []) {
+    echo '<p>De schandpaal is leeg.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Wanneer</th><th>Speler</th><th>Toelichting</th><th>Door</th><th></th></tr></thead><tbody>';
+
+    foreach ($lijst as $rij) {
+        echo '<tr>';
+        echo '<td>' . e(datetime_nl($rij['time'])) . '</td>';
+        echo '<td>' . e((string) $rij['cheater']) . '</td>';
+        echo '<td>' . e((string) $rij['com']) . '</td>';
+        echo '<td>' . e((string) $rij['person']) . '</td>';
+        echo '<td><form method="post" style="margin:0">' . csrf_field()
+           . '<input type="hidden" name="actie" value="verwijderen">'
+           . '<input type="hidden" name="id" value="' . (int) $rij['id'] . '">'
+           . '<button type="submit">Verwijderen</button></form></td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function toevoegen(array $user, string $naam, string $com): string
+{
+    $com = trim($com);
+
+    if ($com === '') {
+        throw new SpelFout('Vul een toelichting in.');
+    }
+
+    $speler = beheer_speler($naam);
+
+    if ((int) $speler['level'] >= (int) $user['level']) {
+        throw new SpelFout('Je kunt geen speler met gelijke of hogere rechten op de schandpaal zetten.');
+    }
+
+    $bestaat = (int) q_val('SELECT COUNT(*) FROM `shame` WHERE `cheater` = ?', [$speler['login']], 0);
+
+    if ($bestaat > 0) {
+        throw new SpelFout($speler['login'] . ' staat al op de schandpaal.');
+    }
+
+    q('INSERT INTO `shame` (`time`, `cheater`, `person`, `com`) VALUES (NOW(), ?, ?, ?)',
+        [$speler['login'], $user['login'], mb_substr($com, 0, 255)]);
+
+    notify((string) $speler['login'], 'Schandpaal',
+        'Je bent op de schandpaal gezet. Reden: ' . $com);
+
+    log_action((string) $user['login'], 'schandpaal', $com, 0, (string) $speler['login']);
+
+    return $speler['login'] . ' staat nu op de schandpaal.';
+}
+
+/** @throws SpelFout */
+function verwijderen(int $id): string
+{
+    if (q_count('DELETE FROM `shame` WHERE `id` = ?', [$id]) === 0) {
+        throw new SpelFout('Die vermelding bestaat niet.');
+    }
+
+    return 'De vermelding is verwijderd.';
+}

@@ -162,6 +162,15 @@ function datetime_nl(?string $sqlDatetime): string
     return $ts === false ? '-' : date('d-m-Y H:i', $ts);
 }
 
+/**
+ * Idem, maar voor de kolommen die een unix-tijdstip als getal bewaren
+ * (`news`.`time`, `poll`.`datum`, `donate`.`time`).
+ */
+function timestamp_nl(int $ts, bool $metTijd = true): string
+{
+    return $ts <= 0 ? '-' : date($metTijd ? 'd-m-Y H:i' : 'd-m-Y', $ts);
+}
+
 // --- Meldingen tussen requests -------------------------------------------
 
 /**

@@ -300,3 +300,30 @@ function random_city(): string
     $list = cities();
     return $list[array_rand($list)];
 }
+
+// --- Forum -----------------------------------------------------------------
+
+/**
+ * De vaste forumcategorieën. Alleen deze sleutels komen in de database.
+ * Staat hier omdat zowel forum.php als adm-forum.php ze nodig heeft.
+ */
+function forum_categorieen(): array
+{
+    return [
+        'algemeen' => 'Algemeen',
+        'vragen'   => 'Vragen',
+        'tip'      => 'Tips',
+        'bug'      => 'Bugs',
+        'oc'       => 'Organised Crime',
+        'race'     => 'Races',
+        'familie'  => 'Families',
+        'varia'    => 'Varia',
+        'rip'      => 'In memoriam',
+    ];
+}
+
+/** In deze categorie plaatst alleen het spel zelf berichten. */
+function forum_alleen_lezen(string $type): bool
+{
+    return $type === 'rip';
+}
