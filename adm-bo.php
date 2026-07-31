@@ -36,6 +36,7 @@ function bewerkbare_velden(): array
         'geslacht'  => ['label' => 'Geslacht',        'soort' => 'geslacht'],
         'activated' => ['label' => 'Geactiveerd',     'soort' => 'getal', 'min' => 0, 'max' => 1],
         'status'    => ['label' => 'Status',          'soort' => 'status'],
+        'gestorven' => ['label' => 'Keer omgelegd',   'soort' => 'getal', 'min' => 0, 'max' => 100000],
         'health'    => ['label' => 'Gezondheid',      'soort' => 'getal', 'min' => 0, 'max' => 100],
         'xp'        => ['label' => 'Ervaring',        'soort' => 'getal', 'min' => 0, 'max' => 100000000],
         'se'        => ['label' => 'Moordervaring',   'soort' => 'komma', 'min' => 0, 'max' => 100],

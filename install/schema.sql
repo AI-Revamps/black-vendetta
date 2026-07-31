@@ -113,13 +113,26 @@ CREATE TABLE IF NOT EXISTS `users` (
   `nrofkill`   int unsigned NOT NULL DEFAULT 0,
   `play`       int unsigned NOT NULL DEFAULT 0,
 
+  -- Hoe vaak dit account is omgelegd. Blijft staan bij een herstart: het is
+  -- de enige teller die een doorstart overleeft, en hij staat in het profiel.
+  `gestorven`  int unsigned NOT NULL DEFAULT 0,
+  -- Wanneer voor het laatst opnieuw begonnen is. NULL = nooit doodgeweest.
+  `herstart`   datetime NULL DEFAULT NULL,
+
   PRIMARY KEY (`id`),
   UNIQUE KEY `login` (`login`),
+  -- Eén account per e-mailadres. Stond eerder alleen als gewone index, maar
+  -- register.php controleert er nu hard op, dus de database bewaakt het mee.
+  -- Prefix van 191 tekens: dat past ook op oudere MariaDB-versies met een
+  -- indexlimiet van 767 bytes.
+  UNIQUE KEY `email_uniek` (`email`(191)),
   KEY `ranglijst` (`status`, `activated`, `xp`),
   KEY `stad_status` (`stad`, `status`),
   KEY `famillie` (`famillie`),
   KEY `online` (`online`),
-  KEY `email` (`email`)
+  -- Eén account per IP-adres; zie register.php. Geen UNIQUE, want een
+  -- beheerder kan per adres uitzondering geven via de tabel `multiple`.
+  KEY `ip` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------- berichten

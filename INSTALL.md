@@ -168,6 +168,32 @@ ontvangen.
 
 ---
 
+## Accounts en doodgaan
+
+Twee spelregels die met elkaar samenhangen, en die je moet kennen voordat je
+spelers uitnodigt.
+
+**Doodgaan is geen einde.** Wie omgelegd wordt, komt op een schermpje waar
+staat wie het deed. Met één knop begint dat *zelfde* account opnieuw: rang,
+geld, wapens, auto's, familie en huwelijk zijn weg, en je start met het
+startkapitaal in een willekeurige stad, met beginnersbescherming. Je houdt je
+gebruikersnaam, je profiel en lopende donaties — daar is voor betaald.
+
+Hoe vaak iemand is omgelegd staat op zijn profiel. Dat is de enige teller die
+een doorstart overleeft.
+
+**Daarom: één account per persoon.** Met `allow_multi_accounts` op `false`
+mag er per IP-adres en per e-mailadres precies één account bestaan, óók als dat
+account op dit moment dood is. Er is immers geen reden meer om een tweede te
+maken.
+
+Voor huisgenoten op één aansluiting geef je per IP-adres uitzondering via de
+beheerpagina **Multi-accounts**. Houd er rekening mee dat een IP-adres bij veel
+providers verandert; het IP-logboek onder **Zoeken** laat per speler zien welke
+andere accounts vanaf hetzelfde adres actief zijn geweest.
+
+---
+
 ## Instellingen achteraf aanpassen
 
 Alles zit in `inc/config.php`. De belangrijkste:

@@ -73,20 +73,32 @@ function aanmelden(array $in): string
     if (q_val('SELECT COUNT(*) FROM `users` WHERE `login` = ?', [$login], 0) > 0) {
         throw new RuntimeException('Die gebruikersnaam is al in gebruik.');
     }
+    // Ook hier tellen omgelegde accounts mee: één account per e-mailadres.
     if (q_val('SELECT COUNT(*) FROM `users` WHERE `email` = ?', [$email], 0) > 0) {
-        throw new RuntimeException('Er is al een account met dit e-mailadres.');
+        throw new RuntimeException(
+            'Er bestaat al een account met dit e-mailadres. Ben je je wachtwoord kwijt, '
+            . 'gebruik dan "wachtwoord vergeten". Ben je omgelegd, log dan in: je begint '
+            . 'met datzelfde account opnieuw.'
+        );
     }
 
     // --- Meerdere accounts vanaf hetzelfde IP ---
+    //
+    // Alle accounts tellen mee, ook omgelegde. Eerder telden alleen levende
+    // accounts, omdat je na een moord een nieuw account moest maken. Dat hoeft
+    // niet meer: een omgelegd account begint via rip.php gewoon opnieuw. Er is
+    // dus geen legitieme reden meer voor een tweede account, en de uitzondering
+    // was een makkelijke manier om er alsnog meerdere te verzamelen.
     if (!config('game.allow_multi_accounts')) {
         $toegestaan = (int) q_val('SELECT `allo` FROM `multiple` WHERE `ip` = ?', [$ip], 0);
-        $bestaat    = (int) q_val(
-            "SELECT COUNT(*) FROM `users` WHERE `ip` = ? AND `status` = 'levend'", [$ip], 0
-        );
+        $bestaat    = (int) q_val('SELECT COUNT(*) FROM `users` WHERE `ip` = ?', [$ip], 0);
+
         if ($bestaat > 0 && $toegestaan !== 1) {
             throw new RuntimeException(
-                'Er is al een account aangemaakt vanaf dit IP-adres. Speel je samen met '
-                . 'iemand op hetzelfde netwerk? Vraag dan een beheerder om toestemming.'
+                'Er bestaat al een account vanaf dit IP-adres. Ben je je wachtwoord kwijt, '
+                . 'gebruik dan "wachtwoord vergeten". Ben je omgelegd, log dan in: je begint '
+                . 'met datzelfde account opnieuw. Speel je samen met iemand op hetzelfde '
+                . 'netwerk? Vraag dan een beheerder om toestemming.'
             );
         }
     }

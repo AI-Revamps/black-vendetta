@@ -47,7 +47,9 @@ panel_open('Spelers');
 echo '<div class="tabelwikkel"><table class="lijst"><tbody>';
 regel('Spelers',           num((int) ($cijfers['totaal'] ?? 0)));
 regel('Levend',            num((int) ($cijfers['levend'] ?? 0)));
-regel('Dood',              num((int) ($cijfers['dood'] ?? 0)));
+// "Dood" betekent sinds de herstartregeling: omgelegd en nog niet opnieuw
+// begonnen. Wie doorstart telt weer als levend.
+regel('Omgelegd, nog niet herstart', num((int) ($cijfers['dood'] ?? 0)));
 regel('Online',            num((int) ($cijfers['online'] ?? 0)));
 regel('Geld op zak',       money((int) ($cijfers['zak'] ?? 0)));
 regel('Geld op de bank',   money((int) ($cijfers['bank'] ?? 0)));

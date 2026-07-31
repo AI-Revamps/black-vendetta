@@ -59,6 +59,12 @@ return [
         'require_activation' => true,
 
         // Mogen meerdere accounts vanaf hetzelfde IP-adres registreren?
+        //
+        // Op false geldt: één account per IP-adres en één per e-mailadres,
+        // ook als dat account omgelegd is. Dat kan, omdat je na een moord
+        // geen nieuw account nodig hebt: hetzelfde account begint opnieuw.
+        // Voor huisgenoten op één aansluiting kun je per IP-adres uitzondering
+        // geven via de beheerpagina "Multi-accounts".
         'allow_multi_accounts' => false,
     ],
 

@@ -80,12 +80,13 @@ function cron_tasks(): array
             q('UPDATE `famillie` SET `crusher` = 0, `aantal` = 0');
             q('DELETE FROM `kras`');
 
-            // Resten van dode spelers opruimen. Dit stond in adm-cleandb.php,
-            // een pagina zonder enige rechtencontrole: wie de URL kende kon
-            // hem aanroepen en er werden rijen verwijderd.
+            // Resten van omgelegde spelers opruimen. Dit stond in
+            // adm-cleandb.php, een pagina zonder enige rechtencontrole: wie de
+            // URL kende kon hem aanroepen en er werden rijen verwijderd.
+            //
+            // speler_herstarten() ruimt dit ook op zodra iemand doorstart; dit
+            // is voor accounts die blijven liggen.
             q("DELETE g FROM `garage` g JOIN `users` u ON u.`login` = g.`login`
-                WHERE u.`status` = 'dood'");
-            q("DELETE i FROM `iplog` i JOIN `users` u ON u.`login` = i.`login`
                 WHERE u.`status` = 'dood'");
             q("DELETE f FROM `friends` f JOIN `users` u ON u.`login` = f.`login`
                 WHERE u.`status` = 'dood'");
@@ -93,6 +94,12 @@ function cron_tasks(): array
                 WHERE u.`status` = 'dood'");
             q("DELETE h FROM `hitlist` h JOIN `users` u ON u.`login` = h.`login`
                 WHERE u.`status` = 'dood'");
+
+            // Het IP-logboek blijft juist staan. Dat stond hier eerder ook bij
+            // de opruiming, maar sinds er nog maar één account per IP-adres
+            // mag bestaan is dit hét spoor waarmee een moderator meerdere
+            // accounts kan herkennen. Weggooien op leeftijd, niet op status.
+            q('DELETE FROM `iplog` WHERE `time` < DATE_SUB(NOW(), INTERVAL 90 DAY)');
 
             // Nieuwe drank- en drugsprijzen per stad.
             foreach (cities() as $stad) {

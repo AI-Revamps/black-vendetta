@@ -263,6 +263,114 @@ function bijschrijven(int $userId, int $bedrag, string $veld = 'zak'): void
     q("UPDATE `users` SET `{$veld}` = `{$veld}` + ? WHERE `id` = ?", [$bedrag, $userId]);
 }
 
+// --- Opnieuw beginnen na de dood ------------------------------------------
+
+/**
+ * Zet een omgelegd account terug op nul en maak het weer speelbaar.
+ *
+ * Je hoeft na een moord dus geen nieuw account aan te maken: hetzelfde account
+ * begint opnieuw. Dat is ook de reden dat er bij registratie maar één account
+ * per IP-adres en per e-mailadres mag bestaan — er is geen enkele reden meer
+ * om een tweede aan te maken.
+ *
+ * Wat blijft staan:
+ *  - inloggegevens, e-mailadres, geslacht en rechtenniveau
+ *  - profieltekst en profielplaatje
+ *  - lopende donaties; daar is voor betaald en die horen niet bij de voortgang
+ *  - `gestorven`, de teller die juist ophoogt
+ *
+ * Al het overige gaat terug naar de beginstand van een nieuwe speler.
+ */
+function speler_herstarten(int $userId): string
+{
+    return db_transaction(static function () use ($userId): string {
+        $speler = lock_user($userId);
+
+        if ($speler === null) {
+            throw new SpelFout('Dit account bestaat niet meer.');
+        }
+        if ($speler['status'] === 'levend') {
+            throw new SpelFout('Je leeft nog.');
+        }
+
+        $stad = random_city();
+
+        q(
+            "UPDATE `users` SET
+                `status`    = 'levend',
+                `health`    = 100,
+                `energie`   = 99.9,
+                `stad`      = ?,
+                `zak`       = ?,
+                `bank`      = 0,
+                `banktime`  = 0,
+                `xp`        = 0,
+                `se`        = 0,
+                `respect`   = 0,
+                `rp`        = 0,
+                `kogels`    = 0,
+                `wapon`     = 0,
+                `defence`   = 0,
+                `trans`     = 0,
+                `guard`     = 0,
+                `drugs`     = 0,
+                `drank`     = 0,
+                `vet`       = 0,
+                `sl`        = 0,
+                `bf`        = 0,
+                `bo`        = 0,
+                `famillie`  = '',
+                `famrang`   = 0,
+                `famcapo`   = '',
+                `laatste_rang` = 0,
+                `testament` = '',
+                `huwelijk`  = '',
+                `rijbewijs` = 0,
+                `rijvord`   = 0,
+                `lessen`    = 0,
+                `rijbewijstijd` = NULL,
+                `nrofcrime` = 0,
+                `nrofcar`   = 0,
+                `nrofroute` = 0,
+                `nrofoc`    = 0,
+                `nrofrace`  = 0,
+                `nrofkill`  = 0,
+                `ac`        = NULL,
+                `bc`        = NULL,
+                `crime`     = NULL,
+                `kc`        = NULL,
+                `pc`        = NULL,
+                `safe`      = NULL,
+                `slaap`     = NULL,
+                `transport` = NULL,
+                `drugst`    = NULL,
+                `drankt`    = NULL,
+                -- Beginnersbescherming loopt vanaf `start`, dus die gaat mee
+                -- terug: je bent weer even onaantastbaar als een nieuwe speler.
+                `start`     = NOW(),
+                `herstart`  = NOW(),
+                `gestorven` = `gestorven` + 1
+              WHERE `id` = ?",
+            [$stad, (int) config('game.start_money', 1000), $userId]
+        );
+
+        // Resten van het vorige leven. Wat geërfd moest worden is al bij het
+        // overlijden verplaatst; dit is wat er daarna nog naar dit account wees.
+        $naam = (string) $speler['login'];
+
+        foreach (['garage', 'hitlist', 'invite', 'loterij', 'kras', 'jail'] as $tabel) {
+            q("DELETE FROM `{$tabel}` WHERE `login` = ?", [$naam]);
+        }
+        q('DELETE FROM `friends` WHERE `login` = ? OR `friend` = ?', [$naam, $naam]);
+        q("UPDATE `casino` SET `owner` = '', `winst` = 0 WHERE `owner` = ?", [$naam]);
+
+        log_action($naam, 'herstart',
+            'Opnieuw begonnen na overlijden nummer ' . ((int) $speler['gestorven'] + 1));
+
+        return $stad;
+    });
+}
+
 /** Stuur een systeembericht naar een speler. */
 function notify(string $naar, string $onderwerp, string $tekst): void
 {

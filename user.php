@@ -74,6 +74,7 @@ veld('Status', $doel['status'] === 'levend'
 veld('Rang', e(rank_name((int) $doel['xp'])));
 veld('Eer', num((int) $doel['respect']));
 veld('Vermogen', e(welstand((int) $doel['zak'])));
+veld('Omgelegd', omgelegd($doel));
 
 veld((int) $doel['famrang'] === 5 ? 'Don van' : 'Familie',
     (string) $doel['famillie'] === ''
@@ -161,6 +162,28 @@ layout_footer();
 function veld(string $label, string $waarde): void
 {
     echo '<tr><th>' . e($label) . '</th><td>' . $waarde . '</td></tr>';
+}
+
+/**
+ * Hoe vaak deze speler is omgelegd, en wanneer hij voor het laatst opnieuw
+ * begon. Wie nog nooit dood is geweest, krijgt dat ook te lezen — dat is
+ * immers iets om trots op te zijn.
+ */
+function omgelegd(array $doel): string
+{
+    $aantal = (int) $doel['gestorven'];
+
+    if ($aantal === 0) {
+        return 'nog nooit';
+    }
+
+    $tekst = num($aantal) . ($aantal === 1 ? ' keer' : ' keer');
+
+    if (($doel['herstart'] ?? null) !== null) {
+        $tekst .= ' <small>(laatste doorstart ' . e(datetime_nl($doel['herstart'])) . ')</small>';
+    }
+
+    return $tekst;
 }
 
 /** Grofmazige aanduiding van het vermogen; het exacte bedrag blijft geheim. */

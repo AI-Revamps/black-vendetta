@@ -445,6 +445,57 @@ uitbetaling niet zou dekken.
 
 ---
 
+## Spelregel: doodgaan en accounts
+
+Dit is een aangepaste spelregel, geen migratie van wat er stond.
+
+**In de oude opzet** was doodgaan definitief. `rip.php` verwees je naar
+`register.php` voor een nieuw account, en de registratiecontrole liet dat toe
+door alleen *levende* accounts per IP-adres te tellen. Het e-mailadres telde
+wél alle accounts mee, dus je had ook een nieuw adres nodig. Netto: doodgaan
+betekende een tweede account, en de multi-accountregel had een gat.
+
+**Nu:** een omgelegd account start opnieuw. `speler_herstarten()` in
+`inc/game.php` zet het account terug op de beginstand en `rip.php` heeft daar
+een knop voor.
+
+| Gaat weg | Blijft |
+|---|---|
+| rang, ervaring, eer | gebruikersnaam en wachtwoord |
+| geld op zak en op de bank | e-mailadres en rechtenniveau |
+| wapens, bescherming, vervoer, lijfwachten | profieltekst en profielplaatje |
+| auto's, familie, huwelijk, testament | lopende donaties — daar is voor betaald |
+| rijbewijs en alle spelerstellers | `gestorven`, die juist ophoogt |
+| een casino of kogelfabriek | |
+
+`start` gaat mee terug, dus de beginnersbescherming loopt weer. Dat is bewust:
+zonder die bescherming word je meteen opnieuw omgelegd.
+
+Omdat er geen reden meer is voor een tweede account, telt de registratiecontrole
+nu **alle** accounts per IP-adres en per e-mailadres, ook dode. De tabel `users`
+heeft daarvoor een `UNIQUE` op e-mail gekregen, zodat de database het meebewaakt.
+Uitzonderingen per IP-adres blijven mogelijk via de beheerpagina Multi-accounts.
+
+Het IP-logboek wordt niet meer gewist bij het opruimen van dode spelers, maar op
+leeftijd (90 dagen). Met één account per IP is dat juist het spoor waarmee een
+moderator meerdere accounts herkent.
+
+### Getest
+
+| Test | Resultaat |
+|---|---|
+| Tweede registratie vanaf hetzelfde IP | geweigerd |
+| Tweede registratie met hetzelfde e-mailadres | geweigerd |
+| Registreren terwijl het bestaande account dood is | geweigerd |
+| Dode speler opent home, crime, bank, shop, kill | alle vijf naar `rip.php`, menu verborgen |
+| `rip.php` toont de dader en zijn bericht | ja |
+| Doorstarten | leeft weer, alles op nul, donaties en profiel behouden, auto weg, casino weer te koop |
+| Tweede keer sterven | teller loopt naar 2, en het scherm meldt de vorige dood |
+| Doorstartknop terwijl je leeft | doorgestuurd naar het spel, teller ongewijzigd |
+| Na de doorstart weer spelen | home, crime, bank en shop speelbaar |
+
+---
+
 ## Bewuste keuzes
 
 **Spelers worden gekoppeld op `login`, niet op `id`.** Netter zou een numerieke sleutel met foreign keys zijn, maar 25 tabellen en zo'n 90 bestanden verwijzen naar spelers via hun naam. Dat omzetten maakt Fase 3 twee keer zo groot zonder dat een speler er iets van merkt. `login` is `UNIQUE` en geïndexeerd, dus snel genoeg. Wel is de naam nu onveranderlijk — een naamwijziging zou losse tabellen uit de pas laten lopen.
