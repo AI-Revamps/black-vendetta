@@ -378,7 +378,7 @@ verdwenen met de `mysql_*`-aanroepen waar ze in stonden.
 | | Stap |
 |---|---|
 | ⬜ | Cronjob instellen bij de host, met de request-fallback als vangnet |
-| ⬜ | Mail via `mail()` met correcte headers en afzender uit config |
+| ✅ | Mail via `mail()` met correcte headers en afzender uit config |
 | ⬜ | `display_errors` uit, logging naar bestand buiten de webroot |
 | ⬜ | Installer verwijderen of vergrendelen na gebruik |
 | ⬜ | `INSTALL.md`: uploaden, database aanmaken, installer draaien, cron instellen |
@@ -406,6 +406,18 @@ Onderweg bevestigde het spel drie regels die het hoort te handhaven: je kunt
 niet moorden zolang jij of je doelwit nog beginnersbescherming heeft, niet in
 een andere stad, en er kan niet gegokt worden als de kas van de casinobaas een
 uitbetaling niet zou dekken.
+
+### E-mail
+
+| Test | Resultaat |
+|---|---|
+| Registreren terwijl verzenden mislukt | account bestaat, met een melding dat de beheerder moet activeren — een mailstoring blokkeert de aanmelding niet |
+| Inloggen vóór activatie | geweigerd |
+| Activatielink met een verkeerde code | geweigerd, en de echte code blijft geldig |
+| Activatielink met de juiste code | account actief, code meteen verbruikt |
+| Dezelfde link nog eens | geweigerd |
+| Wachtwoord vergeten, drie varianten | alle drie hetzelfde antwoord, zodat je er niet uit kunt afleiden welke accounts bestaan; alleen de geldige aanvraag maakt een code aan |
+| `\r\n` plus een extra Bcc-header in het e-mailadres | geweigerd bij registratie |
 
 ---
 
