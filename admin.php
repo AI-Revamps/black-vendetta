@@ -1,130 +1,85 @@
-<? 
-session_start();
-include("config.php"); 
-$username = $HTTP_POST_VARS["username"];  
-$password = $HTTP_POST_VARS["password"];  
-if($submit){
-	if ($username == "$admin" AND $password == "$paswoord") {  
-		$login = time();
-		session_register('login') ;
-	} 
-	else{  
-		echo"<b>Je hebt een verkeerd paswoord of gebruikersnaam ingegeven!</b><br>";
-	}
+<?php
+/**
+ * Beheerdersoverzicht: kerncijfers en de weg naar de beheerpagina's.
+ *
+ * Het oude admin.php was iets heel anders: een losse beheerder voor een
+ * gastenboekje, met een eigen gebruikersnaam en wachtwoord uit config.php.
+ * Het leunde op $HTTP_POST_VARS, session_register() en register_globals, alle
+ * drie verwijderd uit PHP, en had geen enkele koppeling met de rechten van het
+ * spel. Bovendien luidde de sessiecontrole `$_SESSION[login] + 60*60*24`,
+ * waarbij $_SESSION['login'] de gebruikersnaam is en dus geen getal.
+ *
+ * Dat viel niet te redden. Deze pagina is nieuw en toont wat een beheerder
+ * werkelijk nodig heeft.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/beheer.php';
+
+$user = require_level(LEVEL_MODERATOR);
+
+layout_header('Beheer');
+beheer_menu($user, 'admin.php');
+
+$cijfers = q_row(
+    "SELECT
+        (SELECT COUNT(*) FROM `users` WHERE `activated` = 1)                    AS spelers,
+        (SELECT COUNT(*) FROM `users` WHERE `status` = 'levend' AND `activated` = 1) AS levend,
+        (SELECT COUNT(*) FROM `users` WHERE `activated` = 0)                    AS ongeactiveerd,
+        (SELECT COUNT(*) FROM `users`
+          WHERE `online` > DATE_SUB(NOW(), INTERVAL 15 MINUTE))                 AS online,
+        (SELECT COUNT(*) FROM `users` WHERE `level` >= 200)                     AS staf,
+        (SELECT COUNT(*) FROM `bans`)                                           AS bans,
+        (SELECT COUNT(*) FROM `jail` WHERE `time` > NOW())                      AS vast,
+        (SELECT COUNT(*) FROM `famillie`)                                       AS families,
+        (SELECT COUNT(*) FROM `forum_topics`)                                   AS topics,
+        (SELECT IFNULL(SUM(`zak`) + SUM(`bank`), 0) FROM `users`)               AS geld"
+) ?? [];
+
+panel_open('Kerncijfers');
+echo '<div class="tabelwikkel"><table class="lijst">';
+foreach ([
+    'Spelers (geactiveerd)' => num((int) ($cijfers['spelers'] ?? 0)),
+    'Waarvan levend'        => num((int) ($cijfers['levend'] ?? 0)),
+    'Nog niet geactiveerd'  => num((int) ($cijfers['ongeactiveerd'] ?? 0)),
+    'Online (15 min)'       => num((int) ($cijfers['online'] ?? 0)),
+    'Stafleden'             => num((int) ($cijfers['staf'] ?? 0)),
+    'Verbanningen'          => num((int) ($cijfers['bans'] ?? 0)),
+    'In de gevangenis'      => num((int) ($cijfers['vast'] ?? 0)),
+    'Families'              => num((int) ($cijfers['families'] ?? 0)),
+    'Forumtopics'           => num((int) ($cijfers['topics'] ?? 0)),
+    'Geld in omloop'        => money((int) ($cijfers['geld'] ?? 0)),
+] as $label => $waarde) {
+    echo '<tr><th scope="row">' . e($label) . '</th><td class="getal">' . $waarde . '</td></tr>';
 }
-if($_SESSION[login] + 60*60*24 > time()){
-?>
-<form name="form2" method="post" action="<? echo"$PHP_SELF"; ?>">Al de berichten wissen:<br>
-    <input name="wissen" type="submit" value="Berichten Wissen"><br>Je instellingen wijzigen:<br>
-	<input name="wijzigen" type="submit" value="Instellingen Wijzigen">
-  <br>
-  E&eacute;n van de berichten veranderen:<br>
-  <input type="submit" name="veranderen" value="Berichten Wijzigen">
-  <br>
-  Je uitloggen (anders blijf je 1 dag ingelogd!):<br>
-	<input name="uitloggen" type="submit" value="Uitloggen">
-</form>
-<?
-	if($uitloggen){
-		session_unregister('login');
-	}
-	if($wissen){
-		if(!$bestand){
-			echo"<b>Er zijn nog geen berichten!</b><br>";
-		}
-		else{
-			$open = fopen("$file", "w");
-			fclose($open);
-			echo"<b>De berichten zijn verwijderd!</b><br>";
-		}
-	}
-	if($veranderen){
-?>
-<form name="form3" method="post" action="verander.php">
-<?
-if(!$bestand){
-	echo"<b>Er zijn nog geen berichten</b><br>";
+echo '</table></div>';
+panel_close();
+
+// --- Wat er recent gebeurd is ---
+$recent = q_all('SELECT * FROM `logs` ORDER BY `time` DESC LIMIT 30');
+
+panel_open('Laatste gebeurtenissen');
+
+if ($recent === []) {
+    echo '<p>Er is nog niets vastgelegd.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Wanneer</th><th>Gebied</th><th>Door</th><th>Wie</th>'
+       . '<th class="getal">Waarde</th><th>Wat</th></tr></thead><tbody>';
+    foreach ($recent as $regel) {
+        echo '<tr>';
+        echo '<td>' . e(datetime_nl($regel['time'])) . '</td>';
+        echo '<td>' . e((string) $regel['area']) . '</td>';
+        echo '<td>' . e((string) $regel['login']) . '</td>';
+        echo '<td>' . e((string) $regel['person']) . '</td>';
+        echo '<td class="getal">' . ((int) $regel['code'] !== 0 ? num((int) $regel['code']) : '') . '</td>';
+        echo '<td>' . e((string) $regel['com']) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table></div>';
 }
-else{
-	for($i = 0; $i < $hits; $i++){
-		echo"Bericht $i <input type=text name=text[$i] value=\"$getal[$i]\"><br>";
-	}
-echo"<input name=verander type=submit value=Wijzigen>";
-}
-?>
-</form>
-<?
-	}
-	if($wijzigen){
-?>
-<b><form name="form3" method="post" action="wijzig.php">
-  <p>Je gebruikersnaam: <br>
-    <input name="text" type="text" value="<? echo"$admin"; ?>">
-    <br>
-    Je wachtwoord:<br>
-    <input name="text2" type="password" value="<? echo"$paswoord"; ?>">
-    <br>
-    De tekst die moet komen als iemand een fout wachtwoord of gebruikersnaam heeft 
-    ingetypt: <br>
-    <input name="text3" type="text" value="<? echo"$fout"; ?>">
-    <br>
-    Nieuwe berichten vooraan = &quot;nieuwe&quot; oude = &quot;oude&quot;<br>
-    <input name="text4" type="text" value="<? echo"$vooraan"; ?>">
-    <br>
-    Maximum aantal karakters dat ze mogen in hun naam:<br>
-    <input name="text5" type="text" value="<? echo"$maxn"; ?>">
-    <br>
-    Maximum aantal karakters dat ze mogen in hun bericht: <br>
-    <input name="text6" type="text" value="<? echo"$maxb"; ?>">
-    <br>
-    Als je vanboven nieuwe had aangeduid hoeveel berichten mogen dan in de balk 
-    staan:<br>
-    <input name="text7" type="text" value="<? echo"$max"; ?>">
-    <br>
-    Het bestand waar in geschreven moet worden:<br>
-    <input name="text8" type="text" value="<? echo"$file"; ?>">
-    <br>
-    Het bestand waar het formpje staat:<br>
-    <input name="text9" type="text" value="<? echo"$form"; ?>">
-    <br>
-	Het bestand waar de berichtenbalk staat:<br>
-    <input name="text18" type="text" value="<? echo"$bar"; ?>">
-    <br>
-    De tekst die er moet komen als er nog geen berichten zijn:<br>
-    <input name="text11" type="text" value="<? echo"$leeg"; ?>">
-    <br>
-    Wat er moet komen als ze niks hebben ingevuld:<br>
-    <input name="text12" type="text" value="<? echo"$ongeldig"; ?>">
-    <br>
-    De scheiding tussen twee berichten:<br>
-    <input name="text13" type="text" value="<? echo"$tussen"; ?>">
-    <br>
-    Wat er moet komen als het bericht gepost is:<br>
-    <input name="text14" type="text" value="<? echo"$post"; ?>">
-    <br>
-    De map waar de afbeeldingen staan(zonder eind&quot;/&quot;):<br>
-    <input name="text15" type="text" value="<? echo"$dir"; ?>">
-    <br>
-    Het aantal seconden dat de gebruiker moet wachten voor hij nog eens mag posten:<br>
-    <input name="text16" type="text" value="<? echo"$verlooptijd"; ?>">
-    <br>
-	Als ze te snel na elkaar een bericht gepost hebben:<br>
-    <input name="text17" type="text" value="<? echo"$flood"; ?>">
-    <br>
-    <input type="submit" name="wijzig" value="Wijzigen">
-  </p>
-</form>
-</b>
-<?
-	}	
-}
-else{
-?>  
-<form name="form1" method="post" action="<? echo"$PHP_SELF"; ?>"><p>Gebruikersnaam: 
-    <input name="username" type="text" id="username">Paswoord: 
-    <input name="password" type="password" id="password">      
-    <input name="submit" type="submit" id="submit" value="Login"> 
-</form> 
-<?  
-}
-?>
+
+panel_close();
+layout_footer();

@@ -80,6 +80,20 @@ function cron_tasks(): array
             q('UPDATE `famillie` SET `crusher` = 0, `aantal` = 0');
             q('DELETE FROM `kras`');
 
+            // Resten van dode spelers opruimen. Dit stond in adm-cleandb.php,
+            // een pagina zonder enige rechtencontrole: wie de URL kende kon
+            // hem aanroepen en er werden rijen verwijderd.
+            q("DELETE g FROM `garage` g JOIN `users` u ON u.`login` = g.`login`
+                WHERE u.`status` = 'dood'");
+            q("DELETE i FROM `iplog` i JOIN `users` u ON u.`login` = i.`login`
+                WHERE u.`status` = 'dood'");
+            q("DELETE f FROM `friends` f JOIN `users` u ON u.`login` = f.`login`
+                WHERE u.`status` = 'dood'");
+            q("DELETE f FROM `friends` f JOIN `users` u ON u.`login` = f.`friend`
+                WHERE u.`status` = 'dood'");
+            q("DELETE h FROM `hitlist` h JOIN `users` u ON u.`login` = h.`login`
+                WHERE u.`status` = 'dood'");
+
             // Nieuwe drank- en drugsprijzen per stad.
             foreach (cities() as $stad) {
                 q(
