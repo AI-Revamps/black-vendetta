@@ -97,6 +97,13 @@ if (($user = current_user()) !== null) {
         $_SESSION['_seen'] = time();
         q('UPDATE `users` SET `online` = NOW() WHERE `id` = ?', [$user['id']]);
     }
+
+    // Promotiegeld van de familie uitkeren bij een nieuwe rang. Doet alleen
+    // werk als de rang werkelijk gestegen is.
+    if (rank_index((int) $user['xp']) > (int) $user['laatste_rang']) {
+        require_once BV_INC . '/familie.php';
+        fam_promotie_uitbetalen($user);
+    }
 }
 
 // cron.php roept de taken zelf aan en meldt wat er gedraaid heeft. Zou de

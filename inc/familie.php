@@ -106,6 +106,73 @@ function fam_bijschrijven(string $naam, int $bedrag): void
     }
 }
 
+/**
+ * Keer het promotiegeld uit als een lid een nieuwe rang heeft bereikt.
+ *
+ * De familie stelt per spelersrang een bedrag in via fampromotie.php. In de
+ * oude versie werden die bedragen wel opgeslagen maar nergens uitgelezen: er
+ * bestond geen enkele uitbetalingscode, dus het instelscherm deed niets.
+ *
+ * Wordt bij elk verzoek aangeroepen vanuit bootstrap.php, maar doet alleen
+ * werk wanneer de rang daadwerkelijk gestegen is.
+ */
+function fam_promotie_uitbetalen(array $user): void
+{
+    $rang    = rank_index((int) $user['xp']);
+    $betaald = (int) $user['laatste_rang'];
+
+    if ($rang <= $betaald) {
+        return;
+    }
+
+    // Zonder familie alleen de teller bijwerken, zodat er later niet met
+    // terugwerkende kracht voor oude rangen uitbetaald wordt.
+    if (($user['famillie'] ?? '') === '') {
+        q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
+        return;
+    }
+
+    db_transaction(static function () use ($user, $rang, $betaald): void {
+        $familie = fam_van($user, true);
+
+        if ($familie === null) {
+            q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
+            return;
+        }
+
+        // Alle rangen optellen die sinds de vorige uitbetaling gehaald zijn.
+        $bedrag = 0;
+        for ($n = $betaald + 1; $n <= $rang; $n++) {
+            if ($n >= 2 && $n <= 14) {
+                $bedrag += (int) ($familie['rang' . $n] ?? 0);
+            }
+        }
+
+        q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
+
+        if ($bedrag < 1) {
+            return;
+        }
+
+        // Alleen uitbetalen als de kas het toelaat.
+        if (!fam_afboeken((string) $familie['name'], $bedrag)) {
+            notify((string) $user['login'], 'Promotie',
+                'Je bent gepromoveerd, maar de kas van ' . $familie['name']
+                . ' had niet genoeg om je promotiegeld uit te keren.');
+            return;
+        }
+
+        bijschrijven((int) $user['id'], $bedrag, 'zak');
+
+        fam_log((string) $familie['name'], (string) $user['login'], -$bedrag,
+            'Promotiegeld tot rang ' . $rang);
+
+        notify((string) $user['login'], 'Promotie',
+            'Gefeliciteerd met je nieuwe rang. Je familie keert je '
+            . money($bedrag) . ' promotiegeld uit.');
+    });
+}
+
 /** Leg een geldbeweging van de familie vast. */
 function fam_log(string $familie, string $wie, int $bedrag, string $omschrijving): void
 {

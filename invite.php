@@ -19,7 +19,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
-require BV_INC . '/familie.php';
+require_once BV_INC . '/familie.php';
 
 /** Hoeveel grondgebied elk lid kost. */
 const GROND_PER_LID = 5;

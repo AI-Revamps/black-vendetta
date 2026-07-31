@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `famillie`   varchar(20) NOT NULL DEFAULT '',
   `famrang`    tinyint unsigned NOT NULL DEFAULT 0,
   `famcapo`    varchar(25) NOT NULL DEFAULT '',
+  -- Tot welke rang het promotiegeld van de familie al is uitbetaald. Zonder
+  -- dit veld was er geen manier om te zien of iemand al beloond was, en werd
+  -- het bedrag uit fampromotie.php dan ook nooit uitgekeerd.
+  `laatste_rang` tinyint unsigned NOT NULL DEFAULT 0,
 
   `wapon`      tinyint unsigned NOT NULL DEFAULT 0,
   `defence`    tinyint unsigned NOT NULL DEFAULT 0,
@@ -476,6 +480,19 @@ CREATE TABLE IF NOT EXISTS `poll` (
   `gestemd` text NULL,
   PRIMARY KEY (`id`),
   KEY `actief` (`actief`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Wie op welke poll gestemd heeft.
+--
+-- In de oude versie werden stemmen bijgehouden door de tekst "(ip,keuze)" aan
+-- het tekstveld `poll`.`gestemd` te plakken. Dat veld groeide onbeperkt en er
+-- moest met string-zoeken in gecontroleerd worden of iemand al gestemd had.
+CREATE TABLE IF NOT EXISTS `poll_stemmen` (
+  `poll_id` int unsigned NOT NULL,
+  `login`   varchar(16) NOT NULL,
+  `keuze`   tinyint unsigned NOT NULL,
+  `time`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`poll_id`, `login`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `news` (

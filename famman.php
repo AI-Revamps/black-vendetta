@@ -27,7 +27,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
-require BV_INC . '/familie.php';
+require_once BV_INC . '/familie.php';
 require BV_INC . '/opmaak.php';
 
 const FAM_INFO_MAX    = 2000;
