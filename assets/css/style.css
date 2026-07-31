@@ -414,6 +414,21 @@ img.smilie {
 
 .getrokken { text-align: center; font-size: 1.1rem; }
 
+/* Blackjack */
+.kaarthand {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: .5rem;
+}
+.kaarthand img {
+    width: auto;
+    height: 6rem;
+    border-radius: 4px;
+    border: 1px solid var(--rand);
+    background: #fff;
+}
+
 /* Roulette */
 .bal {
     display: inline-grid;
