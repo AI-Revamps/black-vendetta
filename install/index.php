@@ -20,7 +20,10 @@ mb_internal_encoding('UTF-8');
 
 const WORTEL      = __DIR__ . '/..';
 const CONFIG_PAD  = WORTEL . '/inc/config.php';
-const SCHEMA_PAD  = WORTEL . '/schema.sql';
+// Het schema staat in deze map en niet in de hoofdmap, zodat het samen met de
+// installer verdwijnt. In de oude versie stond `sql.sql` in de webroot en was
+// de volledige databasestructuur voor iedereen op te vragen.
+const SCHEMA_PAD  = __DIR__ . '/schema.sql';
 const SLOT_PAD    = __DIR__ . '/.geinstalleerd';
 
 session_start();
@@ -102,7 +105,7 @@ function eisen(): array
             'naam' => 'schema.sql aanwezig',
             'ok'   => is_readable(SCHEMA_PAD),
             'nu'   => is_readable(SCHEMA_PAD) ? 'ja' : 'nee',
-            'hulp' => 'Upload <code>schema.sql</code> naar de hoofdmap van het spel.',
+            'hulp' => 'Upload <code>schema.sql</code> naar de map <code>install/</code>.',
         ],
     ];
 }

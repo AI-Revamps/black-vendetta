@@ -83,6 +83,24 @@ if (!headers_sent()) {
     header('Referrer-Policy: same-origin');
     header('X-Frame-Options: SAMEORIGIN');
     header('Content-Type: text/html; charset=utf-8');
+
+    // Tweede slot op XSS. inc/opmaak.php escapet alles voordat het de opmaak
+    // terugzet, maar mocht daar ooit iets doorheen glippen, dan weigert de
+    // browser alsnog om vreemd script te draaien.
+    //
+    // img-src staat wél extern toe: spelers zetten zelf een profielplaatje in,
+    // en dat mag overal vandaan komen. Een plaatje kan geen code uitvoeren.
+    header(
+        "Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "script-src 'self'; "
+        . "style-src 'self' 'unsafe-inline'; "
+        . "img-src 'self' data: https: http:; "
+        . "form-action 'self'; "
+        . "frame-ancestors 'self'; "
+        . "base-uri 'self'; "
+        . "object-src 'none'"
+    );
 }
 
 session_boot();

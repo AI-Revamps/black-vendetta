@@ -185,7 +185,7 @@ Twee dingen kwamen tijdens het testen aan het licht:
 
 ---
 
-## Fase 3 — Modules migreren 🔄 bezig
+## Fase 3 — Modules migreren ✅ afgerond
 
 Per module: `mysql_*` → prepared statements, uitvoer door `e()`, geldmutaties in transacties.
 Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
@@ -199,7 +199,7 @@ Volgorde is op risico gekozen — daar waar geld te maken valt eerst.
 | ✅ | **Casino** | `blackjack.php`, `roulette.php`, `slots.php`, `guess.php`, `krassen.php`, `loterij.php` |
 | ✅ | **Sociaal** | `forum.php`, `message.php`, `fam.php`, `famman.php`, `getmarried.php`, `poll.php` |
 | ✅ | **Beheer** | de veertien `adm-*.php` bestanden plus de herbouw van `admin.php` |
-| ⬜ | Overig | `stats.php`, `members.php`, `news.php`, `help.php`, `jail.php`, `respect.php`, … |
+| ✅ | **Overzicht** | `stats.php`, `members.php`, `news.php`, `jail.php`, `respect.php`, `wallofshame.php`, `user.php`, `profile.php`, `tip.php` |
 
 Bij elk blok geldt: `SELECT … FOR UPDATE` binnen `db_transaction()` zodra er geld of items van eigenaar wisselen. Dat sluit de verdubbelingstrucs die met MyISAM sowieso niet te voorkomen waren.
 
@@ -306,22 +306,74 @@ kan blijven.
 | Item met verkoopprijs boven koopprijs | geweigerd |
 | Rooktest over alle 91 pagina's | alleen de vier nog niet gemigreerde bestanden geven fouten |
 
----
+### Wat het overzichtsblok repareerde (Fase 3w en 3x)
 
-## Fase 4 — Tekst en interface ⬜ gepland
-
-| | Stap |
+| Bestand | Probleem |
 |---|---|
-| ⬜ | ISO-8859-1 → UTF-8 voor `crime.php`, `oc.php`, `famman.php`, `fam.php`, `msn.php`, `install.php` |
-| ⬜ | Alle `<?` → `<?php` (51 bestanden) |
-| ⬜ | Kale woorden quoten: `== kind` → `== 'kind'` (34 bestanden) |
-| ⬜ | Captcha vervangen: langere code, eenmalig bruikbaar, werkt zonder GD-afhankelijkheid |
-| ⬜ | `right.php` vervangen door één query (was dertien tabelscans) |
-| ⬜ | Oude bestanden opruimen: `install.php`, `admin.php`, `bar.php`, `form.php`, `verander.php`, `wijzig.php`, `copy.php`, `berichtenbalk.php`, `sql.sql`, `Thumbs.db` |
+| `wallofshame.php` | **Geld bijdrukken.** Bij een dodelijke tomaat kreeg de gooier `zak = zak + $victim->zak`, maar de zak van het slachtoffer werd nooit leeggemaakt — alleen `bank` ging op nul. Elke dode verdubbelde zijn contante geld |
+| `profile.php` | **Wachtwoorden als kale MD5**, met `$data->pass != MD5($pass)` als controle. Geen enkele eis aan het nieuwe wachtwoord |
+| `user.php` | `[color=x" onmouseover="…]` opende een attribuut op de pagina van elke bezoeker: tachtig regels `eregi_replace()` zetten rechtstreeks HTML terug |
+| `jail.php` | Het bericht aan wie werd vrijgekocht kwam nooit aan: de INSERT noemde vijf kolommen en gaf vier waarden mee |
+| `jail.php` | Bij een mislukte uitbraak werd een cel aangemaakt met `$boete`, `$famillie` en `$jailtime` — drie variabelen die op dat punt niet bestonden |
+| `jail.php` | Vrijkopen ging via een GET-link die geld van je rekening haalde |
+| `inc/game.php` | `jail_put()` deed een kale `INSERT` terwijl `jail`.`login` uniek is; elke arrestatie van iemand met een verlopen cel liep vast |
+| `respect.php` | Beide overzichten filterden op `` `time` >= '{$data->signup}' `` — die kolom bestaat niet, dus de lijsten waren altijd leeg |
+| `respect.php` | Schandepunten trokken `respect` onder nul op een `unsigned` kolom |
+| `members.php` | `ORDER BY $sort $order` rechtstreeks uit de URL; zoekterm ongefilterd in een `LIKE` inclusief `%` en `_` |
+| `members.php` | `$_REQUEST['q']` ongefilterd in het waarde-attribuut van het zoekveld |
+| `stats.php` | Las álle spelers uit de database om de totalen in PHP op te tellen, plus zestien queries voor acht steden |
+| `tip.php` | Meldingen gingen naar de hardcoded naam `JanuS`, die niet bestaat; naam en e-mail kwamen uit verborgen formuliervelden |
+
+### Getest
+
+| Test | Resultaat |
+|---|---|
+| Twee spelers gooien tegelijk de dodelijke tomaat | precies één wint de buit, de ander krijgt "is al dood"; totaal daalt met exact de tomaatkosten |
+| Vrijkopen, tomaat, respect met te weinig saldo | nooit een negatief saldo |
+| Vijf XSS-payloads in het profielveld, DOM-gecontroleerd | geen `on*`-attribuut, geen `javascript:` in href of src |
+| Wachtwoord wijzigen | hash verandert, begint met `$2y$`, nieuw wachtwoord werkt |
+| `members.php?s=zak;--` | valt terug op de standaardsortering |
+| Zoeken op `%` | 0 resultaten in plaats van iedereen |
+| Rooktest over alle 70 overgebleven pagina's | 0 problemen |
 
 ---
 
-## Fase 5 — Live zetten ⬜ gepland
+## Fase 4 — Tekst en interface ✅ afgerond
+
+Deze fase was aan het eind grotendeels vanzelf klaar: elk herbouwd bestand is
+meteen als UTF-8 met een volledige `<?php`-tag geschreven, en de kale woorden
+verdwenen met de `mysql_*`-aanroepen waar ze in stonden.
+
+| | Stap | Resultaat |
+|---|---|---|
+| ✅ | ISO-8859-1 → UTF-8 | 0 bestanden met ongeldige UTF-8 over |
+| ✅ | Alle `<?` → `<?php` | 0 korte open-tags over |
+| ✅ | Kale woorden quoten (`== kind` → `== 'kind'`) | weg met de herbouw; sinds PHP 8 zijn het fatale fouten, wat de vindplaatsen vanzelf aanwees |
+| ✅ | Captcha: langere code, eenmalig bruikbaar, werkt zonder GD | `inc/captcha.php`, met een tekstsom als terugval |
+| ✅ | `right.php` vervangen door één query | `status_summary()` in `inc/layout.php` |
+| ✅ | Oude bestanden opruimen | 24 bestanden weg (zie hieronder) |
+
+### Verwijderd, en waarom
+
+| Bestand | Reden |
+|---|---|
+| `upper.php`, `menu.php`, `right.php`, `clock.php` | de frameset; vervangen door `inc/layout.php` |
+| `rangen.php`, `tijden.php`, `rangmsg.php` | losse includes uit `config.php`; nu `inc/game.php` |
+| `bar.php`, `form.php`, `verander.php`, `wijzig.php`, `berichtenbalk.php` | gastenboekje met een eigen wachtwoord, los van de rechten van het spel |
+| `admin.php` (oud), `install.php` (oud) | vervangen door een echt beheerdersoverzicht en `install/index.php` |
+| `adm-cleandb.php` | geen enkele authenticatie; was bovendien een opruimtaak — nu een crontaak |
+| `blackmarket.php` | dubbel met `mshop.php` |
+| `sql.sql` | importeerde niet (74× `type=MyISAM`, zero-dates) en stond publiek in de webroot |
+| `msn.php` | uploadde een MSN-contactenlijst (.ctt) en mailde iedereen daarin; MSN is in 2013 gestopt |
+| `chat.php` | formulier naar chat4all.net, ruim vijftien jaar weg |
+| `klikmissie.php`, `klikmissie1.php` | betaalden €10.000 voor een klik naar het verdwenen top100nl.net, en de vlag werd nooit teruggezet |
+| `red.php`, `paidtimer.php` | hoorden bij het oude menu en de frameset |
+| `ban.php` | blokkeerde iedereen wiens reverse DNS niet op `.be` of `.nl` eindigde: hield legitieme bezoekers tegen en proxy's niet |
+| `copy.php`, `Thumbs.db` | restanten |
+
+---
+
+## Fase 5 — Live zetten 🔄 bezig
 
 | | Stap |
 |---|---|
@@ -330,6 +382,7 @@ kan blijven.
 | ⬜ | `display_errors` uit, logging naar bestand buiten de webroot |
 | ⬜ | Installer verwijderen of vergrendelen na gebruik |
 | ⬜ | `INSTALL.md`: uploaden, database aanmaken, installer draaien, cron instellen |
+| ⬜ | Volledige speelsessie van registratie tot rang 15 op een verse database |
 
 ---
 
