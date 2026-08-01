@@ -28,6 +28,13 @@ $naam = (string) config('site.name');
 
 layout_header('Welkom');
 panel_open('Welkom bij ' . $naam);
+
+// Het volledige logo, als het geplaatst is. Zo niet, dan begint de pagina
+// gewoon met de tekst.
+$logo = logo_url('logo.png');
+if ($logo !== null) {
+    echo '<img class="voorpagina-logo" src="' . e($logo) . '" alt="' . e($naam) . '">';
+}
 ?>
 <p><strong><?= e($naam) ?> is een online multiplayer rollenspel in tekstvorm.</strong></p>
 

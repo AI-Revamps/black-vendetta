@@ -48,7 +48,7 @@ panel_close();
 
 // --- Hoe je begint ---------------------------------------------------------
 
-panel_open('<a id="begin"></a>Hoe je begint');
+panel_open('Hoe je begint', 'begin');
 
 echo '<p>Je begint als <strong>' . e(rank_name(0)) . '</strong> met '
    . money((int) config('game.start_money', 1000)) . ' op zak, in een willekeurige stad, '
@@ -89,7 +89,7 @@ panel_close();
 
 // --- Rangen ----------------------------------------------------------------
 
-panel_open('<a id="rangen"></a>Rangen');
+panel_open('Rangen', 'rangen');
 
 echo '<p>Je rang hangt af van je ervaring. Er zijn er ' . count(rank_ladder()) . '.</p>';
 
@@ -110,7 +110,7 @@ panel_close();
 
 // --- Geld ------------------------------------------------------------------
 
-panel_open('<a id="geld"></a>Geld verdienen');
+panel_open('Geld verdienen', 'geld');
 
 echo '<ul>';
 echo '<li><strong>Misdaden</strong> zijn het startpunt. Hoe hoger je rang, hoe vaker ze lukken.</li>';
@@ -141,7 +141,7 @@ panel_close();
 
 // --- Moord -----------------------------------------------------------------
 
-panel_open('<a id="moord"></a>Moord en getuigen');
+panel_open('Moord en getuigen', 'moord');
 
 echo '<p>Je kunt iemand vermoorden die in dezelfde stad is als jij. Je hebt kogels nodig en '
    . 'een wapen; hoe meer moordervaring je hebt, hoe beter je richt.</p>';
@@ -174,7 +174,7 @@ panel_close();
 
 // --- Doodgaan --------------------------------------------------------------
 
-panel_open('<a id="dood"></a>Doodgaan');
+panel_open('Doodgaan', 'dood');
 
 echo '<p>Word je vermoord, dan is dat <strong>niet het einde van je account</strong>. Je '
    . 'krijgt een scherm waar staat wat er gebeurd is, en met één knop begin je opnieuw met '
@@ -197,7 +197,7 @@ panel_close();
 
 // --- Accounts --------------------------------------------------------------
 
-panel_open('<a id="accounts"></a>Accounts');
+panel_open('Accounts', 'accounts');
 
 if (config('game.allow_multi_accounts')) {
     echo '<p>Meerdere accounts vanaf hetzelfde adres zijn hier toegestaan.</p>';
@@ -218,7 +218,7 @@ panel_close();
 
 // --- Premium ---------------------------------------------------------------
 
-panel_open('<a id="premium"></a>Premium en diamanten');
+panel_open('Premium en diamanten', 'premium');
 
 echo '<p><strong>Diamanten</strong> zijn de betaalde munt. Je vindt ze bij toeval tijdens een '
    . 'geslaagde misdaad of autodiefstal: de kans is ongeveer <strong>één op '
@@ -246,7 +246,7 @@ panel_close();
 
 // --- Opmaak ----------------------------------------------------------------
 
-panel_open('<a id="opmaak"></a>Opmaakcodes');
+panel_open('Opmaakcodes', 'opmaak');
 
 echo '<p>In je profiel, op het forum en in privéberichten kun je opmaak gebruiken.</p>';
 
@@ -289,7 +289,7 @@ panel_close();
 
 // --- Huisregels ------------------------------------------------------------
 
-panel_open('<a id="regels"></a>Huisregels');
+panel_open('Huisregels', 'regels');
 
 echo '<ol>';
 echo '<li>Eén account per persoon. Wie er meer aanmaakt raakt ze allemaal kwijt.</li>';
@@ -309,7 +309,7 @@ panel_close();
 
 // --- Privacy ---------------------------------------------------------------
 
-panel_open('<a id="privacy"></a>Privacy');
+panel_open('Privacy', 'privacy');
 
 echo '<p>Wat er van je bewaard wordt:</p>';
 echo '<ul>';
