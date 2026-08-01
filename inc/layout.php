@@ -406,6 +406,40 @@ function huidige_groep(array $groepen, string $huidig): ?string
     return null;
 }
 
+/**
+ * Pictogram voor de onderbalk, als inline SVG.
+ *
+ * Bewust geen emoji of tekens uit een lettertype: die zien er op elk toestel
+ * anders uit en zijn niet te kleuren. Deze lijntekeningen nemen via
+ * currentColor de kleur van de tab over, ook als die actief is.
+ */
+function icoon(string $naam): string
+{
+    $paden = [
+        // Een persoon: je eigen status.
+        'persoon' => '<circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+
+        // Een bankgebouw met zuilen.
+        'bank' => '<path d="M3 9.5 12 4l9 5.5"/>'
+                . '<path d="M5.5 11v7M9.5 11v7M14.5 11v7M18.5 11v7"/>'
+                . '<path d="M3 20.5h18"/>',
+
+        // Een boodschappentas.
+        'winkel' => '<path d="M5 8h14l-1.1 12H6.1L5 8Z"/><path d="M9 8V6.2a3 3 0 0 1 6 0V8"/>',
+
+        // Een envelop.
+        'envelop' => '<rect x="3" y="5.5" width="18" height="13" rx="2"/>'
+                   . '<path d="m3.6 7 8.4 6 8.4-6"/>',
+
+        // Drie streepjes voor het menu.
+        'menu' => '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    ];
+
+    return '<svg class="teken" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         . 'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" '
+         . 'aria-hidden="true" focusable="false">' . ($paden[$naam] ?? '') . '</svg>';
+}
+
 /** Groen, oranje of rood, afhankelijk van de gezondheid. */
 function health_klasse(int $health): string
 {
@@ -450,10 +484,10 @@ function onderbalk(array $user): void
     $stat   = status_summary($user);
 
     $tabs = [
-        ['home.php',    'Status',   '&#9679;'],
-        ['crime.php',   'Misdaad',  '&#9876;'],
-        ['shop.php',    'Winkel',   '&#128176;'],
-        ['message.php', 'Berichten', '&#9993;'],
+        ['home.php',    'Status',    'persoon'],
+        ['bank.php',    'Bank',      'bank'],
+        ['shop.php',    'Winkel',    'winkel'],
+        ['message.php', 'Berichten', 'envelop'],
     ];
 
     echo '<nav class="onderbalk" aria-label="Snelmenu">' . "\n<ul>\n";
@@ -462,7 +496,7 @@ function onderbalk(array $user): void
         $klasse = $bestand === $huidig ? ' class="actief"' : '';
 
         echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>';
-        echo '<span class="teken" aria-hidden="true">' . $teken . '</span>';
+        echo icoon($teken);
         echo '<span>' . e($label) . '</span>';
 
         if ($bestand === 'message.php' && $stat['ongelezen'] > 0) {
@@ -474,7 +508,7 @@ function onderbalk(array $user): void
 
     echo '<li><button class="menu-toggle-onder" type="button" aria-controls="zijmenu" '
        . 'aria-expanded="false">'
-       . '<span class="teken" aria-hidden="true">&#9776;</span><span>Menu</span>'
+       . icoon('menu') . '<span>Menu</span>'
        . "</button></li>\n";
 
     echo "</ul>\n</nav>\n";
