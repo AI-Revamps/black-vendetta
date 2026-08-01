@@ -7,10 +7,10 @@
  *
  * Wat hier gerepareerd is ten opzichte van de oude versie:
  *
- *  - De donateursbonus werd gecontroleerd met `$data->paid == 1`, terwijl `paid`
- *    het aantal actieve donaties bijhield: met twee of drie donaties verloor je
- *    je bonus juist. Die telling is inmiddels vervangen door één premiumtermijn,
- *    dus de controle is nu simpelweg is_premium().
+ *  - De donateursbonus (dubbele voorraad) is eruit. Die werd gecontroleerd met
+ *    `$data->paid == 1`, terwijl `paid` het aantal actieve donaties bijhield —
+ *    met twee of drie donaties verloor je je bonus dus juist. De bonus zelf is
+ *    daarna helemaal geschrapt: premium hoort niemand sterker te maken.
  *  - Betalen en de voorraad afboeken gebeurde in twee losse queries zonder
  *    transactie, zodat de stadsvoorraad negatief kon worden bij gelijktijdige
  *    aankopen.
@@ -51,8 +51,7 @@ if (is_post()) {
 
 $stad      = q_row('SELECT * FROM `stad` WHERE `stad` = ?', [$user['stad']]);
 $wacht     = cooldown_left((int) $user['slaap_ts']);
-$donateur  = is_premium($user);
-$voorraad  = beschikbaar($stad, $donateur);
+$voorraad  = (int) ($stad['kogels'] ?? 0);
 $prijs     = (int) ($stad['prijs'] ?? 0);
 $betaalbaar = $prijs > 0 ? intdiv((int) $user['zak'], $prijs) : 0;
 
@@ -69,8 +68,7 @@ if ($wacht > 0) {
        . '</strong> wachten voordat je weer kogels kunt kopen.</p>';
 } else {
     echo '<div class="tabelwikkel"><table class="lijst">';
-    echo '<tr><th scope="row">Voorraad</th><td>' . num($voorraad) . ' kogels'
-       . ($donateur ? ' <small>(dubbel, als donateur)</small>' : '') . '</td></tr>';
+    echo '<tr><th scope="row">Voorraad</th><td>' . num($voorraad) . ' kogels</td></tr>';
     echo '<tr><th scope="row">Prijs per kogel</th><td>' . money($prijs) . '</td></tr>';
     echo '<tr><th scope="row">Je hebt op zak</th><td>' . money((int) $user['zak']) . '</td></tr>';
     echo '<tr><th scope="row">Je kunt er kopen</th><td>' . num(min($voorraad, $betaalbaar)) . '</td></tr>';
@@ -97,13 +95,6 @@ layout_footer();
 
 // ==========================================================================
 
-/** Hoeveel kogels deze speler hier kan kopen. Donateurs krijgen er twee keer zoveel. */
-function beschikbaar(?array $stad, bool $donateur): int
-{
-    $kogels = (int) ($stad['kogels'] ?? 0);
-    return $donateur ? $kogels * 2 : $kogels;
-}
-
 /** @throws SpelFout */
 function kopen(array $user, int $aantal): string
 {
@@ -125,9 +116,7 @@ function kopen(array $user, int $aantal): string
             throw new SpelFout('Er is hier geen kogelfabriek.');
         }
 
-        $donateur = is_premium($speler);
-
-        if ($aantal > beschikbaar($stad, $donateur)) {
+        if ($aantal > (int) $stad['kogels']) {
             throw new SpelFout('Zoveel kogels zijn er niet in voorraad.');
         }
 
@@ -137,15 +126,12 @@ function kopen(array $user, int $aantal): string
             throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
         }
 
-        // Donateurs putten de stadsvoorraad half zo snel uit; dat is de bonus.
-        $uitVoorraad = $donateur ? (int) ceil($aantal / 2) : $aantal;
-
         q('UPDATE `users` SET `kogels` = `kogels` + ?, `slaap` = DATE_ADD(NOW(), INTERVAL ? SECOND)
             WHERE `id` = ?',
             [$aantal, KOGELS_WACHTTIJD, $speler['id']]);
 
         q('UPDATE `stad` SET `kogels` = GREATEST(0, `kogels` - ?) WHERE `stad` = ?',
-            [$uitVoorraad, $speler['stad']]);
+            [$aantal, $speler['stad']]);
 
         return 'Je hebt ' . num($aantal) . ' kogels gekocht voor ' . money($prijs) . '.';
     });

@@ -69,14 +69,14 @@ panel_open('Wat je eraan hebt');
 
 $interval = ads_interval();
 
-echo '<ul>';
-echo '<li><strong>Geen advertenties.</strong> Zonder premium onderbreekt het spel je '
+echo '<p><strong>Geen advertenties.</strong> Zonder premium onderbreekt het spel je '
    . ($interval > 0
         ? 'elke ' . num($interval) . ' paginabezoeken'
         : 'af en toe')
-   . ' met een advertentiepagina. Met premium gebeurt dat niet.</li>';
-echo '<li><strong>Dubbele kogelvoorraad</strong> bij de kogelfabriek.</li>';
-echo '</ul>';
+   . ' met een advertentiepagina. Met premium gebeurt dat niet.</p>';
+
+echo '<p>Meer is het niet, en dat is met opzet: premium maakt je niet sterker. Je koopt '
+   . 'rust, geen voorsprong. Wie niet betaalt speelt precies hetzelfde spel.</p>';
 
 echo '<p>Premium duurt ' . PREMIUM_DAGEN . ' dagen. Verleng je terwijl het nog loopt, '
    . 'dan worden de dagen erbij opgeteld — je verliest dus niets door op tijd te zijn.</p>';

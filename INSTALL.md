@@ -208,8 +208,9 @@ zelf in.
 Verlengen telt de dagen erbij op, dus niemand verliest iets door op tijd te
 zijn.
 
-Wat premium doet: **geen advertenties**, plus de dubbele kogelvoorraad bij de
-kogelfabriek die er al was.
+Wat premium doet: **geen advertenties**. Verder niets, en dat is een bewuste
+keuze — premium maakt niemand sterker in het spel. Wie betaalt koopt rust, geen
+voorsprong.
 
 **Advertenties.** Wie geen premium heeft, komt om de zoveel paginabezoeken
 (standaard 25) op een tussenpagina met een knop "ga door". Je kunt daar een
