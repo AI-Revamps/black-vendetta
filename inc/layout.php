@@ -169,6 +169,11 @@ function layout_header(string $titel = ''): void
     echo '<link rel="icon" href="' . e(url('favicon.ico')) . '">' . "\n";
     echo "</head>\n<body>\n";
 
+    // Zijmenu en statuspaneel horen bij een levende, ingelogde speler. Zijn ze
+    // er niet, dan moet het raster één kolom zijn in plaats van drie — anders
+    // valt de inhoud in de smalle menukolom.
+    $metZijkanten = $user !== null && !is_dead();
+
     // --- Kopbalk ---
     echo '<header class="topbar">' . "\n";
     echo '<a class="brand" href="' . e(url('home.php')) . '">' . e($siteNaam) . "</a>\n";
@@ -203,15 +208,18 @@ function layout_header(string $titel = ''): void
     }
     echo "</nav>\n";
 
-    // Knop om het menu op smalle schermen open te klappen.
-    echo '<button class="menu-toggle" type="button" aria-controls="zijmenu" '
-       . 'aria-expanded="false" aria-label="Menu">&#9776;</button>' . "\n";
+    // Knop om het menu op smalle schermen open te klappen. Alleen tonen als er
+    // ook werkelijk een menu is; uitgelogd bediende hij niets.
+    if ($metZijkanten) {
+        echo '<button class="menu-toggle" type="button" aria-controls="zijmenu" '
+           . 'aria-expanded="false" aria-label="Menu">&#9776;</button>' . "\n";
+    }
     echo "</header>\n";
 
-    echo '<div class="layout">' . "\n";
+    echo '<div class="layout' . ($metZijkanten ? '' : ' alleen-inhoud') . '">' . "\n";
 
     // --- Zijmenu ---
-    if ($user !== null && !is_dead()) {
+    if ($metZijkanten) {
         echo '<nav class="sidebar" id="zijmenu">' . "\n";
         foreach (menu_groups($user) as $groep => $items) {
             echo '<details class="menugroep" open><summary>' . e($groep) . "</summary>\n<ul>\n";
