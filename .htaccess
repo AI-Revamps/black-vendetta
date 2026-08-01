@@ -4,8 +4,16 @@
 # LiteSpeed, dan wordt dit bestand ook gelezen. Op nginx moet je de regels
 # handmatig omzetten; vraag je host daarnaar.
 
+# LET OP: in dit bestand mag alleen wat Apache in een .htaccess toestaat.
+# <Directory>, <VirtualHost> en php_flag/php_value horen hier NIET thuis:
+# daar breekt Apache op af met een 500 op de hele site.
+
 # --- Mapinhoud niet tonen ------------------------------------------------
-Options -Indexes
+# Valt onder AllowOverride Indexes. Geeft je host daarvoor geen toestemming,
+# dan levert deze regel een 500 op; haal hem dan weg.
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
 
 # --- Standaardpagina ------------------------------------------------------
 DirectoryIndex index.php index.html
@@ -32,10 +40,10 @@ DirectoryIndex index.php index.html
     </IfModule>
 </FilesMatch>
 
-# --- Geen PHP uitvoeren in mappen met geüploade bestanden -------------------
-<Directory "uploads">
-    php_flag engine off
-</Directory>
+# Hier stond een <Directory "uploads">-blok met php_flag erin. Allebei fout:
+# <Directory> mag niet in een .htaccess, en php_flag werkt alleen met mod_php,
+# niet met PHP-FPM of CGI. Het gaf een 500 op de hele site. Er is bovendien
+# geen map met geüploade bestanden — spelers uploaden niets.
 
 # --- Caching van statische bestanden ----------------------------------------
 <IfModule mod_expires.c>
@@ -48,8 +56,13 @@ DirectoryIndex index.php index.html
 </IfModule>
 
 # --- Compressie ---------------------------------------------------------------
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript
+# AddOutputFilterByType komt uit mod_filter, niet uit mod_deflate. Op een host
+# met wel mod_deflate maar niet mod_filter gaf een controle op de verkeerde
+# module een 500. Allebei nodig, dus allebei controleren.
+<IfModule mod_filter.c>
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript
+    </IfModule>
 </IfModule>
 
 # --- Beveiligingsheaders --------------------------------------------------------

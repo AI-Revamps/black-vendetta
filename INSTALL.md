@@ -290,6 +290,18 @@ Verhuis je naar een ander domein, dan hoef je alleen `site.url` aan te passen.
 
 ## Veelgestelde vragen
 
+**Ik krijg een HTTP 500 op `/install/`.**
+Twee veelvoorkomende oorzaken:
+
+1. **Je host staat iets in `.htaccess` niet toe.** Apache geeft dan een 500 op
+   de héle site. Hernoem `.htaccess` tijdelijk naar `htaccess.uit` en laad
+   opnieuw. Werkt het dan? Zet de regels er dan één blok tegelijk weer in tot je
+   ziet welk blok het is, en haal dat weg. De meest kwetsbare regel is
+   `Options -Indexes`: die vereist dat je host `AllowOverride Options` toestaat.
+2. **Je host draait een te oude PHP.** De installer zegt dat zelf; zie je in
+   plaats daarvan een kale 500, kijk dan in het foutenlogboek van je host (in
+   cPanel meestal *Errors* of *Error Log*).
+
 **Ik zie een witte pagina.**
 Zet `'debug' => true` in `inc/config.php`, laad opnieuw, lees de foutmelding en
 zet hem daarna **meteen weer op `false`**.
