@@ -46,6 +46,7 @@ staat in **[docs/INSTALLATIE.md](docs/INSTALLATIE.md)**.
 | [docs/ARCHITECTUUR.md](docs/ARCHITECTUUR.md) | hoe de code in elkaar zit |
 | [docs/ONTWIKKELEN.md](docs/ONTWIKKELEN.md) | lokaal draaien en testen |
 | [docs/HERBOUW.md](docs/HERBOUW.md) | verslag van de herbouw en wat er gerepareerd is |
+| [CHANGELOG.md](CHANGELOG.md) | wat er per versie veranderd is |
 | [docs/LOGOBESTANDEN.md](docs/LOGOBESTANDEN.md) | welke logobestanden waar horen |
 
 Werk je met een AI-assistent aan dit project? Begin dan bij
