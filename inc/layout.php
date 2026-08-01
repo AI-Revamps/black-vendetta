@@ -18,10 +18,29 @@ declare(strict_types=1);
 
 defined('BV_INC') || exit;
 
-/** Bestandsnaam van de pagina die nu getoond wordt, bv. 'crime.php'. */
+/**
+ * Bestandsnaam van de pagina die nu getoond wordt, bv. 'crime.php'.
+ *
+ * Uit SCRIPT_NAME en niet uit REQUEST_URI: met mooie adressen staat er in de
+ * adresbalk "/crime", maar draait nog steeds crime.php. SCRIPT_NAME geeft in
+ * beide gevallen de echte bestandsnaam, zodat het menu weet waar je bent.
+ */
 function current_page(): string
 {
-    return basename((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH)) ?: 'home.php';
+    $script = basename((string) parse_url($_SERVER['SCRIPT_NAME'] ?? '', PHP_URL_PATH));
+
+    if ($script !== '' && str_ends_with($script, '.php')) {
+        return $script;
+    }
+
+    // Terugval voor opstellingen waar SCRIPT_NAME niets bruikbaars geeft.
+    $uri = basename((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+
+    if ($uri === '') {
+        return 'home.php';
+    }
+
+    return str_ends_with($uri, '.php') ? $uri : $uri . '.php';
 }
 
 /**

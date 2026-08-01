@@ -100,7 +100,33 @@ function client_ip(): string
 function url(string $path = ''): string
 {
     $base = rtrim((string) config('site.url', ''), '/');
-    return $base . '/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+
+    if (config('mooie_urls')) {
+        $path = zonder_extensie($path);
+    }
+
+    return $base . '/' . $path;
+}
+
+/**
+ * Haal ".php" uit een pad, met behoud van de querystring.
+ *
+ * "members.php?filter=levend" wordt "members?filter=levend". Alleen bestanden
+ * die op .php eindigen worden aangeraakt; stylesheets, plaatjes en mappen
+ * blijven zoals ze zijn.
+ */
+function zonder_extensie(string $path): string
+{
+    $vraag = strpos($path, '?');
+    $deel  = $vraag === false ? $path : substr($path, 0, $vraag);
+    $rest  = $vraag === false ? '' : substr($path, $vraag);
+
+    if (str_ends_with($deel, '.php')) {
+        $deel = substr($deel, 0, -4);
+    }
+
+    return $deel . $rest;
 }
 
 /**

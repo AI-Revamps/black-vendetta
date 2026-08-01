@@ -296,6 +296,36 @@ daarna de rij uit `stad`.
 
 ---
 
+## Adressen zonder .php
+
+Standaard staan de adressen als `jouwdomein.nl/home.php`. Dat kan ook zonder
+extensie: `jouwdomein.nl/home`.
+
+De regels daarvoor staan al in `.htaccess` en hebben **mod_rewrite** nodig. Dat
+zit op vrijwel elke Apache-host, maar niet op alle.
+
+**Zo zet je het aan:**
+
+1. Ga naar `https://jouwdomein.nl/home`. Zie je de statuspagina (of de
+   inlogpagina), dan werkt mod_rewrite.
+2. Zet in `inc/config.php`:
+   ```php
+   'mooie_urls' => true,
+   ```
+3. Klaar. Alle links in het spel gaan nu zonder `.php`.
+
+> **Krijg je bij stap 1 een 404?** Dan doet je host geen mod_rewrite. Laat de
+> instelling dan op `false` staan; het spel werkt gewoon met `.php` in de
+> adressen.
+>
+> Zet je hem toch aan zonder werkende mod_rewrite, dan leidt elke link naar een
+> 404. Herstellen doe je door hem via FTP weer op `false` te zetten.
+
+De oude adressen mét `.php` blijven het altijd doen, ook met deze instelling
+aan. Bladwijzers en links die spelers al hadden blijven dus werken.
+
+---
+
 ## Instellingen achteraf aanpassen
 
 Alles zit in `inc/config.php`. De belangrijkste:
@@ -311,8 +341,9 @@ Alles zit in `inc/config.php`. De belangrijkste:
     'require_activation'   => true,   // activatiemail verplicht
     'allow_multi_accounts' => false,  // meerdere accounts per IP
 ],
-'cron_mode' => 'request',
-'debug'     => false,
+'cron_mode'  => 'request',
+'mooie_urls' => false,   // adressen zonder .php; zie hierboven
+'debug'      => false,
 ```
 
 Verhuis je naar een ander domein, dan hoef je alleen `site.url` aan te passen.

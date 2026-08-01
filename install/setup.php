@@ -627,6 +627,10 @@ function bouw_config(array $w): string
         . "    'cron_mode' => {$q($w['cron_mode'])},\n"
         . "    'cron_key'  => {$q($w['cron_key'])},\n\n"
         . "    'captcha' => 'plaatje',\n\n"
+        . "    // Op true worden alle links /home in plaats van /home.php. Heeft\n"
+        . "    // mod_rewrite nodig; de regels staan al in .htaccess. Controleer\n"
+        . "    // eerst of https://jouwdomein.nl/home werkt.\n"
+        . "    'mooie_urls' => false,\n\n"
         . "    'debug' => false,\n"
         . "];\n";
 }

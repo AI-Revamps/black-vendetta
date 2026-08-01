@@ -18,6 +18,26 @@
 # --- Standaardpagina ------------------------------------------------------
 DirectoryIndex index.php index.html
 
+# --- Adressen zonder .php --------------------------------------------------
+# Laat /home ook home.php bedienen. Deze regels staan er altijd; ze doen niets
+# kwaads als je de bijbehorende instelling uit laat staan, en zonder
+# mod_rewrite worden ze overgeslagen.
+#
+# Zet 'mooie_urls' in inc/config.php op true zodra je gecontroleerd hebt dat
+# https://jouwdomein.nl/home werkt. Staat die op false, dan blijft het spel
+# gewoon .php in de adressen zetten en verandert er niets.
+#
+# Er staat met opzet geen RewriteBase: zo werkt dit ook als het spel in een
+# submap staat.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Alleen als er geen echte map is en het .php-bestand wél bestaat.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L]
+</IfModule>
+
 # --- Gevoelige bestanden afschermen ---------------------------------------
 # Databasedumps, logbestanden, versiebeheer en editor-backups.
 <FilesMatch "(?i)\.(sql|sqlite|db|log|ini|md|bak|old|swp|dist|sample)$">

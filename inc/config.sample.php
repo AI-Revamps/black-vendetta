@@ -82,6 +82,18 @@ return [
     // Verander dit in een willekeurige reeks tekens.
     'cron_key' => 'verander-dit-in-iets-willekeurigs',
 
+    // --- Adressen zonder .php -----------------------------------------------
+    // Op true worden alle links /home in plaats van /home.php.
+    //
+    // Dit heeft mod_rewrite nodig; de regels staan al klaar in .htaccess.
+    // Controleer eerst of https://jouwdomein.nl/home werkt en zet hem daarna
+    // pas op true. Werkt het niet en staat dit toch aan, dan leidt elke link
+    // naar een 404 — zet hem dan via FTP weer op false.
+    //
+    // De oude adressen met .php blijven het altijd doen, dus bestaande links
+    // en bladwijzers van spelers blijven werken.
+    'mooie_urls' => false,
+
     // --- Beveiligingscode ---------------------------------------------------
     // 'plaatje' = een plaatje met vijf tekens (heeft de gd-uitbreiding nodig)
     // 'tekst'   = een eenvoudige rekensom
