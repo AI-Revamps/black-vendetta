@@ -192,6 +192,11 @@ summary:focus-visible {
     padding-right: 2px;
 }
 
+/* Zonder dit persen de groepen zich samen in de beschikbare hoogte in plaats
+   van te scrollen: flexkinderen krimpen standaard. Dat leverde een menu op
+   waarin de onderste groepen tot een paar pixels waren platgedrukt. */
+.sidebar > * { flex-shrink: 0; }
+
 .sidebar::-webkit-scrollbar { width: 8px; }
 .sidebar::-webkit-scrollbar-thumb {
     background: var(--rand);
@@ -959,22 +964,29 @@ table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
         padding-bottom: calc(var(--onderbalk) + env(safe-area-inset-bottom, 0px) + 1rem);
     }
 
-    /* Het zijmenu wordt een la die van links inschuift. */
+    /* Het zijmenu wordt een la die van links inschuift, tussen de kopbalk en
+       de onderbalk. Eerder begon hij op top:0, waardoor de bovenste groep
+       achter de kopbalk verdween. */
     .sidebar {
         position: fixed;
-        top: 0;
+        top: var(--kopbalk);
         left: 0;
         bottom: 0;
         z-index: 26;
         width: min(84vw, 20rem);
         max-height: none;
         padding: .75rem;
+        padding-bottom: calc(var(--onderbalk) + env(safe-area-inset-bottom, 0px) + 1rem);
         background: var(--zwart);
         border-right: 1px solid var(--rand);
         overflow-y: auto;
         transform: translateX(-100%);
         transition: transform .2s ease;
     }
+
+    /* De overlay begint ook onder de kopbalk, zodat de hamburger bereikbaar
+       blijft om het menu weer te sluiten. */
+    .menu-overlay { top: var(--kopbalk); }
     .sidebar.open { transform: translateX(0); }
     .menu-overlay.open { display: block; }
 

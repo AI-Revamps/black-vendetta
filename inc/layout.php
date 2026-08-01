@@ -190,7 +190,7 @@ function layout_header(string $titel = ''): void
     echo '<meta charset="utf-8">' . "\n";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
     echo '<title>' . e($volTitel) . "</title>\n";
-    echo '<link rel="stylesheet" href="' . e(url('assets/css/style.css')) . '?v=3">' . "\n";
+    echo '<link rel="stylesheet" href="' . e(asset_url('assets/css/style.css')) . '">' . "\n";
 
     $favicon = logo_url('favicon.png');
     echo '<link rel="icon" href="' . e($favicon ?? url('favicon.ico')) . '">' . "\n";
@@ -368,8 +368,24 @@ function layout_footer(): void
         onderbalk($user);
     }
 
-    echo '<script src="' . e(url('assets/js/app.js')) . '?v=3" defer></script>' . "\n";
+    echo '<script src="' . e(asset_url('assets/js/app.js')) . '" defer></script>' . "\n";
     echo "</body>\n</html>\n";
+}
+
+/**
+ * Adres van een bestand in /assets/, met de wijzigingsdatum erachter.
+ *
+ * Zo krijgt de browser vanzelf de nieuwe versie zodra het bestand verandert.
+ * Eerder stond er een handmatig getal (?v=3), en dat is precies één keer
+ * misgegaan: de stylesheet werd aangepast zonder het getal op te hogen,
+ * waardoor iedereen de oude opmaak bleef zien.
+ */
+function asset_url(string $pad): string
+{
+    $vol = BV_ROOT . '/' . ltrim($pad, '/');
+    $tijd = is_file($vol) ? filemtime($vol) : time();
+
+    return url($pad) . '?v=' . $tijd;
 }
 
 /**
