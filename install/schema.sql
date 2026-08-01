@@ -74,15 +74,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `bf`         int unsigned NOT NULL DEFAULT 0,
   `bo`         int unsigned NOT NULL DEFAULT 0,
 
-  -- Bezochte steden (mag de speler er heen reizen).
-  `Brussel`    tinyint unsigned NOT NULL DEFAULT 0,
-  `Leuven`     tinyint unsigned NOT NULL DEFAULT 0,
-  `Gent`       tinyint unsigned NOT NULL DEFAULT 0,
-  `Brugge`     tinyint unsigned NOT NULL DEFAULT 0,
-  `Hasselt`    tinyint unsigned NOT NULL DEFAULT 0,
-  `Antwerpen`  tinyint unsigned NOT NULL DEFAULT 0,
-  `Amsterdam`  tinyint unsigned NOT NULL DEFAULT 0,
-  `Enschede`   tinyint unsigned NOT NULL DEFAULT 0,
+  -- Huisbezit stond hier als één kolom per stad: `Brussel`, `Leuven`, enzovoort.
+  -- Daardoor kostte een stad toevoegen een ALTER TABLE, en brak de registratie
+  -- zodra iemand in een stad terechtkwam waarvoor de kolom ontbrak. Het staat
+  -- nu in de tabel `huizen`.
 
   `pic`        varchar(255) NOT NULL DEFAULT '',
   `info`       text NULL,
@@ -167,9 +162,22 @@ CREATE TABLE IF NOT EXISTS `stad` (
   `drank`  int unsigned NOT NULL DEFAULT 50,
   `drugsp` int unsigned NOT NULL DEFAULT 2500,
   `drankp` int unsigned NOT NULL DEFAULT 2500,
+  -- Wat het kost om hierheen te reizen. Stond eerder hardcoded in
+  -- transport.php, waardoor een nieuwe stad onbereikbaar was.
   `transp` int unsigned NOT NULL DEFAULT 2000,
   `grond`  int unsigned NOT NULL DEFAULT 1000,
   PRIMARY KEY (`stad`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Huisbezit per speler per stad. Een huis geeft thuisvoordeel bij gevechten
+-- in die stad. Eerder was dit een kolom per stad in `users`; zo kost een stad
+-- toevoegen geen schemawijziging meer.
+CREATE TABLE IF NOT EXISTS `huizen` (
+  `login` varchar(16) NOT NULL,
+  `stad`  varchar(32) NOT NULL,
+  `sinds` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`login`, `stad`),
+  KEY `per_stad` (`stad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------- families
@@ -626,14 +634,15 @@ INSERT IGNORE INTO `cron` (`name`, `time`) VALUES
   ('detective', '1970-01-01 00:00:01');
 
 INSERT IGNORE INTO `stad` (`stad`, `kogels`, `prijs`, `drugs`, `drank`, `drugsp`, `drankp`, `transp`, `grond`) VALUES
+  -- `transp` is de reisprijs; die stond eerder hardcoded in transport.php.
   ('Brussel',   100, 1273,  32, 464, 14903, 3402, 2000, 1000),
-  ('Leuven',    100, 1273, 194, 196, 13734, 1093, 2000, 1000),
-  ('Gent',      100, 1273, 104,  17,  7049, 5630, 2000, 1000),
-  ('Brugge',    100, 1273, 331,   6,  7190, 3668, 2000, 1000),
-  ('Hasselt',   100, 1273, 381, 132, 12659, 1312, 2000, 1000),
-  ('Antwerpen', 100, 1273,  33,  28,  6172, 4550, 2000, 1000),
-  ('Amsterdam', 100, 1273, 194,   4, 12955, 3408, 2000, 1000),
-  ('Enschede',  100, 1273, 544,   0, 10080, 2803, 2000, 1000);
+  ('Leuven',    100, 1273, 194, 196, 13734, 1093, 2500, 1000),
+  ('Gent',      100, 1273, 104,  17,  7049, 5630, 1500, 1000),
+  ('Brugge',    100, 1273, 331,   6,  7190, 3668, 1300, 1000),
+  ('Hasselt',   100, 1273, 381, 132, 12659, 1312, 1000, 1000),
+  ('Antwerpen', 100, 1273,  33,  28,  6172, 4550, 2250, 1000),
+  ('Amsterdam', 100, 1273, 194,   4, 12955, 3408, 3500, 1000),
+  ('Enschede',  100, 1273, 544,   0, 10080, 2803, 4500, 1000);
 
 INSERT IGNORE INTO `items` (`id`, `nr`, `type`, `naam`, `aprijs`, `vprijs`, `effect`) VALUES
   (1,  1, 'att',   'Uzi',               25000,   20000,    3.00),

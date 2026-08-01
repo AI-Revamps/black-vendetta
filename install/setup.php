@@ -161,8 +161,26 @@ function toon_formulier(?string $fout): void
     // Ingevulde waarden bewaren zodat je bij een fout niet opnieuw hoeft te typen.
     $v = static fn (string $k, string $std = ''): string => h((string) ($_POST[$k] ?? $std));
 
-    $gokUrl = h(gok_site_url());
+    $gokUrl  = h(gok_site_url());
     $sleutel = h(bin2hex(random_bytes(16)));
+
+    $standaardSteden = implode("\n", standaard_steden());
+
+    $cronOpties = opties('cron_mode', [
+        'request' => 'Meedraaien met paginabezoeken (werkt altijd)',
+        'cron'    => 'Alleen via een echte cronjob bij mijn host',
+        'both'    => 'Allebei',
+    ], 'request');
+
+    $activatieOpties = opties('require_activation', [
+        '1' => 'Ja, nieuwe spelers moeten hun e-mailadres bevestigen',
+        '0' => 'Nee, meteen spelen',
+    ], '1');
+
+    $multiOpties = opties('allow_multi', [
+        '0' => 'Nee, één account per IP-adres',
+        '1' => 'Ja, toestaan',
+    ], '0');
 
     toon_pagina('Stap 2 — Gegevens', <<<HTML
         {$melding}
@@ -225,11 +243,119 @@ function toon_formulier(?string $fout): void
           <input id="adm_pass2" name="adm_pass2" type="password" minlength="10" required autocomplete="new-password">
         </div>
 
+        <h2>Steden</h2>
+        <p class="uitleg">Waar het spel zich afspeelt. Eén stad per regel, minstens twee.
+        De volgorde maakt niet uit; nieuwe spelers krijgen er willekeurig een toegewezen.
+        Je kunt dit later nog aanpassen op de beheerpagina Steden.</p>
+
+        <div class="raster">
+          <label for="cities">Stedenlijst</label>
+          <textarea id="cities" name="cities" rows="8" spellcheck="false" required>{$v('cities', $standaardSteden)}</textarea>
+          <span></span>
+          <small>Letters, cijfers, spaties, streepjes en apostrofs. Hoogstens 32 tekens per naam.</small>
+        </div>
+
+        <h2>Hoe het spel draait</h2>
+
+        <div class="raster">
+          <label for="cron_mode">Periodieke taken</label>
+          <select id="cron_mode" name="cron_mode">
+            {$cronOpties}
+          </select>
+          <span></span>
+          <small>Het spel moet af en toe werk doen: kogelvoorraad aanvullen, prijzen
+          verversen, de loterij trekken. Weet je het niet, laat het dan op
+          <em>meedraaien met paginabezoeken</em> staan — dat werkt altijd.</small>
+
+          <label for="require_activation">Activatiemail</label>
+          <select id="require_activation" name="require_activation">
+            {$activatieOpties}
+          </select>
+          <span></span>
+          <small>Met een activatiemail moet een nieuwe speler eerst op een link in zijn
+          mail klikken. Werkt <code>mail()</code> op jouw host niet, zet dit dan uit —
+          anders kan niemand zijn account activeren.</small>
+
+          <label for="allow_multi">Meerdere accounts per IP</label>
+          <select id="allow_multi" name="allow_multi">
+            {$multiOpties}
+          </select>
+          <span></span>
+          <small>Uit betekent één account per IP-adres en per e-mailadres. Voor
+          huisgenoten kun je later per adres uitzondering geven.</small>
+        </div>
+
         <input type="hidden" name="cron_key" value="{$sleutel}">
 
         <p><button type="submit" class="knop primair">Installeren</button></p>
         </form>
         HTML);
+}
+
+/** De stedenlijst waarmee het spel van oudsher geleverd wordt. */
+function standaard_steden(): array
+{
+    return ['Brussel', 'Leuven', 'Gent', 'Brugge',
+            'Hasselt', 'Antwerpen', 'Amsterdam', 'Enschede'];
+}
+
+/**
+ * Lees de stedenlijst uit het tekstvak: één per regel.
+ *
+ * @return string[]
+ * @throws RuntimeException
+ */
+function steden_uit_invoer(string $ruw): array
+{
+    $steden = [];
+
+    foreach (preg_split('/\R/', $ruw) ?: [] as $regel) {
+        $naam = trim($regel);
+
+        if ($naam === '') {
+            continue;
+        }
+        if (mb_strlen($naam) > 32) {
+            throw new RuntimeException("De stadsnaam '{$naam}' is langer dan 32 tekens.");
+        }
+        // Geen backticks, aanhalingstekens of punten: deze namen komen in
+        // tabellen, koppen en configuratiebestanden terecht.
+        if (!preg_match("/^[\p{L}\p{N} '\-]+$/u", $naam)) {
+            throw new RuntimeException(
+                "De stadsnaam '{$naam}' bevat tekens die niet mogen. Gebruik letters, "
+                . 'cijfers, spaties, streepjes en apostrofs.'
+            );
+        }
+        if (in_array($naam, $steden, true)) {
+            throw new RuntimeException("De stad '{$naam}' staat er twee keer in.");
+        }
+
+        $steden[] = $naam;
+    }
+
+    if (count($steden) < 2) {
+        throw new RuntimeException('Vul minstens twee steden in; anders valt er niets te reizen.');
+    }
+    if (count($steden) > 30) {
+        throw new RuntimeException('Dertig steden is het maximum.');
+    }
+
+    return $steden;
+}
+
+/** Bouw de keuzelijst en onthoud wat er al gekozen was. */
+function opties(string $veld, array $keuzes, string $standaard): string
+{
+    $gekozen = (string) ($_POST[$veld] ?? $standaard);
+    $html    = '';
+
+    foreach ($keuzes as $waarde => $label) {
+        $html .= '<option value="' . h((string) $waarde) . '"'
+               . ((string) $waarde === $gekozen ? ' selected' : '') . '>'
+               . h($label) . '</option>';
+    }
+
+    return $html;
 }
 
 // ==========================================================================
@@ -276,6 +402,17 @@ function installeren(array $in): void
         throw new RuntimeException('De twee wachtwoorden zijn niet gelijk.');
     }
 
+    // Ontbreekt het veld helemaal, dan gebruiken we de standaardlijst. Alleen
+    // als iemand er wél iets invulde controleren we het; anders zou een
+    // installatie zonder dit veld stranden op een verwarrende melding.
+    $steden = isset($in['cities'])
+        ? steden_uit_invoer((string) $in['cities'])
+        : standaard_steden();
+    $cronMode  = in_array($in['cron_mode'] ?? '', ['request', 'cron', 'both'], true)
+        ? (string) $in['cron_mode'] : 'request';
+    $activatie = ($in['require_activation'] ?? '1') === '1';
+    $multi     = ($in['allow_multi'] ?? '0') === '1';
+
     // --- Verbinden ---
     try {
         $pdo = new PDO(
@@ -312,6 +449,32 @@ function installeren(array $in): void
         }
     }
 
+    // --- Steden klaarzetten ---
+    //
+    // schema.sql zet de acht standaardsteden neer. Heeft de beheerder een eigen
+    // lijst ingevuld, dan halen we wat hij niet wil weg en zetten we de rest erbij.
+    // Verwijderen kan hier veilig: er is nog niemand die ergens woont.
+    $bestaandeSteden = $pdo->query('SELECT `stad` FROM `stad`')->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach (array_diff($bestaandeSteden, $steden) as $weg) {
+        $pdo->prepare('DELETE FROM `stad` WHERE `stad` = ?')->execute([$weg]);
+    }
+
+    $nieuw = $pdo->prepare(
+        'INSERT IGNORE INTO `stad` (`stad`, `kogels`, `prijs`, `drugs`, `drank`,
+                                    `drugsp`, `drankp`, `transp`, `grond`)
+              VALUES (?, 100, 1273, 50, 50, ?, ?, ?, 1000)'
+    );
+
+    foreach (array_diff($steden, $bestaandeSteden) as $erbij) {
+        $nieuw->execute([
+            $erbij,
+            random_int(6000, 15000),   // drugsprijs
+            random_int(1000, 6000),    // drankprijs
+            random_int(1000, 4500),    // reisprijs
+        ]);
+    }
+
     // --- Beheerder aanmaken ---
     $bestaat = $pdo->prepare('SELECT COUNT(*) FROM `users` WHERE `login` = ?');
     $bestaat->execute([$admLogin]);
@@ -320,7 +483,8 @@ function installeren(array $in): void
         throw new RuntimeException("Er bestaat al een speler met de naam '{$admLogin}'. Kies een andere naam.");
     }
 
-    $stad = 'Brussel';
+    $stad = $steden[0];
+
     $pdo->prepare(
         'INSERT INTO `users`
               (`login`, `pass`, `email`, `ip`, `activated`, `level`, `status`,
@@ -336,6 +500,10 @@ function installeren(array $in): void
         1000,
     ]);
 
+    // Beheerder begint net als iedereen met een huis in zijn startstad.
+    $pdo->prepare('INSERT IGNORE INTO `huizen` (`login`, `stad`) VALUES (?, ?)')
+        ->execute([$admLogin, $stad]);
+
     // --- Config wegschrijven ---
     $config = bouw_config([
         'db_host'   => $dbHost,
@@ -347,6 +515,10 @@ function installeren(array $in): void
         'mail_from' => $mailFrom,
         'adm_email' => $admEmail,
         'cron_key'  => (string) ($in['cron_key'] ?? bin2hex(random_bytes(16))),
+        'cities'    => $steden,
+        'cron_mode' => $cronMode,
+        'activatie' => $activatie,
+        'multi'     => $multi,
     ]);
 
     if (@file_put_contents(CONFIG_PAD, $config, LOCK_EX) === false) {
@@ -443,16 +615,35 @@ function bouw_config(array $w): string
         . "        'timezone'       => 'Europe/Amsterdam',\n"
         . "    ],\n\n"
         . "    'game' => [\n"
-        . "        'cities' => ['Brussel', 'Leuven', 'Gent', 'Brugge',\n"
-        . "                     'Hasselt', 'Antwerpen', 'Amsterdam', 'Enschede'],\n"
+        . "        // Wil je later een stad toevoegen: zet hem hier in de lijst en maak\n"
+        . "        // hem daarna aan op de beheerpagina Steden. Meer is er niet nodig.\n"
+        . "        'cities' => [\n"
+        . stedenregels($w['cities'])
+        . "        ],\n"
         . "        'start_money'          => 1000,\n"
-        . "        'require_activation'   => true,\n"
-        . "        'allow_multi_accounts' => false,\n"
+        . "        'require_activation'   => " . ($w['activatie'] ? 'true' : 'false') . ",\n"
+        . "        'allow_multi_accounts' => " . ($w['multi'] ? 'true' : 'false') . ",\n"
         . "    ],\n\n"
-        . "    'cron_mode' => 'request',\n"
+        . "    'cron_mode' => {$q($w['cron_mode'])},\n"
         . "    'cron_key'  => {$q($w['cron_key'])},\n\n"
+        . "    'captcha' => 'plaatje',\n\n"
         . "    'debug' => false,\n"
         . "];\n";
+}
+
+/** De stedenlijst netjes uitgelijnd, vier per regel. */
+function stedenregels(array $steden): string
+{
+    $regels = [];
+
+    foreach (array_chunk($steden, 4) as $groep) {
+        $regels[] = '            ' . implode(', ', array_map(
+            static fn (string $s): string => var_export($s, true),
+            $groep
+        )) . ',';
+    }
+
+    return implode("\n", $regels) . "\n";
 }
 
 // ==========================================================================

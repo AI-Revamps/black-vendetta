@@ -28,7 +28,7 @@ $wapen  = wapennaam((int) $user['wapon'], 'att');
 $vest   = wapennaam((int) $user['defence'], 'def');
 $vervoer= wapennaam((int) $user['trans'], 'trans');
 $cel    = jail_status($user['login']);
-$huis   = ((int) ($user[$user['stad']] ?? 0)) > 0 ? 'Ja' : 'Nee';
+$huis   = heeft_huis((string) $user['login'], (string) $user['stad']) ? 'Ja' : 'Nee';
 
 layout_header('Status');
 

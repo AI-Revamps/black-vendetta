@@ -54,7 +54,7 @@ function weerstand(array $speler, string $stad): float
     $weerstand = $basis * item_effect('def', (int) $speler['defence']);
 
     // Thuisvoordeel: een eigen huis in deze stad.
-    if ((int) ($speler[$stad] ?? 0) > 0) {
+    if (heeft_huis((string) $speler['login'], $stad)) {
         $weerstand += GEVECHT_HUIS_BONUS;
     }
 

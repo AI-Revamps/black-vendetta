@@ -71,9 +71,20 @@ De installer doet drie dingen:
 1. **Servercontrole.** Controleert PHP-versie, uitbreidingen en schrijfrechten,
    en zegt per punt wat je moet doen als iets niet klopt.
 2. **Gegevens invullen.** Databasegegevens, het adres van het spel, het
-   afzenderadres voor e-mail, en je eigen beheerdersaccount.
-3. **Installeren.** Schrijft `inc/config.php`, importeert `schema.sql` en maakt
-   je beheerdersaccount aan.
+   afzenderadres voor e-mail, je eigen beheerdersaccount, én de eerste
+   spelinstellingen:
+   - **Steden** — één per regel. De acht standaardsteden staan al ingevuld; je
+     kunt ze weghalen en je eigen lijst neerzetten.
+   - **Periodieke taken** — meedraaien met paginabezoeken, een echte cronjob,
+     of allebei.
+   - **Activatiemail** — moeten nieuwe spelers hun e-mailadres bevestigen?
+     Werkt `mail()` op jouw host niet, zet dit dan uit.
+   - **Meerdere accounts per IP** — aan of uit.
+3. **Installeren.** Schrijft `inc/config.php` met jouw keuzes, importeert het
+   schema en maakt je beheerdersaccount aan.
+
+Alles bij stap 2 is later nog aan te passen: de steden op de beheerpagina
+**Steden**, de rest in `inc/config.php`.
 
 Lukt het schrijven van `inc/config.php` niet, dan toont de installer de inhoud
 van dat bestand op het scherm. Kopieer die naar `inc/config.php` en upload hem
@@ -164,7 +175,7 @@ ontvangen.
 | Map `install/` weg | via FTP |
 | Rechten van `inc` terug op `755` | via FTP |
 | `inc/config.php` niet opvraagbaar | ga naar `https://jouwdomein.nl/inc/config.php` — je hoort een foutmelding of een lege pagina te zien, geen wachtwoord |
-| Steden ingevuld | `game.cities` in `inc/config.php` moet overeenkomen met de tabel `stad`. De beheerpagina *Drank en drugs* laat zien welke steden ontbreken |
+| Steden ingevuld | `game.cities` in `inc/config.php` moet overeenkomen met de tabel `stad`. De beheerpagina *Steden* laat zien welke er nog ontbreken en maakt ze met één klik aan |
 
 ---
 
@@ -262,6 +273,26 @@ niemand online in die stad, dan blijft de moord onopgemerkt.
 
 De pagina laat ook zien wat je keuze op dit moment zou opleveren, per stad. Een
 verklaring is twee dagen geldig.
+
+---
+
+## Steden aanpassen
+
+**Een stad toevoegen** is twee handelingen. Zet de naam in `game.cities` in
+`inc/config.php`, ga dan naar de beheerpagina **Steden** en klik op *Aanmaken*.
+De stad krijgt meteen prijzen en een reisprijs, die je daar kunt bijstellen.
+
+Er is geen schemawijziging nodig. Vroeger wel: huisbezit stond als één kolom per
+stad in de tabel `users`, en een stad die daar ontbrak liet de registratie
+vastlopen. Dat staat nu in een aparte tabel.
+
+**Een stad hernoemen** vraagt wel om een handeling in de database, want er staan
+spelers, huizen en families in. De precieze queries staan op diezelfde
+beheerpagina, klaar om te kopiëren.
+
+**Een stad weghalen** doe je alleen als er niemand meer woont: haal hem uit de
+configuratie, verplaats de achterblijvers naar een andere stad en verwijder
+daarna de rij uit `stad`.
 
 ---
 

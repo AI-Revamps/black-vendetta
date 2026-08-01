@@ -398,11 +398,16 @@ function speler_herstarten(int $userId): string
         // overlijden verplaatst; dit is wat er daarna nog naar dit account wees.
         $naam = (string) $speler['login'];
 
-        foreach (['garage', 'hitlist', 'invite', 'loterij', 'kras', 'jail'] as $tabel) {
+        foreach (['garage', 'hitlist', 'invite', 'loterij', 'kras', 'jail', 'huizen'] as $tabel) {
             q("DELETE FROM `{$tabel}` WHERE `login` = ?", [$naam]);
         }
         q('DELETE FROM `friends` WHERE `login` = ? OR `friend` = ?', [$naam, $naam]);
         q("UPDATE `casino` SET `owner` = '', `winst` = 0 WHERE `owner` = ?", [$naam]);
+
+        // Net als een nieuwe speler begin je met een huis in je startstad.
+        // Toen huisbezit nog een kolom per stad was viel dit buiten de reset,
+        // waardoor je na een doorstart je oude huizen gewoon hield.
+        huis_geven($naam, $stad);
 
         log_action($naam, 'herstart',
             'Opnieuw begonnen na overlijden nummer ' . ((int) $speler['gestorven'] + 1));
@@ -458,6 +463,72 @@ function random_city(): string
 {
     $list = cities();
     return $list[array_rand($list)];
+}
+
+// --- Prijzen die op meer dan één plek nodig zijn ----------------------------
+//
+// Deze stonden in shop.php en loterij.php zelf. help.php noemt ze ook, en die
+// kan die bestanden niet inladen zonder ze uit te voeren. Hier staan ze één
+// keer, zodat de uitleg nooit uit de pas kan lopen met het spel.
+
+const HUIS_KOOPPRIJS    = 850_000;
+const HUIS_VERKOOPPRIJS = 750_000;
+const LOT_PRIJS         = 10_000;
+const LOT_MAX           = 100;
+
+// --- Huizen ----------------------------------------------------------------
+//
+// Huisbezit stond als één kolom per stad in `users`. Daardoor kostte een stad
+// toevoegen een schemawijziging, en brak de registratie zodra een speler in een
+// stad terechtkwam waarvoor die kolom niet bestond. Het staat nu in `huizen`.
+
+/** Heeft deze speler een huis in deze stad? */
+function heeft_huis(string $login, string $stad): bool
+{
+    return (int) q_val(
+        'SELECT COUNT(*) FROM `huizen` WHERE `login` = ? AND `stad` = ?',
+        [$login, $stad],
+        0
+    ) > 0;
+}
+
+/**
+ * Alle steden waar deze speler een huis heeft.
+ *
+ * @return string[]
+ */
+function huizen_van(string $login): array
+{
+    return array_column(
+        q_all('SELECT `stad` FROM `huizen` WHERE `login` = ? ORDER BY `stad`', [$login]),
+        'stad'
+    );
+}
+
+/**
+ * Geef een speler een huis. Heeft hij er al een, dan verandert er niets.
+ *
+ * @return bool True als er werkelijk een huis bij kwam.
+ */
+function huis_geven(string $login, string $stad): bool
+{
+    return q_count(
+        'INSERT IGNORE INTO `huizen` (`login`, `stad`) VALUES (?, ?)',
+        [$login, $stad]
+    ) === 1;
+}
+
+/**
+ * Neem een huis weg.
+ *
+ * @return bool True als er werkelijk een huis weg was.
+ */
+function huis_afnemen(string $login, string $stad): bool
+{
+    return q_count(
+        'DELETE FROM `huizen` WHERE `login` = ? AND `stad` = ?',
+        [$login, $stad]
+    ) === 1;
 }
 
 // --- Forum -----------------------------------------------------------------

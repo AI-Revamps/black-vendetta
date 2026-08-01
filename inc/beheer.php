@@ -33,7 +33,7 @@ function beheerpaginas(): array
         // ongefilterd bij elke speler in de browser terechtkomt.
         'adm-premium.php'  => ['Premium',         LEVEL_OWNER],
         'adm-items.php'    => ['Items',           LEVEL_OWNER],
-        'adm-drdrpr.php'   => ['Drank en drugs',  LEVEL_OWNER],
+        'adm-drdrpr.php'   => ['Steden',          LEVEL_OWNER],
         'adm-bo.php'       => ['Speler bewerken', LEVEL_OWNER],
     ];
 }

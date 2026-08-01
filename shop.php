@@ -19,8 +19,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
 
-const HUIS_KOOPPRIJS   = 850_000;
-const HUIS_VERKOOPPRIJS = 750_000;
+// HUIS_KOOPPRIJS en HUIS_VERKOOPPRIJS staan in inc/game.php, omdat help.php ze
+// ook noemt en dit bestand niet kan inladen zonder het uit te voeren.
 
 /** Lijfwachten: niveau => prijs. */
 function lijfwachten(): array
@@ -219,18 +219,17 @@ function huis_kopen(array $user): string
         $speler = lock_user((int) $user['id']);
         $stad   = (string) $speler['stad'];
 
-        // Kolomnaam alleen uit de vaste stedenlijst, nooit uit invoer.
         if (!is_city($stad)) {
             throw new SpelFout('Je verblijft in een onbekende stad.');
         }
-        if ((int) $speler[$stad] > 0) {
+        if (heeft_huis((string) $speler['login'], $stad)) {
             throw new SpelFout('Je hebt al een huis in ' . $stad . '.');
         }
         if (!afboeken((int) $speler['id'], HUIS_KOOPPRIJS, 'zak')) {
             throw new SpelFout('Een huis kost ' . money(HUIS_KOOPPRIJS) . '.');
         }
 
-        q("UPDATE `users` SET `{$stad}` = 1 WHERE `id` = ?", [$speler['id']]);
+        huis_geven((string) $speler['login'], $stad);
 
         return 'Je hebt een huis gekocht in ' . $stad . ' voor ' . money(HUIS_KOOPPRIJS)
              . '. Dat geeft je thuisvoordeel bij gevechten in deze stad.';
@@ -247,11 +246,7 @@ function huis_verkopen(array $user): string
         if (!is_city($stad)) {
             throw new SpelFout('Je verblijft in een onbekende stad.');
         }
-
-        $gelukt = q_count("UPDATE `users` SET `{$stad}` = 0 WHERE `id` = ? AND `{$stad}` > 0",
-            [$speler['id']]) === 1;
-
-        if (!$gelukt) {
+        if (!huis_afnemen((string) $speler['login'], $stad)) {
             throw new SpelFout('Je hebt geen huis in ' . $stad . '.');
         }
 
@@ -390,7 +385,8 @@ function toon_lijfwachten(array $user): void
 function toon_huis(array $user): void
 {
     $stad   = (string) $user['stad'];
-    $heeft  = is_city($stad) && (int) $user[$stad] > 0;
+    $bezit  = huizen_van((string) $user['login']);
+    $heeft  = in_array($stad, $bezit, true);
 
     panel_open('Huis in ' . $stad);
     echo '<p>Een eigen huis geeft je thuisvoordeel bij gevechten in deze stad.</p>';
@@ -409,7 +405,7 @@ function toon_huis(array $user): void
     }
 
     // Overzicht van je andere huizen.
-    $elders = array_filter(cities(), static fn (string $s): bool => $s !== $stad && (int) ($user[$s] ?? 0) > 0);
+    $elders = array_values(array_filter($bezit, static fn (string $s): bool => $s !== $stad));
     if ($elders !== []) {
         echo '<p class="uitleg">Je hebt ook een huis in: ' . e(implode(', ', $elders)) . '.</p>';
     }

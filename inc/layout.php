@@ -109,7 +109,7 @@ function menu_groups(array $user): array
             'adm-addmulti.php' => 'Multi-accounts',
             'adm-msg.php'      => 'Adminbericht',
             'adm-bo.php'       => 'Userstats',
-            'adm-drdrpr.php'   => 'Drank &amp; drugs',
+            'adm-drdrpr.php'   => 'Steden',
             'adm-prison.php'   => 'Gevangenis',
             'adm-items.php'    => 'Items',
             'adm-shame.php'    => 'Wall of Shame',

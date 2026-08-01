@@ -15,25 +15,36 @@
  *  - De prijzen stonden twee keer in het bestand: één keer voor de controle en
  *    één keer voor de tabel. Ze konden dus uit de pas lopen, zoals bij Enschede.
  *  - De stadsnamen waren kale woorden, wat in PHP 8 een fatale fout geeft.
+ *  - De prijzen stonden daarna nog steeds hardcoded in dit bestand, waardoor een
+ *    stad die je in de configuratie toevoegde onbereikbaar bleef. Ze komen nu
+ *    uit `stad`.`transp`.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
 
-/** Reiskosten per bestemming. Eén plek, gebruikt voor zowel tabel als afschrijving. */
+/**
+ * Reiskosten per bestemming, uit de kolom `stad`.`transp`.
+ *
+ * Stond hier eerder als vaste lijst. Een stad die je in de configuratie
+ * toevoegde ontbrak dan hier, en was daardoor onbereikbaar. Nu komt de prijs
+ * uit de database en stel je hem in op de beheerpagina Steden.
+ *
+ * Alleen steden die óók in de configuratie staan tellen mee: een oude rij die
+ * in `stad` is blijven staan hoort geen bestemming te zijn.
+ */
 function reisprijzen(): array
 {
-    return [
-        'Hasselt'   => 1000,
-        'Brugge'    => 1300,
-        'Gent'      => 1500,
-        'Brussel'   => 2000,
-        'Antwerpen' => 2250,
-        'Leuven'    => 2500,
-        'Amsterdam' => 3500,
-        'Enschede'  => 4500,
-    ];
+    $prijzen = [];
+
+    foreach (q_all('SELECT `stad`, `transp` FROM `stad` ORDER BY `transp`, `stad`') as $rij) {
+        if (is_city((string) $rij['stad'])) {
+            $prijzen[(string) $rij['stad']] = (int) $rij['transp'];
+        }
+    }
+
+    return $prijzen;
 }
 
 $user = require_login();
@@ -124,9 +135,6 @@ function reizen(array $user, string $naar): string
 
         q('UPDATE `users` SET `stad` = ?, `transport` = DATE_ADD(NOW(), INTERVAL ? SECOND) WHERE `id` = ?',
             [$naar, $wachttijd, $speler['id']]);
-
-        // De stad geldt voortaan als bezocht.
-        q("UPDATE `users` SET `{$naar}` = GREATEST(`{$naar}`, 1) WHERE `id` = ?", [$speler['id']]);
 
         return 'Je bent aangekomen in ' . $naar . '. De reis kostte ' . money($prijs) . '.';
     });

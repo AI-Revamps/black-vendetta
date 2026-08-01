@@ -1,393 +1,337 @@
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-  <tr> 
-    <td class="subTitle"><b>Help</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<ol>
-<li><a href="#algemeen">Uitleg</a></li>
-<li><a href="#faq">Veel gestelde vragen</a></li>
-<li><font face="Verdana"><a href="#algemeen0">Regels</a></font></li>
-<li><a href="#Ranginfo">Ranginfo</a></li>
-<li><a href="#ubb">UBB codes</a></li>
-<li><a href="#smile">Emoticons</a></li>
-<li><a href="#prive">Privacy verklaring</a></li>
-<li><a href="#credits">Credits</a></li>
-</ol>
-  </td></tr>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="algemeen"></a>Uitleg</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-In den beginne ben je een schooier, je hebt enkel &euro;1000. Je moet proberen op te groeien tot een Godfather van de maffia.
-Dit doe je door misdaden te begaan, banken te beroven, auto's te stelen, enz...<br>
-Als je genoeg geld hebt verdient, dan kan je een eigen familie starten of lid worden van een reeds bestaande maffiafamilie.
-Je kan ook concurrenten uitschakelen door hen te vermoorden, maar je moet oppassen, want het zou wel eens kunnen dat je doelwit 
-zich verweerd en terugschiet.</td></tr>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="faq"></a>Veel gestelde vragen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<i><b>Wanneer staat iemand onder bescherming, en wat doet het?</b></i><br>
-De eerste 24 uur nadat iemand zijn account heeft geactiveerd, staat hij/zij onder bescherming. Dat wil zeggen dat niemand hem/haar
-aan kan vermoorden, maar ook de persoon zelf kan niemand vermoorden.<br><br>
-<i><b>Ik ben mijn wachtwoord vergeten, wat nu?</b></i><br>
-Ga naar login en klik op <a href="login.php?x=lostpass">Wachtwoord vergeten?</a>. Vul je e-mail in waarmee je je hebt
-aangemeld bij Vendetta. Er zal een link worden verstuurd naar het opgegeven 
-e-mail adres. Wanneer iemand op deze link drukt zal er een nieuw wachtwoord 
-ingesteld worden, en deze word naar het e-mail adres gestuurd. Wij raden u aan 
-dit wachtwoord meteen te veranderen.<br><br>
-<i><b>Waar kan ik m'n wachtwoord veranderen?</b></i><br>
-Je kunt je wachtwoord veranderen op de pagina "Profiel".<br><br>
-<i><b>Hoe kan ik een casino kopen?</b></i><br>
-      Door naar een stad te gaan waar het casino nog niet is opgekocht. Let wel 
-      op, je moet minstens &euro; 500.000 op je bank hebben, anders is je casino 
-      failliet.<br><br>
-      <i><b>Hoe kan ik een kogelfabriek kopen en wat ben ik ermee?</b></i><br>
-      Door naar een stad te gaan waar de kogelfabrieknog niet is opgekocht. Eens 
-      je een kogelfabriek hebt kan je een kogelprijs instellen. Per kogel die 
-      je verkoopt krijg je de helft van de prijs. Je krijgt elk uur 100 kogels 
-      bij, maar je kan er ook bijkopen voor &euro;100 per kogel.
-      <br><br>
-<i><b>Hoe kan ik mijn eigen familie oprichten?</b></i><br>
-Een familie kan je oprichten als je de rang Local Chief hebt behaald en je minstens &euro;25,000,000 hebt. Di geld heb je nodig om een gebied te kopen waar je familie de baas over is. Dit gebied is in een specifieke stad gelegen waar je indien nodig meer gebied kunt kopen. Een familie kan slechts in 1 stad heersen.<br>
-<b><i><br>Wat is een testament</i></b><i><b>?</b></i><br>
-	Het testament bepaald waar jouw auto's en geld heen gaan naar je dood, dus 
-als jij vermoord word, en je hebt je testament ingevuld krijgt degene die je 
-ingevuld hebt 50% van het geld dat op je bankrekening stond, en hij/zij krijgt 
-al jouw auto's.<p><i><b>Waarneer gaat de rangvordering omhoog?</b></i><br>
-	Door veel misdaden te doen gaat je rangvordering omhoog, hoe hoger je rang 
-is, hoe langer het duurt voordat je de volgende rang haalt.<p><b><i>Waarneer gaat je rang omhoog</i></b><i><b>?</b></i><br>
-	Als je rangvordering bij 100% is gaat je rang omhoog, tenzij je een 'Godfather' 
-bent, dan staat je rangvordering altijd op 100%.<p><b><i>Wat is het 
-verschil tussen de verschillende transportmiddelen en wapens</i></b><i><b>?</b></i><br>
-	Bij het ene transportmiddel moet je langer wachten voordat je weer kan reizen dan bij een ander. Bij de wapens zijn sommige wapens minder nauwkeurig, waardoor je meerdere kogels moet schieten... De duurste items zijn meestal de beste.
-<p><b><i>Help! ik word bedreigd wat moet ik doen?</i></b><br>
-Schiet degene die jou bedreigt neer of laat iemand anders het voor je doen.
-      <p><b><i>Hoe krijg ik eerpunten?</i></b><br>
-        Door te stijgen in rang, elke 50 misdaden die je doet kan je 1 eerpunt 
-        weggeven. Als je veel vrienden hebt, of veel macht, dan kan je aan hen 
-        eerpunten vragen.<br><br>
-		<a name="refer"></a><i><b>Wat betekend referrerID?</b></i><br>
-Een referrerID is het ID van de speler die je het spel getoont heeft. Als je tijdens het registreren het ID invoert (of via de referrerID-link van de speler je registreerd), dan krijgt die speler 5 eerpunten bij het activeren van je account.
-    </td></tr>
-  </table>
+<?php
+/**
+ * Spelregels en veelgestelde vragen.
+ *
+ * De oude versie was een losse HTML-pagina met de regels van het spel van 2007
+ * erin. Die klopten grotendeels niet meer, en waren op geen enkele manier
+ * gekoppeld aan wat de code werkelijk doet.
+ *
+ * Deze versie haalt alle getallen uit de code en de instellingen: rangen uit
+ * rank_ladder(), afkoeltijden uit cooldowns(), prijzen uit de gedeelde
+ * constanten in inc/game.php, en de premiuminstellingen uit de database. Wie de
+ * balans aanpast hoeft dus niet ook nog de uitleg bij te werken.
+ */
 
-<table width=100%>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="algemeen0"></a>Regels</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-Om het spel leuk te houden moeten de members zich aan enkele regels houden:<br>
-      Ken je iemand die de regels overtreed? Neem contact op met een admin via 
-      de BUG/TIP knop.<br>
-<ol>
-<li>Spammen (doormiddel van berichten)</li>
-<li>Het gebruik van proxies is verboden</li>
-<li>Indien je meerdere accounts wil gebruiken moet je toestemming vragen aan een admin</li>
-<li>Schelden is niet toegestaan</li>
-<li>Hacken wordt zwaar bestraft</li>
-<li>Met meerdere personen op 1 account spelen (het zogenoemde DUPEN) is NIET toegestaan</li>
-</ol>
-Indien deze regels overtreden worden, word je verbannen. Indien je deze ban omzeild, word je account verwijderd.
-  </td></tr>
-  </table>
+declare(strict_types=1);
 
-<table width=100%>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="Ranginfo"></a>Ranginfo</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-De rang die je hebt bepaald hoeveel macht je hebt, hoe hoger je rang is, hoe 
-beter je bent beschermd tegen moorden.<br><br>
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/combat.php';
+require BV_INC . '/casino.php';
+require BV_INC . '/opmaak.php';
 
-<p>De rangen (van laag naar hoog)<br>
-</p>
-<table style="margin-left: 10px;">
-  <tr><td width=110><b>Rang:</b></td><td><b>Drank</b></td><td><b>Drugs</b></td></tr>
-  <tr><td width=110>Empty-Suit</td>         <td>1</td>         <td>0</td></tr>
-  <tr><td width=110>Deliveryboy</td>        <td>2</td>         <td>0</td></tr>
-  <tr><td width=110>Picciotto</td>          <td>5</td>         <td>1</td></tr>
-  <tr><td width=110>Shoplifter</td>         <td>7</td>         <td>2</td></tr>
-  <tr><td width=110>Pickpocket</td>         <td>10</td>        <td>4</td></tr>
-  <tr><td width=110>Thief</td>              <td>15</td>        <td>5</td></tr>
-  <tr><td width=110>Associate</td>          <td>20</td>        <td>7</td></tr>
-  <tr><td width=110>Mobster</td>            <td>25</td>        <td>8</td></tr>
-  <tr><td width=110>Soldier</td>            <td>30</td>        <td>10</td></tr>
-  <tr><td width=110>Swindler</td>           <td>35</td>        <td>11</td></tr>
-  <tr><td width=110>Assassin</td>           <td>40</td>        <td>13</td></tr>
-  <tr><td width=110>Local Chief</td>        <td>45</td>        <td>14</td></tr>
-  <tr><td width=110>Chief</td>              <td>50</td>        <td>16</td></tr>
-  <tr><td width=110>Bruglione</td>          <td>60</td>        <td>17</td></tr>
-  <tr><td width=110>Godfather</td>          <td>70</td>        <td>20</td></tr>
-  </table>
-  </td></tr>
-</table>
+layout_header('Spelregels');
 
-<table width=100%>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="ubb"></a>UBB Codes</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-     Welke UBB codes je kan gebruiken in berichten, profiel, familiepagina kan je 
-        hier vinden.<br><br>
-            <table style="margin-left: 10px;" width="100%">
-        <tr> 
-          <td width=50%><b>Code:</b></td>
-          <td width=50%><b>Effect:</b></td>
-        </tr>
-        <tr> 
-          <td>[img]http://www.website.be/images/afbeelding.gif[/img]</td>
-          <td>Afbeelding van die url wordt getoont</td>
-        </tr>
-        <tr> 
-          <td>[url=http://janus.gotdns.com]The JanuS-Zone[/url]</td>
-          <td><a href="http://janus.gotdns.com" target="_blank">The JanuS-Zone</a></td>
-        </tr>
-        <tr> 
-          <td>[b]Tekst[/b]</td>
-          <td><b>Tekst</b></td>
-        </tr>
-        <tr> 
-          <td>[u]Tekst[/u]</td>
-          <td><u>Tekst</u></td>
-        </tr>
-        <tr> 
-          <td>[i]Tekst[/i]</td>
-          <td><i>Tekst</i></td>
-        </tr>
-        <tr> 
-          <td>[s]Tekst[/s]</td>
-          <td><s>Tekst</s></td>
-        </tr>
-        <tr> 
-          <td>[list]Tekst[/list]</td>
-          <td><li>Tekst</li></td>
-        </tr>
-        <tr> 
-          <td>[small]Tekst[/small]</td>
-          <td><small>Tekst</small></td>
-        </tr>
-        <tr> 
-          <td>[move]Tekst[/move]</td>
-          <td><marquee>
-            Tekst</marquee></td>
-        </tr>
-        <tr> 
-          <td>[color=kleur]Tekst[/color]<br> <br></td>
-          <td><font color="red">Tekst</font> (als kleur = red) hier kan je de 
-            kleur opgeven, bvb red, green, grey, blue, white,... ofwel via kleurencode 
-            bvb FF000, 00FF00, 0000FF, 333333,...)</td>
-        </tr>
-        <tr> 
-          <td>[face=lettertype]Tekst[/face] </td>
-          <td><font face="Cooper Black">Tekst</font> (als lettertype = "Cooper 
-            Black")</td>
-        </tr>
-        <tr> 
-          <td>[size=getal]Tekst[/size] </td>
-          <td><font size="14">Tekst</font> (als getal = 14)</td>
-        </tr>
-        <tr> 
-          <td>[bo]</td>
-          <td>Aantal Bust-outs</td>
-        </tr>
-        <tr>
-          <td>[crime]</td>
-          <td>Aantal misdaden</td>
-        </tr>
-        <tr>
-          <td>[auto]</td>
-          <td>Aantal auto stelen</td>
-        </tr>
-        <tr>
-          <td>[route]</td>
-          <td>Aantal route 66</td>
-        </tr>
-        <tr>
-          <td>[oc]</td>
-          <td>Aantal oc's</td>
-        </tr>
-        <tr>
-          <td>[race]</td>
-          <td>Aantal race's</td>
-        </tr>
-		<tr>
-          <td>[kill]</td>
-          <td>Aantal moorden</td>
-        </tr>
-      </table>
-      <br>Wil je graag een nieuwe UBB code? Ga naar BUG/TIP en meld het aan een admin.
-  </td></tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="subTitle"><a name="smile"></a><b>Emoticons</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt"><table width="100%" border="0" cellspacing="0" cellpadding="0" align="center">
-        <tr> 
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/biere.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/sourire.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/content.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-2.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-1.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/langue.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/triste.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/OH-3.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pleure.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/cool.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/enerve1.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/enerve2.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/roll-eyes.gif"></div></td>
-        </tr>
-        <tr> 
-          <td><div align="center">(b) of (B)</div></td>
-          <td><div align="center">:) of :-)</div></td>
-          <td><div align="center">:d of :-D</div></td>
-          <td><div align="center">:-0</div></td>
-          <td><div align="center">:o</div></td>
-          <td><div align="center">:p of :-P</div></td>
-          <td><div align="center">;) of ;-)</div></td>
-          <td><div align="center">:( of :-(</div></td>
-          <td><div align="center">:| of :-|</div></td>
-          <td><div align="center">:'(</div></td>
-          <td><div align="center">(h) of (H)</div></td>
-          <td><div align="center">:-@</div></td>
-          <td><div align="center">:@</div></td>
-          <td><div align="center">:s of :-S</div></td>
-        </tr>
-        <tr> 
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-        </tr>
-        <tr> 
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/bouche.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/coeur.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/coeur-brise.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pouce-oui.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/pouce-non.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/diable.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/drink.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/worship.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/gun.gif"></div></td>
-          <td><div align="center"><img src="http://members.lycos.nl/js6287/chat/img/guns.gif"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-        </tr>
-        <tr> 
-          <td><div align="center">(k) of (K)</div></td>
-          <td><div align="center">(l) of (L)</div></td>
-          <td><div align="center">(u) of (U)</div></td>
-          <td><div align="center">;p of ;-P</div></td>
-          <td><div align="center">(y) of (Y)</div></td>
-          <td><div align="center">(n) of (N)</div></td>
-          <td><div align="center">(6)</div></td>
-          <td><div align="center">(d) of (D)</div></td>
-          <td><div align="center">_o_</div></td>
-          <td><div align="center">(g)</div></td>
-          <td><div align="center">(G)</div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-        </tr>
-        <tr> 
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-          <td><div align="center"></div></td>
-        </tr>
-      </table>
+// --- Inhoud ---------------------------------------------------------------
 
-    </td>
-  </tr>
-</table>
-<table width=100%>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="prive"></a>Privacy verklaring</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt"> Wij vinden het belangrijk dat uw privacy op onze website 
-      beschermd wordt. U bent voor het gebruik van de site niet verplicht om uw 
-      persoonsgegevens door te geven. Soms is het echter van belang dat u dit 
-      wel doet zodat wij u optimaal van dienst kunnen zijn. Vendetta gebruikt 
-      uw gegevens om direct met u in contact te komen wanneer nodig en om de informatie 
-      op de site beter op uw wensen aan te sluiten. Wij gaan zeer voorzichtig 
-      en discreet om met uw gegevens. Dit houdt onder meer in dat we uw gegevens 
-      goed beveiligen en ervoor zorgen dat slechts een beperkt aantal werknemers 
-      binnen Vendettagame gebruik kunnen maken van uw gegevens. Uw gegevens zullen 
-      niet ter beschikking worden gesteld aan derden. U zult van ons geen reclamepost 
-      of e-mail ontvangen als u hier niet om gevraagd heeft. Wanneer u inzage 
-      wenst in gegevens die eventueel door ons zijn vastgelegd kunt u deze eenvoudig 
-      opvragen door een e-mail te sturen naar info@vendettagame.nl met als onderwerp 
-      �privacy�. Formuleer duidelijk welke informatie u wilt hebben en waar deze 
-      informatie vastgelegd zou moeten zijn. </td>
-  </tr>
-</table>
-<table width=100%>
-  <tr><td><br></td></tr>
-  <tr> 
-    <td class="subTitle"><b><a name="credits"></a>Credits</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt"> Founder: JanuS<br>Scripter: JanuS<br><br>Crew: JanuS ; Pyro ; Legenddon <br>Crew management: JanuS ; Pyro <br>
-      Game managers: JanuS ; Pyro</td>
-  </tr>
-</table>
+$onderdelen = [
+    'begin'    => 'Hoe je begint',
+    'rangen'   => 'Rangen',
+    'geld'     => 'Geld verdienen',
+    'moord'    => 'Moord en getuigen',
+    'dood'     => 'Doodgaan',
+    'accounts' => 'Accounts',
+    'premium'  => 'Premium en diamanten',
+    'opmaak'   => 'Opmaakcodes',
+    'regels'   => 'Huisregels',
+    'privacy'  => 'Privacy',
+];
 
-</body>
+panel_open('Spelregels');
+echo '<p>Alles wat hieronder staat komt rechtstreeks uit het spel zelf. Verandert het '
+   . 'beheer de balans, dan verandert deze pagina mee.</p>';
+echo '<ul class="inhoud">';
+foreach ($onderdelen as $anker => $titel) {
+    echo '<li><a href="#' . e($anker) . '">' . e($titel) . '</a></li>';
+}
+echo '</ul>';
+panel_close();
 
+// --- Hoe je begint ---------------------------------------------------------
 
-</html>
+panel_open('<a id="begin"></a>Hoe je begint');
+
+echo '<p>Je begint als <strong>' . e(rank_name(0)) . '</strong> met '
+   . money((int) config('game.start_money', 1000)) . ' op zak, in een willekeurige stad, '
+   . 'en met een huis in die stad. Vanaf daar is het de bedoeling dat je opklimt tot '
+   . '<strong>' . e(rank_name(999999)) . '</strong>.</p>';
+
+echo '<p>Dat doe je met misdaden, auto\'s stelen, overvallen, handel in drank en drugs, '
+   . 'en door concurrenten uit de weg te ruimen. Je klimt op ervaring; die krijg je van '
+   . 'vrijwel alles wat je onderneemt, ook als het mislukt.</p>';
+
+echo '<p>De eerste <strong>' . BESCHERMING_UREN . ' uur</strong> sta je onder '
+   . 'beginnersbescherming: niemand kan je vermoorden, maar jij ook niemand.</p>';
+
+echo '<h3>Afkoeltijden</h3>';
+echo '<p>Na een handeling moet je even wachten voor je hem opnieuw kunt doen.</p>';
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Handeling</th><th class="getal">Wachttijd</th></tr></thead><tbody>';
+
+$namen = [
+    'crime'    => 'Misdaad',
+    'auto'     => 'Auto stelen',
+    'bank'     => 'Bankoverval',
+    'route'    => 'Route 66',
+    'kill'     => 'Moord',
+    'slaap'    => 'Kogelfabriek',
+    'fitness'  => 'Fitness',
+    'schieten' => 'Schietbaan',
+];
+
+foreach (cooldowns() as $sleutel => $seconden) {
+    echo '<tr><th scope="row">' . e($namen[$sleutel] ?? $sleutel) . '</th>'
+       . '<td class="getal">' . e(duration($seconden)) . '</td></tr>';
+}
+
+echo '</tbody></table></div>';
+panel_close();
+
+// --- Rangen ----------------------------------------------------------------
+
+panel_open('<a id="rangen"></a>Rangen');
+
+echo '<p>Je rang hangt af van je ervaring. Er zijn er ' . count(rank_ladder()) . '.</p>';
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Rang</th><th>Vrouwelijke vorm</th><th class="getal">Vanaf ervaring</th>'
+   . '</tr></thead><tbody>';
+
+foreach (rank_ladder() as $stap) {
+    echo '<tr>';
+    echo '<td>' . e($stap[1]) . '</td>';
+    echo '<td>' . ($stap[2] !== null ? e($stap[2]) : '<span class="uit">—</span>') . '</td>';
+    echo '<td class="getal">' . num($stap[0]) . '</td>';
+    echo '</tr>';
+}
+
+echo '</tbody></table></div>';
+panel_close();
+
+// --- Geld ------------------------------------------------------------------
+
+panel_open('<a id="geld"></a>Geld verdienen');
+
+echo '<ul>';
+echo '<li><strong>Misdaden</strong> zijn het startpunt. Hoe hoger je rang, hoe vaker ze lukken.</li>';
+echo '<li><strong>Auto\'s stelen</strong> levert wagens op die je in de garage kunt opknappen '
+   . 'en op de zwarte markt verkopen.</li>';
+echo '<li><strong>Drank en drugs</strong> koop je goedkoop in de ene stad en verkoop je duur '
+   . 'in de andere. De prijzen wisselen elk uur.</li>';
+echo '<li><strong>Route 66 en Organised Crime</strong> doe je samen met anderen; de buit is '
+   . 'groter maar je hebt medespelers nodig.</li>';
+echo '<li><strong>Casino\'s</strong> koop je voor ' . money(CASINO_PRIJS) . '. Je verdient aan '
+   . 'iedereen die er speelt, maar je moet minstens ' . money(CASINO_MIN_KAS) . ' op de bank '
+   . 'houden, anders kan er niet gespeeld worden.</li>';
+echo '<li><strong>De loterij</strong> kost ' . money(LOT_PRIJS) . ' per lot, met hoogstens '
+   . LOT_MAX . ' loten per speler. Er wordt wekelijks getrokken.</li>';
+echo '</ul>';
+
+echo '<h3>Huizen</h3>';
+echo '<p>Een huis kost ' . money(HUIS_KOOPPRIJS) . ' en levert '
+   . money(HUIS_VERKOOPPRIJS) . ' op als je het weer verkoopt. Je kunt er één per stad '
+   . 'hebben, en in een stad waar je een huis hebt verdedig je jezelf beter.</p>';
+
+echo '<h3>De bank</h3>';
+echo '<p>Geld op de bank raak je niet kwijt als iemand je berooft, maar wél als je vermoord '
+   . 'wordt. Zet daarom iemand in je testament: die erft de helft van je banksaldo en je '
+   . 'wagens.</p>';
+
+panel_close();
+
+// --- Moord -----------------------------------------------------------------
+
+panel_open('<a id="moord"></a>Moord en getuigen');
+
+echo '<p>Je kunt iemand vermoorden die in dezelfde stad is als jij. Je hebt kogels nodig en '
+   . 'een wapen; hoe meer moordervaring je hebt, hoe beter je richt.</p>';
+
+echo '<ul>';
+echo '<li>Je mag hoogstens <strong>' . MAX_RANGVERSCHIL . ' rangen boven je eigen rang</strong> '
+   . 'moorden. Naar beneden mag altijd.</li>';
+echo '<li>Hoogstens <strong>' . MOORDEN_PER_WEEK . ' moorden per week</strong>.</li>';
+echo '<li>Wie onder beginnersbescherming staat kun je niet raken, en zelf ook niet schieten.</li>';
+echo '<li>Stafleden kun je niet vermoorden.</li>';
+echo '<li>Je slachtoffer kan terugschieten. Hoeveel kogels dat zijn stelt hij zelf in bij '
+   . 'zijn profiel.</li>';
+echo '</ul>';
+
+echo '<h3>Wie heeft mij vermoord?</h3>';
+echo '<p><strong>Dat krijg je niet te horen.</strong> Het staat niet op je overlijdenspagina '
+   . 'en ook niet in de statistieken. Alleen ooggetuigen weten wie het deed.</p>';
+
+$wijze = getuigenwijzen()[getuigenwijze()];
+
+echo '<p>Bij elke moord worden er getuigen aangewezen. Op dit moment: <strong>'
+   . e($wijze['naam']) . '</strong>. ' . e($wijze['uitleg']) . '</p>';
+
+echo '<p>Een getuige kan zijn verklaring <strong>' . round(OOGGETUIGE_GELDIG / 86400)
+   . ' dagen lang</strong> op de <a href="' . e(url('mshop.php?x=ws')) . '">zwarte markt</a> '
+   . 'te koop zetten. Koop je er een, dan hoor je wie de dader was. Zo kom je erachter, en zo '
+   . 'kun je als getuige verdienen aan wat je gezien hebt.</p>';
+
+panel_close();
+
+// --- Doodgaan --------------------------------------------------------------
+
+panel_open('<a id="dood"></a>Doodgaan');
+
+echo '<p>Word je vermoord, dan is dat <strong>niet het einde van je account</strong>. Je '
+   . 'krijgt een scherm waar staat wat er gebeurd is, en met één knop begin je opnieuw met '
+   . 'hetzelfde account. Je hoeft je dus niet opnieuw aan te melden.</p>';
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Wat je kwijtraakt</th><th>Wat je houdt</th></tr></thead><tbody>';
+echo '<tr><td>rang, ervaring en eerpunten</td><td>je gebruikersnaam en wachtwoord</td></tr>';
+echo '<tr><td>al je geld, op zak en op de bank</td><td>je profieltekst en je plaatje</td></tr>';
+echo '<tr><td>wapens, bescherming, vervoer en lijfwachten</td><td>lopende premium</td></tr>';
+echo '<tr><td>je auto\'s, huizen, familie en huwelijk</td><td>hoe vaak je al omgelegd bent</td></tr>';
+echo '<tr><td>een casino of kogelfabriek</td><td></td></tr>';
+echo '</tbody></table></div>';
+
+echo '<p>Je begint weer in een willekeurige stad met '
+   . money((int) config('game.start_money', 1000)) . ', een huis daar, en de '
+   . 'beginnersbescherming loopt opnieuw. Hoe vaak je omgelegd bent staat op je profiel.</p>';
+
+panel_close();
+
+// --- Accounts --------------------------------------------------------------
+
+panel_open('<a id="accounts"></a>Accounts');
+
+if (config('game.allow_multi_accounts')) {
+    echo '<p>Meerdere accounts vanaf hetzelfde adres zijn hier toegestaan.</p>';
+} else {
+    echo '<p><strong>Eén account per persoon.</strong> Per IP-adres en per e-mailadres kan er '
+       . 'maar één account bestaan, ook als dat account op dit moment dood is. Dat kan, omdat '
+       . 'je na een moord gewoon opnieuw begint met hetzelfde account.</p>';
+    echo '<p>Speel je met een huisgenoot op dezelfde aansluiting? Vraag dan een beheerder om '
+       . 'toestemming; die kan dat per adres regelen.</p>';
+}
+
+echo '<h3>Wachtwoord vergeten</h3>';
+echo '<p>Gebruik <a href="' . e(url('login.php?x=lostpass')) . '">wachtwoord vergeten</a> op '
+   . 'de inlogpagina. Je krijgt een link per e-mail waarmee je een nieuw wachtwoord instelt. '
+   . 'Je wachtwoord veranderen doe je op je <a href="' . e(url('profile.php')) . '">profiel</a>.</p>';
+
+panel_close();
+
+// --- Premium ---------------------------------------------------------------
+
+panel_open('<a id="premium"></a>Premium en diamanten');
+
+echo '<p><strong>Diamanten</strong> zijn de betaalde munt. Je vindt ze bij toeval tijdens een '
+   . 'geslaagde misdaad of autodiefstal: de kans is ongeveer <strong>één op '
+   . num(diamant_kans()) . '</strong>.</p>';
+
+echo '<p><strong>Premium</strong> duurt ' . PREMIUM_DAGEN . ' dagen en kost '
+   . num(premium_prijs()) . ' diamanten. Je kunt het ook buiten het spel om kopen; dan krijg '
+   . 'je een code die je op de <a href="' . e(url('premium.php')) . '">premiumpagina</a> '
+   . 'invult. Verlengen telt de dagen erbij op.</p>';
+
+$interval = ads_interval();
+
+if ($interval > 0 && ads_html() !== '') {
+    echo '<p>Wat het je oplevert: <strong>geen advertenties</strong>. Zonder premium '
+       . 'onderbreekt het spel je elke ' . num($interval) . ' paginabezoeken met een '
+       . 'advertentiepagina.</p>';
+} else {
+    echo '<p>Er staan op dit moment geen advertenties aan, dus premium levert nu weinig op.</p>';
+}
+
+echo '<p>Premium maakt je <strong>niet sterker</strong>. Wie niet betaalt speelt precies '
+   . 'hetzelfde spel; je koopt rust, geen voorsprong.</p>';
+
+panel_close();
+
+// --- Opmaak ----------------------------------------------------------------
+
+panel_open('<a id="opmaak"></a>Opmaakcodes');
+
+echo '<p>In je profiel, op het forum en in privéberichten kun je opmaak gebruiken.</p>';
+
+echo '<div class="tabelwikkel"><table class="lijst">';
+echo '<thead><tr><th>Code</th><th>Resultaat</th></tr></thead><tbody>';
+
+$voorbeelden = [
+    '[b]vet[/b]',
+    '[i]schuin[/i]',
+    '[u]onderstreept[/u]',
+    '[s]doorgehaald[/s]',
+    '[small]klein[/small]',
+    '[color=rood]gekleurd[/color]',
+    '[size=5]groter[/size]',
+    '[url=https://example.com]een link[/url]',
+    '[quote]een citaat[/quote]',
+    '[list][*]eerste[*]tweede[/list]',
+];
+
+foreach ($voorbeelden as $code) {
+    echo '<tr><td><code>' . e($code) . '</code></td>'
+       . '<td>' . bericht_html($code) . '</td></tr>';
+}
+
+echo '</tbody></table></div>';
+
+echo '<p class="uitleg">Kleuren die je met een naam kunt aanroepen: rood, blauw, groen, geel, '
+   . 'wit, zwart, oranje, paars, grijs, roze en bruin. Een kleurcode als '
+   . '<code>[color=#ff9900]</code> mag ook.</p>';
+
+echo '<h3>Tellers</h3>';
+echo '<p>In je profieltekst worden deze vervangen door je eigen cijfers:</p>';
+echo '<p><code>[crime]</code> <code>[auto]</code> <code>[route]</code> <code>[oc]</code> '
+   . '<code>[race]</code> <code>[kill]</code> <code>[bo]</code></p>';
+
+echo '<h3>Emoticons</h3>';
+echo '<p>' . bericht_html(':) :( ;) :D :p :o 8) :| :s :x') . '</p>';
+
+panel_close();
+
+// --- Huisregels ------------------------------------------------------------
+
+panel_open('<a id="regels"></a>Huisregels');
+
+echo '<ol>';
+echo '<li>Eén account per persoon. Wie er meer aanmaakt raakt ze allemaal kwijt.</li>';
+echo '<li>Geen scripts, bots of andere hulpmiddelen die voor je spelen.</li>';
+echo '<li>Vind je een fout waarmee je kunt valsspelen, meld hem dan via '
+   . '<a href="' . e(url('tip.php')) . '">tip of bug melden</a>. Misbruik je hem, dan lig je eruit.</li>';
+echo '<li>Geen beledigingen, bedreigingen of reclame in berichten en op het forum.</li>';
+echo '<li>Accounts zijn niet over te dragen en niet te verkopen.</li>';
+echo '<li>Het beheer beslist bij twijfel.</li>';
+echo '</ol>';
+
+echo '<p>Wie betrapt wordt op valsspelen komt op de '
+   . '<a href="' . e(url('wallofshame.php')) . '">schandpaal</a> te staan, waar andere '
+   . 'spelers tomaten naar hem kunnen gooien.</p>';
+
+panel_close();
+
+// --- Privacy ---------------------------------------------------------------
+
+panel_open('<a id="privacy"></a>Privacy');
+
+echo '<p>Wat er van je bewaard wordt:</p>';
+echo '<ul>';
+echo '<li><strong>Je e-mailadres</strong>, voor activatie en wachtwoordherstel. Het wordt '
+   . 'nergens aan derden gegeven en is voor andere spelers niet zichtbaar.</li>';
+echo '<li><strong>Je IP-adres</strong>, bij het aanmelden en bij het inloggen. Dat is nodig om '
+   . 'te zien of iemand meerdere accounts aanmaakt. Alleen het beheer kan dit inzien, en het '
+   . 'wordt na negentig dagen opgeruimd.</li>';
+echo '<li><strong>Je wachtwoord</strong> wordt versleuteld opgeslagen en is voor niemand '
+   . 'leesbaar, ook niet voor het beheer.</li>';
+echo '<li><strong>Eén cookie</strong> om je ingelogd te houden. Meer cookies zet het spel '
+   . 'zelf niet.</li>';
+echo '</ul>';
+
+if (ads_html() !== '') {
+    echo '<p>Op de advertentiepagina staat materiaal van een advertentienetwerk. Dat netwerk '
+       . 'kan zelf gegevens verzamelen; daar heeft dit spel geen zeggenschap over.</p>';
+}
+
+echo '<p>Wil je dat je account verwijderd wordt, vraag dat dan aan een beheerder via '
+   . '<a href="' . e(url('tip.php')) . '">tip of bug melden</a>.</p>';
+
+panel_close();
+
+layout_footer();

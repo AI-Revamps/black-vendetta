@@ -133,8 +133,8 @@ function aanmelden(array $in): string
                 (int) config('game.start_money', 1000),
             ]
         );
-        // De startstad geldt meteen als bezocht, anders kan de speler er niet terug.
-        q("UPDATE `users` SET `{$stad}` = 1 WHERE `login` = ?", [$login]);
+        // Je begint met een huis in je startstad; dat geeft daar thuisvoordeel.
+        huis_geven($login, $stad);
     });
 
     if (!$activatieNodig) {

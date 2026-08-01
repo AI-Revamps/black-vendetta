@@ -535,6 +535,20 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
     text-align: center;
 }
 
+/* --- Codeblok in beheerpagina's ------------------------------------------ */
+
+.codeblok {
+    margin: .75rem 0;
+    padding: .75rem 1rem;
+    background: #000;
+    border: 1px solid var(--rand);
+    border-radius: 4px;
+    font: .8rem/1.5 Consolas, "Courier New", monospace;
+    color: #b8d8b8;
+    overflow-x: auto;
+    white-space: pre;
+}
+
 /* --- Premium en advertenties --------------------------------------------- */
 
 .statuspaneel .premium {

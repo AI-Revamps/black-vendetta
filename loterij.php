@@ -17,8 +17,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
 
-const LOT_PRIJS = 10_000;
-const LOT_MAX   = 100;
+// LOT_PRIJS en LOT_MAX staan in inc/game.php, omdat help.php ze ook noemt en
+// dit bestand niet kan inladen zonder het uit te voeren.
 
 $user = require_login();
 
