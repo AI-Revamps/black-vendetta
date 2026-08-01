@@ -55,6 +55,46 @@
         });
     }
 
+    // --- Menugroepen onthouden -------------------------------------------
+    //
+    // Standaard staat alleen de groep open waar je nu bent; anders is het menu
+    // ruim 2500 pixels hoog. Wat je zelf openklapt blijft staan, ook op de
+    // volgende pagina.
+
+    var groepen = document.querySelectorAll('.menugroep[data-groep]');
+
+    function bewaard() {
+        try {
+            return JSON.parse(localStorage.getItem('bv-menu') || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    if (groepen.length > 0) {
+        var stand = bewaard();
+
+        groepen.forEach(function (groep) {
+            var naam = groep.getAttribute('data-groep');
+
+            // Een eerdere keuze wint van de standaard, behalve voor de groep
+            // waar je nu in zit: die hoort open te staan.
+            if (Object.prototype.hasOwnProperty.call(stand, naam) && !groep.open) {
+                groep.open = stand[naam];
+            }
+
+            groep.addEventListener('toggle', function () {
+                var nu = bewaard();
+                nu[naam] = groep.open;
+                try {
+                    localStorage.setItem('bv-menu', JSON.stringify(nu));
+                } catch (e) {
+                    // Privémodus of vol geheugen: dan onthouden we het niet.
+                }
+            });
+        });
+    }
+
     // --- Schaduw bij tabellen die verder doorlopen -----------------------
     //
     // Een tabel die breder is dan het scherm scrollt horizontaal, maar dat is

@@ -247,27 +247,37 @@ function layout_header(string $titel = ''): void
     }
     echo "</nav>\n";
 
-    // Knop om het menu op smalle schermen open te klappen. Alleen tonen als er
-    // ook werkelijk een menu is; uitgelogd bediende hij niets.
-    if ($metZijkanten) {
-        echo '<button class="menu-toggle" type="button" aria-controls="zijmenu" '
-           . 'aria-expanded="false" aria-label="Menu">&#9776;</button>' . "\n";
-    }
+    // Knop om het menu op smalle schermen open te klappen. Ook uitgelogd:
+    // daar wordt de bovennavigatie op een telefoon anders een rommelige rij
+    // links. De la bevat dan diezelfde links.
+    echo '<button class="menu-toggle" type="button" aria-controls="zijmenu" '
+       . 'aria-expanded="false" aria-label="Menu">&#9776;</button>' . "\n";
+
     echo "</header>\n";
 
     // --- Statusstrook (alleen op smalle schermen zichtbaar) ---
     if ($metZijkanten) {
         status_strook($user);
-        echo '<button class="menu-overlay" type="button" hidden aria-label="Menu sluiten"></button>' . "\n";
     }
+
+    echo '<button class="menu-overlay" type="button" hidden aria-label="Menu sluiten"></button>' . "\n";
 
     echo '<div class="layout' . ($metZijkanten ? '' : ' alleen-inhoud') . '">' . "\n";
 
     // --- Zijmenu ---
     if ($metZijkanten) {
+        $groepen = menu_groups($user);
+
+        // Alles openzetten gaf een menu van ruim 2500 pixels: zeven groepen met
+        // bij elkaar bijna zeventig items. Alleen de groep waar je nu bent staat
+        // open; app.js onthoudt wat je verder openklapt.
+        $openGroep = huidige_groep($groepen, $huidig) ?? array_key_first($groepen);
+
         echo '<nav class="sidebar" id="zijmenu">' . "\n";
-        foreach (menu_groups($user) as $groep => $items) {
-            echo '<details class="menugroep" open><summary>' . e($groep) . "</summary>\n<ul>\n";
+        foreach ($groepen as $groep => $items) {
+            echo '<details class="menugroep" data-groep="' . e($groep) . '"'
+               . ($groep === $openGroep ? ' open' : '')
+               . '><summary>' . e($groep) . "</summary>\n<ul>\n";
             foreach ($items as $bestand => $label) {
                 $klasse = str_starts_with($bestand, $huidig) ? ' class="actief"' : '';
                 echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>' . $label . "</a></li>\n";
@@ -278,7 +288,8 @@ function layout_header(string $titel = ''): void
         // Op een telefoon staat de bovennavigatie niet in beeld; zonder deze
         // groep zouden forum, nieuws en de spelregels daar onbereikbaar zijn.
         // Op een breed scherm is hij overbodig en dus verborgen.
-        echo '<details class="menugroep alleen-mobiel" open><summary>Meer</summary>' . "\n<ul>\n";
+        echo '<details class="menugroep alleen-mobiel" data-groep="Meer"><summary>Meer</summary>'
+           . "\n<ul>\n";
         foreach ($top as $bestand => $label) {
             $klasse = $bestand === $huidig ? ' class="actief"' : '';
             echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>' . e($label) . "</a></li>\n";
@@ -294,6 +305,32 @@ function layout_header(string $titel = ''): void
         echo '<form class="alleen-mobiel uitlog-la" method="post" action="'
            . e(url('logout.php')) . '">' . csrf_field()
            . '<button type="submit">Uitloggen</button></form>' . "\n";
+
+        echo "</nav>\n";
+    } else {
+        // Uitgelogd of dood: dezelfde la, gevuld met de bovennavigatie. Op een
+        // breed scherm staat die navigatie in de kopbalk en is dit menu
+        // verborgen; op een telefoon zit het achter de hamburger.
+        echo '<nav class="sidebar" id="zijmenu">' . "\n";
+        echo '<details class="menugroep" open><summary>Menu</summary>' . "\n<ul>\n";
+
+        foreach ($top as $bestand => $label) {
+            $klasse = $bestand === $huidig ? ' class="actief"' : '';
+            echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>' . e($label) . "</a></li>\n";
+        }
+
+        if ($user === null) {
+            echo '<li><a href="' . e(url('login.php')) . "\">Inloggen</a></li>\n";
+        }
+
+        echo "</ul>\n</details>\n";
+
+        if ($user !== null) {
+            // Een dode speler moet er wel uit kunnen.
+            echo '<form class="uitlog-la" method="post" action="'
+               . e(url('logout.php')) . '">' . csrf_field()
+               . '<button type="submit">Uitloggen</button></form>' . "\n";
+        }
 
         echo "</nav>\n";
     }
@@ -333,6 +370,24 @@ function layout_footer(): void
 
     echo '<script src="' . e(url('assets/js/app.js')) . '?v=3" defer></script>' . "\n";
     echo "</body>\n</html>\n";
+}
+
+/**
+ * In welke menugroep zit de pagina waar je nu bent?
+ *
+ * @param array<string, array<string, string>> $groepen
+ */
+function huidige_groep(array $groepen, string $huidig): ?string
+{
+    foreach ($groepen as $groep => $items) {
+        foreach (array_keys($items) as $bestand) {
+            if (str_starts_with($bestand, $huidig)) {
+                return $groep;
+            }
+        }
+    }
+
+    return null;
 }
 
 /** Groen, oranje of rood, afhankelijk van de gezondheid. */

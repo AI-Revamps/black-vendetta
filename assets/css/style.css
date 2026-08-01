@@ -179,7 +179,29 @@ summary:focus-visible {
     display: flex;
     flex-direction: column;
     gap: .4rem;
+
+    /* Met alle groepen open is dit menu ruim 1900 pixels hoog. Zonder eigen
+       scroll blijft een sticky element gewoon staan en valt alles onder de
+       schermrand weg: Familie, Gokken en Beheer waren niet te bereiken.
+       Nu scrollt het menu binnen zijn eigen hoogte. */
+    max-height: calc(100vh - var(--kopbalk) - 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rand) transparent;
+    padding-right: 2px;
 }
+
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--rand);
+    border-radius: 99px;
+}
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+
+/* Uitgelogd is er op een breed scherm geen zijmenu; daar staat de navigatie
+   in de kopbalk. Op een telefoon wordt hetzelfde menu wél de la. */
+.layout.alleen-inhoud .sidebar { display: none; }
 
 .menugroep {
     background: var(--paneel);
@@ -921,10 +943,13 @@ table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
     .menu-toggle { display: block; order: 3; }
     .brand { margin-right: auto; }
 
-    /* In spelmodus neemt de onderbalk de navigatie over. Uitgelogd is er geen
-       onderbalk, dus dan moet de bovennavigatie juist blijven staan. */
-    .spelmodus .topnav { display: none; }
-    .topnav { justify-content: center; width: 100%; order: 4; }
+    /* De navigatie zit op een telefoon altijd achter de hamburger, ingelogd
+       zowel als uitgelogd. Een rij losse links in de kopbalk werd op een smal
+       scherm een rommeltje. */
+    .topnav { display: none; }
+
+    /* Uitgelogd is er geen onderbalk, dus dan wordt de la wél getoond. */
+    .layout.alleen-inhoud .sidebar { display: flex; }
 
     .layout,
     .layout:not(.alleen-inhoud) {
@@ -942,6 +967,7 @@ table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
         bottom: 0;
         z-index: 26;
         width: min(84vw, 20rem);
+        max-height: none;
         padding: .75rem;
         background: var(--zwart);
         border-right: 1px solid var(--rand);
