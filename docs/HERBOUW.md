@@ -1,9 +1,17 @@
-# Black Vendetta — herbouwplan
+# Verslag van de herbouw
 
-Levend document. Wordt bijgewerkt zodra er stappen afgerond zijn.
+Dit begon als planning en is nu naslag: **de herbouw is af.** Alle fasen
+hieronder zijn afgerond, inclusief het redesign van augustus 2026.
 
-**Laatst bijgewerkt:** 30-07-2026
-**Voortgang:** Fase 0 t/m 2 afgerond · Fase 3 bezig (geldblok klaar) · het spel is speelbaar
+Het staat er niet voor de volledigheid. Het is bedoeld om één vraag te
+beantwoorden die tijdens het werken steeds terugkomt: *waarom staat dit zo?*
+Bijna elke ongebruikelijke keuze in de code is een reactie op iets wat in de
+oude versie misging, en dat staat hier per onderdeel opgeschreven.
+
+Zoek je hoe het werkt in plaats van hoe het zo gekomen is, dan is
+[ARCHITECTUUR.md](ARCHITECTUUR.md) het betere document.
+
+**Afgerond:** 01-08-2026
 
 ---
 
@@ -431,17 +439,16 @@ uitbetaling niet zou dekken.
 
 ---
 
-## Installeren (zoals het straks werkt)
+## Installeren
 
-1. Maak in het configuratiescherm van je host een MySQL-database en -gebruiker aan.
-2. Upload alle bestanden per FTP naar `public_html`.
-3. Ga naar `https://jouwdomein.nl/install/`.
-4. Vul databasegegevens, site-URL en het beheerdersaccount in.
-5. De installer schrijft `inc/config.php`, importeert `schema.sql` en zet zichzelf op slot.
-6. Verwijder de map `install/`.
-7. Optioneel: cronjob `php /home/JOUW_ACCOUNT/public_html/cron.php` elke minuut, en zet `cron_mode` op `cron`.
+Kort: database aanmaken, alles uploaden, `/install/` doorlopen, die map daarna
+weggooien. De volledige uitleg staat in **[INSTALLATIE.md](INSTALLATIE.md)**.
 
-**Vereisten:** PHP 8.1 of nieuwer, MySQL 5.7+ of MariaDB 10.2+, extensies `pdo_mysql`, `mbstring` en `gd`.
+Eén keuze is het vermelden waard. De installer is gesplitst in `index.php` en
+`setup.php`, en `index.php` is met opzet in ouderwets PHP geschreven: geen
+`match`, geen pijlfuncties, geen typen. Op een host met PHP 7 gaf de eerste
+versie een parse-error, en dus een blanco 500 waar je niets aan hebt. Nu leest
+`index.php` de versie en toont een gewone Nederlandse zin als PHP te oud is.
 
 ---
 
@@ -493,6 +500,113 @@ moderator meerdere accounts herkent.
 | Tweede keer sterven | teller loopt naar 2, en het scherm meldt de vorige dood |
 | Doorstartknop terwijl je leeft | doorgestuurd naar het spel, teller ongewijzigd |
 | Na de doorstart weer spelen | home, crime, bank en shop speelbaar |
+
+---
+
+## Spelregel: anonieme moord en ooggetuigen
+
+Ook dit is nieuw, geen reparatie. In de oude versie kreeg het slachtoffer
+gewoon te lezen wie hem had omgelegd; er viel niets uit te zoeken.
+
+**Nu** ziet het slachtoffer alleen het afscheidsbericht, niet de naam. Wie de
+dader wil weten, moet de informatie kopen — en daarvoor moet er een getuige zijn
+geweest. Bij elke moord wijst `ooggetuigen_aanwijzen()` in `inc/combat.php` twee
+spelers aan die een bericht krijgen. Die verklaring is een verhandelbaar item:
+de getuige kan hem op de zwarte markt te koop zetten, en het slachtoffer (of
+iemand anders) kan hem kopen.
+
+Hoe getuigen gekozen worden, stelt de beheerder in op de pagina Getuigen:
+
+| Wijze | Wie er in aanmerking komt |
+|---|---|
+| `online` (standaard) | spelers die in de laatste vijf minuten actief waren |
+| `stad` | iedereen in de stad waar de moord plaatsvond |
+| `willekeurig` | twee willekeurige levende spelers |
+
+De instelling staat in de tabel `instellingen`, niet in `inc/config.php`: het is
+een spelknop waar je tijdens het draaien aan wilt kunnen draaien zonder FTP.
+
+---
+
+## Premium, diamanten en advertenties
+
+Er was geen betaald gedeelte; dit is er in zijn geheel bij gekomen.
+
+**Diamanten** zijn de munt die je niet kunt kopen met spelgeld. Je vindt ze bij
+toeval tijdens een misdaad — standaard één op de vijfhonderd, instelbaar. Dat
+maakt ze zeldzaam genoeg om iets waard te zijn zonder dat er een winkel voor
+nodig is.
+
+**Premium** duurt veertien dagen en is op twee manieren te krijgen: met 250
+diamanten, of door te betalen via Ko-fi. Er is bewust één model in plaats van
+drie niveaus — dat scheelt uitleg en gezeur over wat je wel en niet krijgt.
+
+**Advertenties** zijn wat premium wegneemt. Zonder premium krijg je elke 25
+paginaweergaven een tussenpagina met een doorknop. De beheerder plakt daar zelf
+HTML in, zodat de keuze van advertentienetwerk buiten de code blijft.
+
+Twee dingen die daarbij misgingen en waar de code nu op let:
+
+- `advertentie_check()` onderbreekt alleen een GET. Een POST onderbreken
+  betekent dat de handeling van de speler verdwijnt in de tussenpagina.
+- Het adres waar de speler naar terugkeert wordt gecontroleerd voordat het
+  gebruikt wordt. Zonder die controle is de doorknop een open doorverwijzing
+  naar elke site die een aanvaller invult.
+
+---
+
+## Redesign, augustus 2026
+
+Het spel had het donkerbruin-met-oranje van het origineel. Er kwam een logo — een
+maffiafiguur in blauw — en die blauwe kleur is de hoofdkleur geworden.
+
+Het werk zat vrijwel volledig in `assets/css/style.css`. Dat kon omdat de
+klassenamen over alle zeventig pagina's consequent zijn (`getal` 134 keer,
+`lijst` 74, `veldenraster` 72); zolang die namen blijven, verandert het uiterlijk
+overal mee zonder dat er één pagina open hoeft.
+
+Wat er inhoudelijk veranderde:
+
+| | |
+|---|---|
+| Kleur | `--accent: #3ba2f0`, afgeleid van het logo, met `--waarschuw` erbij voor afkoeltijden |
+| Mobiel | statusstrook onder de kopbalk, vaste onderbalk met vijf tabs, zijmenu als la met overlay |
+| Menu | alleen de groep waar je bent staat open — met alles open was het 2.578 pixels en was Familie onbereikbaar |
+| Logo | valt terug op tekst als het bestand ontbreekt, dus het breekt niet zonder |
+
+Vier dingen die daarbij fout gingen en waarom ze fout gingen:
+
+- **De uitgelogde pagina's stonden in een strook van 190 pixels.** Het raster
+  heeft drie kolommen, maar zonder menu en statuspaneel kwam de inhoud in de
+  smalste terecht. Opgelost met `.layout.alleen-inhoud`.
+- **Op desktop bleef een tweede menu staan** terwijl de regel om het te
+  verbergen er allang was. De browsers serveerden een oudere stylesheet, want
+  het `?v=`-nummer in de link was niet opgehoogd. Dat is bij de wortel opgelost
+  met `asset_url()`, dat `filemtime()` gebruikt — nu kán het niet meer misgaan.
+- **De mobiele la was in elkaar gedrukt.** Flex-kinderen krimpen standaard;
+  `flex-shrink: 0` op de directe kinderen loste het op.
+- **De la was niet tot het einde te scrollen.** `bottom: 0` loopt onder de
+  adresbalk van de telefoon door. Nu `height: calc(100dvh - var(--kopbalk))`,
+  met `vh` als terugval voor oudere browsers.
+
+---
+
+## Adressen zonder `.php`
+
+`mooie_urls` in `inc/config.php` haalt de extensie uit de adresbalk. Het is een
+instelling en niet de standaard, want het vraagt `mod_rewrite` en niet elke host
+heeft dat.
+
+De hele truc zit in `url()` in `inc/helpers.php`: staat de instelling aan, dan
+haalt die functie de `.php` eruit voordat het adres wordt opgebouwd. Omdat elke
+link in het spel al door `url()` liep, was er verder niets aan te passen.
+
+De regel in `.htaccess` staat in een `<IfModule mod_rewrite.c>` en gebruikt geen
+`RewriteBase`, zodat hij ook in een submap werkt en niets doet op een host
+zonder de module. Oude adressen mét `.php` blijven gewoon werken.
+
+`tests/adressen.php` controleert dat álle 6.043 interne verwijzingen op alle
+pagina's vrij zijn van `.php`, en dat elke menulink ergens uitkomt.
 
 ---
 

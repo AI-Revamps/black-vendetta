@@ -1,0 +1,260 @@
+<?php
+/**
+ * Veiligheid: opmaak die geen code mag worden, rechten die niet te omzeilen
+ * zijn, en formulieren die zonder token niets doen.
+ *
+ *     php tests/veiligheid.php
+ *
+ * Het eerste deel draait zonder server: het roept bericht_html() rechtstreeks
+ * aan en parseert de uitvoer met DOMDocument. Dat is met opzet geen zoeken op
+ * tekst — geëscapete tekst als &lt;svg onload=x&gt; ís veilig, en een test die
+ * op "onload" zoekt zou daar ten onrechte over vallen.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/_start.php';
+
+// --- Deel 1: opmaak --------------------------------------------------------
+
+kop('BBCode: alles wat geen opmaak is, blijft tekst');
+
+// De bestanden in /inc weigeren rechtstreeks te draaien; dit vlaggetje zegt dat
+// ze via een bootstrap geladen worden. Verder heeft bericht_html() alleen e()
+// en url() nodig, dus die zetten we hier na.
+defined('BV_INC') || define('BV_INC', BV_WORTEL . '/inc');
+
+if (!function_exists('e')) {
+    function e(?string $t): string
+    {
+        return htmlspecialchars((string) $t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+if (!function_exists('url')) {
+    function url(string $p = ''): string { return 'https://spel.test/' . ltrim($p, '/'); }
+}
+
+require BV_WORTEL . '/inc/opmaak.php';
+
+/** Elementen die de opmaak bewust mag opleveren. */
+const TOEGESTAAN = ['strong', 'em', 'u', 's', 'small', 'span', 'ul', 'li',
+                    'blockquote', 'a', 'img', 'br', 'body', 'html', 'p', 'div'];
+
+/**
+ * Ontleed de uitvoer en geef terug wat er werkelijk mis is.
+ *
+ * @return list<string>
+ */
+function keur(string $html): array
+{
+    $problemen = [];
+
+    $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="UTF-8"><div>' . $html . '</div>',
+        LIBXML_NOWARNING | LIBXML_NOERROR);
+    libxml_clear_errors();
+
+    foreach ($doc->getElementsByTagName('*') as $el) {
+        $tag = strtolower($el->nodeName);
+
+        if (!in_array($tag, TOEGESTAAN, true)) {
+            $problemen[] = "element <{$tag}>";
+        }
+
+        foreach ($el->attributes ?? [] as $attr) {
+            $naam   = strtolower($attr->nodeName);
+            $waarde = $attr->nodeValue ?? '';
+
+            if (str_starts_with($naam, 'on')) {
+                $problemen[] = "attribuut {$naam} op <{$tag}>";
+            }
+
+            if (in_array($naam, ['href', 'src'], true)) {
+                $schema = strtolower((string) parse_url($waarde, PHP_URL_SCHEME));
+                if ($schema !== '' && !in_array($schema, ['http', 'https'], true)) {
+                    $problemen[] = "{$naam} met schema '{$schema}' op <{$tag}>";
+                }
+            }
+
+            if ($naam === 'style' && preg_match('/javascript|expression|url\s*\(/i', $waarde)) {
+                $problemen[] = "verdachte style op <{$tag}>";
+            }
+        }
+    }
+
+    return $problemen;
+}
+
+$payloads = [
+    'kale script-tag'          => '<script>alert(1)</script>',
+    'img met onerror'          => '<img src=x onerror=alert(1)>',
+    'bbcode img attribuut'     => '[img]x" onerror="alert(1)[/img]',
+    'bbcode img javascript'    => '[img]javascript:alert(1)[/img]',
+    'bbcode img data-uri'      => '[img]data:text/html,<script>alert(1)</script>[/img]',
+    'url met javascript'       => '[url]javascript:alert(1)[/url]',
+    'url=javascript'           => '[url=javascript:alert(1)]klik[/url]',
+    'url attribuut ontsnappen' => '[url=http://x"onmouseover="alert(1)]klik[/url]',
+    'iframe via [inc]'         => '[inc]http://boef.example/nep-login[/inc]',
+    'kale iframe'              => '<iframe src="http://boef.example"></iframe>',
+    'svg onload'               => '<svg onload=alert(1)>',
+    'color met expression'     => '[color=red;background:url(javascript:alert(1))]x[/color]',
+    'color met afsluiter'      => '[color=red"><script>alert(1)</script>]x[/color]',
+    'size met injectie'        => '[size=1"><script>alert(1)</script>]x[/size]',
+    'body onload'              => '<body onload=alert(1)>',
+    'autolink javascript'      => 'kijk hier: javascript:alert(1)',
+    'genest bbcode'            => '[b][img]x" onerror="alert(1)[/img][/b]',
+];
+
+foreach ($payloads as $naam => $payload) {
+    $problemen = keur(bericht_html($payload, ['spelacties' => true]));
+    check($naam, $problemen === [], implode('; ', $problemen));
+}
+
+// En de opmaak moet natuurlijk wel gewoon werken.
+$net = bericht_html('[b]vet[/b] en [url=https://voorbeeld.nl]link[/url]');
+check('nette opmaak wordt wél omgezet',
+    str_contains($net, '<strong>vet</strong>')
+    && str_contains($net, 'href="https://voorbeeld.nl"'), $net);
+
+// --- Deel 2: opgeslagen XSS ------------------------------------------------
+
+kop('opgeslagen XSS: wat een speler invult, komt er als tekst weer uit');
+
+$db  = tdb();
+$gif = '<script>alert(1)</script>';
+
+$db->prepare("UPDATE users SET info = ? WHERE login = 'Speler'")->execute([$gif]);
+login('Speler', 'spelerwachtwoord123');
+
+$profiel = haal('user.php?login=Speler')['body'];
+check('profieltekst bevat geen echt script',
+    !preg_match('#<script[^>]*>\s*alert#i', $profiel));
+check('en is wel zichtbaar als tekst', str_contains($profiel, '&lt;script&gt;'));
+
+$db->prepare("UPDATE users SET info = '' WHERE login = 'Speler'")->execute();
+
+// --- Deel 3: rechten -------------------------------------------------------
+
+kop('rechten: elk beheerniveau ziet precies wat het mag');
+
+$speler = login('Speler', 'spelerwachtwoord123');
+$mod    = login('Mod',    'modwachtwoord123456');
+$baas   = login('Baas',   'baaswachtwoord12345');
+
+/** pagina => het laagste niveau dat erbij mag */
+$paginas = [
+    'admin.php'        => 'mod',
+    'adm-online.php'   => 'mod',
+    'adm-warn.php'     => 'mod',
+    'adm-search.php'   => 'mod',
+    'adm-msg.php'      => 'baas',
+    'adm-ban.php'      => 'baas',
+    'adm-addmulti.php' => 'baas',
+    'adm-items.php'    => 'baas',
+    'adm-premium.php'  => 'baas',
+    'adm-getuigen.php' => 'baas',
+    'adm-bo.php'       => 'baas',
+];
+
+$sessies = ['speler' => $speler, 'mod' => $mod, 'baas' => $baas];
+
+foreach ($paginas as $pagina => $vanaf) {
+    $mag = [];
+    foreach ($sessies as $wie => $jar) {
+        if (haal($pagina, null, $jar)['code'] === 200) {
+            $mag[] = $wie;
+        }
+    }
+
+    $verwacht = match ($vanaf) {
+        'mod'   => ['mod', 'baas'],
+        default => ['baas'],
+    };
+
+    check($pagina . ': vanaf ' . $vanaf, $mag === $verwacht,
+        $mag === [] ? 'niemand' : implode(', ', $mag));
+}
+
+// Rechten moeten ook bij een POST gelden, niet alleen bij het tonen.
+kop('rechten gelden ook bij POST');
+
+$h = haal('adm-ban.php', null, $baas)['body'];
+$r = haal('adm-ban.php', ['_token' => tok($h), 'actie' => 'ban', 'soort' => 'login',
+    'doel' => 'Speler', 'reden' => 'test'], $mod);
+
+$nog = (int) $db->query("SELECT COUNT(*) FROM bans WHERE login='Speler'")->fetchColumn();
+check('moderator kan niet bannen', $r['code'] !== 200 && $nog === 0, 'HTTP ' . $r['code']);
+
+// --- Deel 4: CSRF ----------------------------------------------------------
+
+kop('CSRF: zonder geldig token gebeurt er niets');
+
+$db->exec("UPDATE users SET zak=100000, bank=0, bc=NULL WHERE login='Speler'");
+
+$zonder = haal('bank.php', ['amount' => '50000', 'in' => '1'], $speler);
+$fout   = haal('bank.php', ['_token' => str_repeat('a', 64), 'amount' => '50000',
+    'in' => '1'], $speler);
+
+$bank = (int) $db->query("SELECT bank FROM users WHERE login='Speler'")->fetchColumn();
+
+check('storten zonder token doet niets', $bank === 0, 'bank ' . $bank);
+check('en met een verzonnen token ook niet', $bank === 0);
+
+// Het verzoek wordt afgebroken met 419 en een uitlegpagina, niet met een lege
+// witte pagina of een fatale fout.
+check('antwoord is 419', $zonder['code'] === 419 && $fout['code'] === 419,
+    $zonder['code'] . ' en ' . $fout['code']);
+check('met uitleg en een weg terug',
+    str_contains($zonder['body'], 'Sessie verlopen')
+    && str_contains($zonder['body'], 'Ga terug naar het spel'));
+
+// Elk formulier dat iets verandert, hoort een token te hebben.
+kop('elk formulier draagt een token');
+
+$zonderToken = [];
+
+foreach (array_map('basename', glob(BV_WORTEL . '/*.php') ?: []) as $pagina) {
+    if (in_array($pagina, ['cron.php', 'logout.php'], true)) {
+        continue;
+    }
+
+    $body = haal($pagina, null, $baas)['body'];
+    preg_match_all('#<form[^>]*method="post"[^>]*>.*?</form>#is', $body, $formulieren);
+
+    foreach ($formulieren[0] as $formulier) {
+        if (!str_contains($formulier, 'name="_token"')) {
+            $zonderToken[] = $pagina;
+            break;
+        }
+    }
+}
+
+check('geen enkel POST-formulier zonder token', $zonderToken === [],
+    implode(', ', array_slice($zonderToken, 0, 8)));
+
+// --- Deel 5: geen handelingen achter een GET-link --------------------------
+
+kop('geen handelingen achter een gewone link');
+
+$verdacht = [];
+
+foreach (array_map('basename', glob(BV_WORTEL . '/*.php') ?: []) as $pagina) {
+    $body = haal($pagina, null, $baas)['body'];
+
+    preg_match_all('#href="([^"]*(?:actie|action|verwijder|delete)=[^"]*)"#i',
+        $body, $links);
+
+    foreach ($links[1] as $link) {
+        // Links die alleen iets tonen of een formulier voorinvullen zijn prima.
+        if (preg_match('/(actie|action)=(tonen|bekijk|lezen|nieuw|bewerk|zoek)/i', $link)) {
+            continue;
+        }
+        $verdacht[] = $pagina . ': ' . $link;
+    }
+}
+
+check('geen wijzigende GET-links', $verdacht === [],
+    implode(' | ', array_slice($verdacht, 0, 5)));
+
+samenvatting();

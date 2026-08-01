@@ -239,11 +239,13 @@ function fail_page(string $title, string $body, int $status = 503): void
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>{$t}</title>
       <style>
-        body { background:#111; color:#ddd; font:14px/1.6 system-ui, sans-serif;
+        body { background:#070b12; color:#dde5f0; font:14px/1.6 system-ui, sans-serif;
                display:grid; place-items:center; min-height:100vh; margin:0; padding:1rem; }
-        .box { max-width:34rem; border:1px solid #333; background:#1b1b1b; padding:1.5rem 2rem; border-radius:6px; }
-        h1 { color:#f90; font-size:1.2rem; margin:0 0 .75rem; }
-        a { color:#f90; }
+        .box { max-width:34rem; border:1px solid #22304a; background:#0f1724;
+               padding:1.5rem 2rem; border-radius:10px; }
+        h1 { color:#3ba2f0; font-size:1.2rem; margin:0 0 .75rem; }
+        a { color:#3ba2f0; }
+        a:hover { color:#6ec8ff; }
       </style>
     </head>
     <body><div class="box"><h1>{$t}</h1><div>{$body}</div></div></body>

@@ -1,4 +1,5 @@
 # Bevat het databasewachtwoord - nooit in versiebeheer.
+# Het voorbeeld ernaast (inc/config.voorbeeld.php) hoort er wel in.
 /inc/config.php
 
 # Slot dat de installer plaatst nadat hij gedraaid heeft.
@@ -17,3 +18,4 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+.claude/settings.local.json
