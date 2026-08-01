@@ -1,28 +1,116 @@
-<?PHP
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-  <tr> 
-    <td class="subTitle"><b>Multiple Accounting</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
+<?php
+/**
+ * Een speler waarschuwen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De waarschuwing werd verstuurd bij het opvragen van de pagina, met de
+ *    ontvanger uit de URL: adm-warn.php?x=Naam. Geen bevestiging, geen
+ *    CSRF-bescherming, en er werd niet gecontroleerd of die speler bestond.
+ *    Er kwam dus een bericht voor een niet-bestaande naam in de database.
+ *  - De tekst stond vast; er was geen manier om een andere reden op te geven.
+ *  - Het bestand controleerde eerst op niveau 200 en daarna nog eens op 255,
+ *    waarbij de tweede controle pas kwam nadat de pagina al begonnen was.
+ */
 
-<?
-if($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}
-$user = $_GET['x'];
-    mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','$user','Waarschuwing','Er is meer dan 1 account op je ip gevonden, dit is tegen de regels. Stuur een bericht naar een admin om je tweede account te rechtvaardigen, anders is de kans groot dat een van je accounts verwijderd wordt.(Verzonden door $data->login)')"); 
-echo "Waarschuwing verzonden.";
-?>
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/beheer.php';
+
+/** De standaardteksten waar een beheerder uit kan kiezen. */
+function waarschuwingen(): array
+{
+    return [
+        'multi' => 'Er is meer dan één account op jouw IP-adres gevonden. Dat is tegen de '
+                 . 'regels. Stuur een bericht naar een beheerder om je tweede account toe te '
+                 . 'lichten, anders wordt een van je accounts verwijderd.',
+        'taal'  => 'Je taalgebruik op het forum of in privéberichten is niet in orde. '
+                 . 'Matig je toon, anders volgen er maatregelen.',
+        'bug'   => 'Er zijn aanwijzingen dat je een fout in het spel hebt uitgebuit. '
+                 . 'Stop daarmee en meld de fout in plaats van hem te gebruiken.',
+        'naam'  => 'Je gebruikersnaam of profieltekst is aanstootgevend. Pas hem aan.',
+    ];
+}
+
+$user    = require_level(beheerpaginas()['adm-warn.php'][1]);
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = waarschuwen($user, post('naam'), post('soort'), post('eigen'));
+        $type    = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+layout_header('Beheer');
+beheer_menu($user, 'adm-warn.php');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Speler waarschuwen');
+
+echo '<form method="post">' . csrf_field();
+echo '<div class="veldenraster">';
+echo '<label for="naam">Speler</label>';
+echo '<input id="naam" name="naam" maxlength="16" required value="' . e(get('x')) . '">';
+echo '<label for="soort">Reden</label><select id="soort" name="soort">';
+foreach (waarschuwingen() as $sleutel => $tekst) {
+    echo '<option value="' . e($sleutel) . '">' . e(mb_substr($tekst, 0, 60)) . '…</option>';
+}
+echo '<option value="eigen">Eigen tekst</option>';
+echo '</select>';
+echo '<label for="eigen">Eigen tekst</label>';
+echo '<textarea id="eigen" name="eigen" maxlength="1000"></textarea>';
+echo '<span></span><small>Alleen gebruikt als je hierboven "Eigen tekst" kiest.</small>';
+echo '<span></span><button type="submit">Waarschuwing sturen</button>';
+echo '</div></form>';
+
+panel_close();
+
+beheer_logregels('waarschuwing');
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function waarschuwen(array $user, string $naam, string $soort, string $eigen): string
+{
+    $speler = beheer_speler($naam);
+
+    if ((int) $speler['level'] >= (int) $user['level']) {
+        throw new SpelFout('Je kunt geen speler met gelijke of hogere rechten waarschuwen.');
+    }
+
+    if ($soort === 'eigen') {
+        $tekst = trim($eigen);
+
+        if ($tekst === '') {
+            throw new SpelFout('Vul je eigen tekst in, of kies een standaardreden.');
+        }
+
+        $tekst = mb_substr($tekst, 0, 1000);
+    } else {
+        $tekst = waarschuwingen()[$soort] ?? null;
+
+        if ($tekst === null) {
+            throw new SpelFout('Kies een geldige reden.');
+        }
+    }
+
+    notify((string) $speler['login'], 'Waarschuwing',
+        $tekst . "\n\nVerstuurd door " . $user['login'] . '.');
+
+    log_action((string) $user['login'], 'waarschuwing',
+        'Waarschuwing verstuurd (' . $soort . ')', 0, (string) $speler['login']);
+
+    return 'De waarschuwing is naar ' . $speler['login'] . ' gestuurd.';
+}

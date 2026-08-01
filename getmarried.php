@@ -1,110 +1,382 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?> 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%> 
-  <tr> 
-    <td class="subTitle"><b>Trouwen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-    <table align=center width=100%>
-<?php 
-if ($_GET['divorce'] == 1) { mysql_query("UPDATE `users` SET `huwelijk`='' WHERE `login`='{$data->huwelijk}'"); mysql_query("UPDATE `users` SET `huwelijk`='' WHERE `login`='{$data->login}'"); mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$data->huwelijk','Scheiding','$data->login heeft een scheiding aangevraagd. Jullie zijn gescheiden...','0','1')"); echo "Jullie zijn nu gescheiden"; ;exit; }
-if ($data->huwelijk) { echo "Je bent al getrouwd.<br><br>Wil je scheiden? <a href=getmarried.php?divorce=1>Klik hier</a>"; exit; }
-$huwprijs = "250000";  
-$dbres = mysql_query("SELECT * FROM `trouwen` WHERE `login`='{$data->login}' OR `partner`='{$data->login}'");
-$trouw = mysql_fetch_object($dbres);
-$trouwen = gmdate('i:s',($data->pc - time()));
-if ($data->xp < 500) { echo "Je moet minstens Thief zijn om te kunnen trouwen."; exit; }
-if ($_POST['submit']) {
-	$zelf = strtolower($data->login);
-	$ander = strtolower($_POST['partner']);
-	$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc` FROM `users` WHERE `login`='{$_POST['partner']}'");
-	$partner = mysql_fetch_object($dbres);
-	$dbres = mysql_query("SELECT * FROM `trouwen` WHERE `login`='{$partner->login}' OR `partner`='{$partner->login}'");
-	$hot = mysql_num_rows($dbres);
-	if (!$partner->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($zelf == $ander) { echo "Je kan niet met jezelf trouwen."; exit; }
-	elseif ($partner->huwelijk) { echo "$partner->login is al getrouwd."; exit; }
-	elseif ($partner->xp < 500) { echo "$partner->login is nog geen Thief."; exit; }
-	elseif ($partner->status == dood) { echo "$partner->login is dood."; exit; }
-	elseif ($hot == 1) { echo "$partner->login heeft al een huwelijksverzoek gekregen."; exit; }
-	elseif ($data->zak < $huwprijs) { echo "Je hebt niet genoeg geld om te trouwen. Het kost &euro;{$huwprijs}."; exit; }
-	else {
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$huwprijs WHERE `login`='{$data->login}'");
-		mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$partner->login','Huwelijksaanzoek','$data->login vraagt je ten huwelijk in {$data->stad}. Ga naar trouwen om je antwoord te geven.','0','1')"); 
-		mysql_query("INSERT INTO `trouwen`(`login`,`partner`,`ready1`,`ready2`,`stad`) VALUES('$data->login','$partner->login','0','0','$data->stad')");
-		echo "Je aanzoek is verzonden."; exit;
-	}
-}
-elseif (isset($_GET['accept'])) {
-	$dbres = mysql_query("SELECT * FROM `trouwen` WHERE `login`='{$data->login}' OR `partner`='{$data->login}'");
-	$trouwen = mysql_fetch_object($dbres);
-	if ($trouwen->ready2 == 1 || $trouwen->partner != $data->login) { echo "Je hebt al ja gezegd, of je hebt geen uitnodiging gekregen om te trouwen."; }
-	elseif ($_GET['accept'] == 0) { mysql_query("DELETE FROM `trouwen` WHERE `partner`='$data->login'"); echo "Je hebt nee gezegd."; mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$trouwen->login','Huwelijksaanzoek','Het antwoord van $data->login is... Nee.','0','1')"); }
-	elseif ($_GET['accept'] == 1) { mysql_query("UPDATE `trouwen` SET `ready2`='1' WHERE `partner`='$data->login'"); echo "Je hebt ja gezegd."; mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$trouwen->login','Huwelijksaanzoek','Het antwoord van $data->login is... Ja.','0','1')"); }
-} 
-elseif (isset($_GET['cancel'])) {
-	$dbres = mysql_query("SELECT * FROM `trouwen` WHERE `login`='{$data->login}' OR `partner`='{$data->login}'");
-	$trouwen = mysql_fetch_object($dbres);
-	if (!$trouwen) { echo "Je hebt geen huwelijksaanzoek gekregen."; }
-	elseif ($_GET['cancel'] == 1 && $trouwen->login == $data->login) { echo "Je hebt het huwelijksaanzoek geannuleerd."; mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$trouwen->partner','Huwelijksaanzoek','$data->login heeft het huwelijksaanzoek geannuleerd.','0','1')"); mysql_query("DELETE FROM `trouwen` WHERE `login`='$data->login'"); }
-	elseif ($_GET['cancel'] == 1 && $trouwen->partner == $data->login) { echo "Je hebt het huwelijksaanzoek geannuleerd."; mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$trouwen->login','Huwelijksaanzoek','$data->login heeft het huwelijksaanzoek geannuleerd.','0','1')"); mysql_query("DELETE FROM `trouwen` WHERE `partner`='$data->login'"); }
-} 
-elseif (isset($_GET['go'])) {
-$jtime = (time() + 600);
-	$dbres = mysql_query("SELECT * FROM `trouwen` WHERE `login`='{$data->login}'");
-	$trouwen = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT * FROM `users` WHERE `login`='$trouwen->login'");
-		$aanvrager = mysql_fetch_object($dbres);
-		$dbres = mysql_query("SELECT * FROM `users` WHERE `login`='$trouwen->partner'");
-		$partner = mysql_fetch_object($dbres);
+/**
+ * Trouwen: een aanzoek doen, aannemen, voltrekken en scheiden.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - `getmarried.php?divorce=1` was een GET-link, en stond bovendien als
+ *    allereerste controle in het bestand. Een afbeelding met die URL in een
+ *    bericht liet de lezer op slag scheiden. Alles gaat nu via POST met
+ *    CSRF-token, met een bevestigingsstap voor de scheiding.
+ *  - De trouwkosten werden bij het aanzoek geïnd, maar bij een afwijzing of
+ *    annulering nooit terugbetaald. Wie een blauwtje liep was zijn geld kwijt.
+ *    Het bedrag wordt nu teruggestort.
+ *  - Aannemen, weigeren, annuleren en voltrekken liepen allemaal via GET.
+ *  - Geen transactie: het aanzoek werd betaald en aangemaakt in losse queries.
+ *  - `ready1` in de tabel `trouwen` werd nergens op 1 gezet en deed dus niets.
+ *    De aanvrager geldt nu vanzelf als akkoord.
+ */
 
-	if (!$trouwen) { echo "Je hebt geen huwelijksaanzoek gekregen of verstuurd."; }
-	elseif ($aanvrager->stad != $trouwen->stad|| $partner->stad != $trouwen->stad) { echo "1 van jullie zit niet in $trouwen->stad."; exit; }
-	else {
-			echo "Proficiat, julie zijn getrouwd, het huwelijk kostte &#164;{$huwprijs}.";
-			mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`,`read`,`inbox`) values(NOW(),'Notificatie','$partner->login','Huwelijksaanzoek','Proficiat, julie zijn getrouwd, het huwelijk kostte &euro;{$huwprijs}.','0','1')"); 
-			mysql_query("UPDATE `users` SET `huwelijk`='{$data->login}' WHERE `login`='$partner->login'");
-			mysql_query("UPDATE `users` SET `huwelijk`='{$partner->login}' WHERE `login`='$data->login'");
-			mysql_query("DELETE FROM `trouwen` WHERE `login`='$data->login'");
-		}
-	}
-elseif (!$trouw) { 
-print <<<ENDHTML
-Heb jij de man/vrouw van je leven gevonden? Wacht niet langer en trouw.<br>Trouwen kost &euro;$huwprijs. Dit bedrag moet jij betalen.<br><br>
-<form method="POST">
-Huwelijksaanvrager:$data->login <br>
-Partner:<input type="text" name="partner" size="16" maxlength=16><br><br>
-<input type="submit" value="Verzenden" name="submit"></form>
-ENDHTML;
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const HUWELIJK_PRIJS = 250_000;
+const HUWELIJK_XP    = 500;      // minimaal Thief
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-elseif ($trouw->partner == $data->login && $trouw->ready2 == 0) {
-echo "Je hebt een verzoek van $trouw->login om te trouwen in {$trouw->stad} aangekregen.<br><br>Wil je met $trouw->login trouwen?  <a href=getmarried.php?accept=1>Ja</a>&nbsp;&nbsp;<a href=getmarried.php?accept=0>Nee</a>";
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-elseif ($trouw->partner == $data->login && $trouw->ready2 == 1) { 
-echo "Je hebt het huwelijksaanzoek geaccepteerd, je moet nu nog wachten op de andere speler. <br><br><a href=getmarried.php?cancel=1>Zeg de bruilhoft af</a>";
+
+$aanzoek = mijn_aanzoek((string) $user['login']);
+
+layout_header('Trouwen');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-elseif ($trouw->ready2 == 0 && $trouw->login == $data->login) { echo "Je partner <a href=user.php?x={$trouw->partner}>$trouw->partner</a> moet nog antwoord geven. <br><br><a href=getmarried.php?cancel=1>Zeg de bruilhoft af</a>"; }
-elseif ($trouw->ready2 == 1 && $trouw->login == $data->login) { echo "Jullie zijn helemaal klaar voor het huwelijk.<br><br><a href=getmarried.php?go=1>Trouw!</a>&nbsp;<a href=getmarried.php?cancel=1>Zeg de bruilhoft af</a>"; }
-?> 
-</table> 
-</body> 
-</html> 
-</table>
+
+if (($user['huwelijk'] ?? '') !== '') {
+    toon_getrouwd($user);
+} elseif ($aanzoek !== null) {
+    toon_aanzoek($user, $aanzoek);
+} else {
+    toon_nieuw($user);
+}
+
+layout_footer();
+
+// ==========================================================================
+
+/** Het aanzoek waar deze speler bij betrokken is, of null. */
+function mijn_aanzoek(string $login, bool $vergrendel = false): ?array
+{
+    // Elke plaatshouder een eigen naam: met echte prepared statements mag
+    // dezelfde naam niet twee keer voorkomen.
+    $sql = 'SELECT * FROM `trouwen` WHERE `login` = :a OR `partner` = :b LIMIT 1';
+    if ($vergrendel) {
+        $sql .= ' FOR UPDATE';
+    }
+    return q_row($sql, ['a' => $login, 'b' => $login]);
+}
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'aanzoek'   => aanzoek_doen($user, post('partner')),
+        'jawoord'   => jawoord($user),
+        'nee'       => afwijzen($user),
+        'annuleer'  => annuleren($user),
+        'voltrek'   => voltrekken($user),
+        'scheiden'  => scheiden($user),
+        default     => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/** @throws SpelFout */
+function aanzoek_doen(array $user, string $naam): string
+{
+    $naam = trim($naam);
+
+    if ($naam === '') {
+        throw new SpelFout('Vul in wie je ten huwelijk wilt vragen.');
+    }
+    if (strcasecmp($naam, (string) $user['login']) === 0) {
+        throw new SpelFout('Je kunt niet met jezelf trouwen.');
+    }
+    if ((int) $user['xp'] < HUWELIJK_XP) {
+        throw new SpelFout('Je moet minstens de rang Thief hebben om te trouwen.');
+    }
+
+    return db_transaction(static function () use ($user, $naam): string {
+        $speler = lock_user((int) $user['id']);
+
+        if ($speler['huwelijk'] !== '') {
+            throw new SpelFout('Je bent al getrouwd.');
+        }
+        if (mijn_aanzoek((string) $speler['login'], true) !== null) {
+            throw new SpelFout('Er loopt al een aanzoek.');
+        }
+
+        $partner = lock_user_by_login($naam);
+
+        if ($partner === null) {
+            throw new SpelFout('Die speler bestaat niet.');
+        }
+        if ($partner['status'] !== 'levend') {
+            throw new SpelFout($partner['login'] . ' is dood.');
+        }
+        if ($partner['huwelijk'] !== '') {
+            throw new SpelFout($partner['login'] . ' is al getrouwd.');
+        }
+        if ((int) $partner['xp'] < HUWELIJK_XP) {
+            throw new SpelFout($partner['login'] . ' is nog geen Thief.');
+        }
+        if (mijn_aanzoek((string) $partner['login'], true) !== null) {
+            throw new SpelFout($partner['login'] . ' heeft al een aanzoek lopen.');
+        }
+        if (!afboeken((int) $speler['id'], HUWELIJK_PRIJS, 'zak')) {
+            throw new SpelFout('Een huwelijk kost ' . money(HUWELIJK_PRIJS) . '.');
+        }
+
+        q('INSERT INTO `trouwen` (`login`, `partner`, `stad`, `ready1`, `ready2`) VALUES (?, ?, ?, 1, 0)',
+            [$speler['login'], $partner['login'], $speler['stad']]);
+
+        notify((string) $partner['login'], 'Huwelijksaanzoek',
+            $speler['login'] . ' vraagt je ten huwelijk in ' . $speler['stad']
+            . '. Ga naar Trouwen om te antwoorden.');
+
+        return 'Je aanzoek aan ' . $partner['login'] . ' is verstuurd. '
+             . 'Het kostte ' . money(HUWELIJK_PRIJS) . '; dat krijg je terug als het niet doorgaat.';
+    });
+}
+
+/** @throws SpelFout */
+function jawoord(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $aanzoek = mijn_aanzoek((string) $user['login'], true);
+
+        if ($aanzoek === null || $aanzoek['partner'] !== $user['login']) {
+            throw new SpelFout('Je hebt geen aanzoek gekregen.');
+        }
+        if ((int) $aanzoek['ready2'] === 1) {
+            throw new SpelFout('Je hebt al ja gezegd.');
+        }
+
+        q('UPDATE `trouwen` SET `ready2` = 1 WHERE `id` = ?', [$aanzoek['id']]);
+
+        notify((string) $aanzoek['login'], 'Huwelijksaanzoek',
+            $user['login'] . ' heeft ja gezegd. Kom samen naar ' . $aanzoek['stad']
+            . ' om het huwelijk te voltrekken.');
+
+        return 'Je hebt ja gezegd. Zorg dat jullie allebei in ' . $aanzoek['stad'] . ' zijn.';
+    });
+}
+
+/** @throws SpelFout */
+function afwijzen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $aanzoek = mijn_aanzoek((string) $user['login'], true);
+
+        if ($aanzoek === null || $aanzoek['partner'] !== $user['login']) {
+            throw new SpelFout('Je hebt geen aanzoek gekregen.');
+        }
+
+        terugbetalen($aanzoek);
+        q('DELETE FROM `trouwen` WHERE `id` = ?', [$aanzoek['id']]);
+
+        notify((string) $aanzoek['login'], 'Huwelijksaanzoek',
+            $user['login'] . ' heeft nee gezegd. Je inleg van ' . money(HUWELIJK_PRIJS)
+            . ' is teruggestort.');
+
+        return 'Je hebt het aanzoek afgewezen.';
+    });
+}
+
+/** @throws SpelFout */
+function annuleren(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $aanzoek = mijn_aanzoek((string) $user['login'], true);
+
+        if ($aanzoek === null) {
+            throw new SpelFout('Er loopt geen aanzoek.');
+        }
+
+        terugbetalen($aanzoek);
+
+        $ander = $aanzoek['login'] === $user['login'] ? $aanzoek['partner'] : $aanzoek['login'];
+        q('DELETE FROM `trouwen` WHERE `id` = ?', [$aanzoek['id']]);
+
+        notify((string) $ander, 'Huwelijksaanzoek',
+            $user['login'] . ' heeft het aanzoek geannuleerd.');
+
+        return 'Het aanzoek is geannuleerd.';
+    });
+}
+
+/**
+ * De inleg terug naar de aanvrager. In de oude versie gebeurde dit niet: wie
+ * een blauwtje liep was zijn geld kwijt.
+ */
+function terugbetalen(array $aanzoek): void
+{
+    $aanvrager = lock_user_by_login((string) $aanzoek['login']);
+
+    if ($aanvrager !== null) {
+        bijschrijven((int) $aanvrager['id'], HUWELIJK_PRIJS, 'zak');
+    }
+}
+
+/** @throws SpelFout */
+function voltrekken(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $aanzoek = mijn_aanzoek((string) $user['login'], true);
+
+        if ($aanzoek === null) {
+            throw new SpelFout('Er loopt geen aanzoek.');
+        }
+        if ((int) $aanzoek['ready2'] !== 1) {
+            throw new SpelFout($aanzoek['partner'] . ' heeft nog geen ja gezegd.');
+        }
+
+        $een  = lock_user_by_login((string) $aanzoek['login']);
+        $twee = lock_user_by_login((string) $aanzoek['partner']);
+
+        if ($een === null || $twee === null) {
+            throw new SpelFout('Een van jullie bestaat niet meer.');
+        }
+        if ($een['status'] !== 'levend' || $twee['status'] !== 'levend') {
+            throw new SpelFout('Een van jullie is dood.');
+        }
+        if ($een['stad'] !== $aanzoek['stad'] || $twee['stad'] !== $aanzoek['stad']) {
+            throw new SpelFout('Jullie moeten allebei in ' . $aanzoek['stad'] . ' zijn.');
+        }
+
+        q('UPDATE `users` SET `huwelijk` = ? WHERE `id` = ?', [$twee['login'], $een['id']]);
+        q('UPDATE `users` SET `huwelijk` = ? WHERE `id` = ?', [$een['login'], $twee['id']]);
+        q('DELETE FROM `trouwen` WHERE `id` = ?', [$aanzoek['id']]);
+
+        $ander = $een['login'] === $user['login'] ? $twee['login'] : $een['login'];
+        notify((string) $ander, 'Huwelijk',
+            'Gefeliciteerd, jullie zijn getrouwd in ' . $aanzoek['stad'] . '.');
+
+        return 'Gefeliciteerd, jullie zijn getrouwd in ' . $aanzoek['stad'] . '.';
+    });
+}
+
+/** @throws SpelFout */
+function scheiden(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $speler = lock_user((int) $user['id']);
+        $partner = (string) $speler['huwelijk'];
+
+        if ($partner === '') {
+            throw new SpelFout('Je bent niet getrouwd.');
+        }
+
+        q("UPDATE `users` SET `huwelijk` = '' WHERE `id` = ?", [$speler['id']]);
+        q("UPDATE `users` SET `huwelijk` = '' WHERE `login` = ?", [$partner]);
+
+        notify($partner, 'Scheiding',
+            $speler['login'] . ' heeft een scheiding aangevraagd. Jullie zijn gescheiden.');
+
+        return 'Jullie zijn gescheiden.';
+    });
+}
+
+// ==========================================================================
+
+function toon_getrouwd(array $user): void
+{
+    panel_open('Je huwelijk');
+    echo '<p>Je bent getrouwd met <strong><a href="'
+       . e(url('user.php?x=' . rawurlencode((string) $user['huwelijk']))) . '">'
+       . e((string) $user['huwelijk']) . '</a></strong>.</p>';
+
+    if (post('actie') === 'scheiden_vragen') {
+        echo '<p>Weet je zeker dat je wilt scheiden?</p>';
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="scheiden">'
+           . '<button type="submit">Ja, scheiden</button> '
+           . '<a class="knop" href="' . e(url('getmarried.php')) . '">Nee, toch niet</a></form>';
+    } else {
+        echo '<form method="post">' . csrf_field()
+           . '<input type="hidden" name="actie" value="scheiden_vragen">'
+           . '<button type="submit">Scheiden</button></form>';
+    }
+
+    panel_close();
+}
+
+function toon_aanzoek(array $user, array $aanzoek): void
+{
+    $isAanvrager = $aanzoek['login'] === $user['login'];
+    $ander       = $isAanvrager ? $aanzoek['partner'] : $aanzoek['login'];
+    $jawoord     = (int) $aanzoek['ready2'] === 1;
+
+    panel_open('Huwelijksaanzoek');
+
+    if ($isAanvrager) {
+        echo '<p>Je hebt <strong>' . e((string) $ander) . '</strong> ten huwelijk gevraagd in '
+           . e((string) $aanzoek['stad']) . '.</p>';
+        echo '<p>' . ($jawoord
+            ? '<strong>' . e((string) $ander) . ' heeft ja gezegd.</strong> Zorg dat jullie allebei in '
+              . e((string) $aanzoek['stad']) . ' zijn en voltrek het huwelijk.'
+            : 'Wachten op antwoord.') . '</p>';
+    } else {
+        echo '<p><strong>' . e((string) $ander) . '</strong> vraagt je ten huwelijk in '
+           . e((string) $aanzoek['stad']) . '.</p>';
+    }
+
+    if (!$isAanvrager && !$jawoord) {
+        echo '<form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="jawoord">'
+           . '<button type="submit">Ja, ik wil</button></form> ';
+        echo '<form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="nee">'
+           . '<button type="submit">Nee</button></form> ';
+    }
+
+    if ($jawoord) {
+        echo '<form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="voltrek">'
+           . '<button type="submit">Voltrek het huwelijk</button></form> ';
+    }
+
+    echo '<form method="post" style="display:inline">' . csrf_field()
+       . '<input type="hidden" name="actie" value="annuleer">'
+       . '<button type="submit">Annuleren</button></form>';
+
+    panel_close();
+}
+
+function toon_nieuw(array $user): void
+{
+    panel_open('Trouwen');
+
+    if ((int) $user['xp'] < HUWELIJK_XP) {
+        echo '<p>Je moet minstens de rang Thief hebben om te trouwen. Je hebt nu '
+           . num((int) $user['xp']) . ' van de ' . num(HUWELIJK_XP) . ' ervaringspunten.</p>';
+        panel_close();
+        return;
+    }
+
+    echo '<p>Heb je de man of vrouw van je leven gevonden? Een huwelijk kost '
+       . money(HUWELIJK_PRIJS) . ', te betalen door de aanvrager. Gaat het niet door, '
+       . 'dan krijg je dat bedrag terug.</p>';
+    echo '<p>Jullie moeten allebei minstens de rang Thief hebben en samen in dezelfde stad '
+       . 'zijn om het huwelijk te voltrekken.</p>';
+
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="aanzoek">';
+    echo '<div class="veldenraster">';
+    echo '<label for="partner">Wie vraag je?</label>';
+    echo '<input id="partner" name="partner" maxlength="16" required>';
+    echo '<span></span><button type="submit">Aanzoek doen</button>';
+    echo '</div></form>';
+
+    panel_close();
+}

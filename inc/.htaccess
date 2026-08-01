@@ -1,0 +1,13 @@
+# Niets in deze map mag rechtstreeks via de browser opgevraagd worden.
+# config.php bevat het databasewachtwoord.
+
+# Apache 2.4
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+# Apache 2.2 (oudere shared hosts)
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

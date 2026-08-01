@@ -1,54 +1,124 @@
-<?PHP
-include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-if ($data->level < 200) { exit; }
-?>
-<html>
-<head>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table align=center width=100%>
-  <tr> 
-    <td class="subTitle"><b>Admin bericht</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?
-if (isset($_POST['submit'])) {
-          if ($_POST['to']!="") {
-$_POST['subject']		= preg_replace('/</','&#60;',$_POST['subject']);
-          $_POST['message']		= preg_replace('/</','&#60;',$_POST['message']);
-          mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Admin','{$_POST['to']}','{$_POST['subject']}','{$_POST['message']}')");
-          print "Bericht verzonden.";
-		  }  
-		else {
-if ($data->level < 255) {echo"Je hebt niet genoeg rechten.";exit;}
-		  $dbres                = mysql_query("SELECT `login` FROM `users` WHERE `status`='levend' AND `activated`='1'");
-        while($member = mysql_fetch_object($dbres)) {
-          $_POST['subject']        = preg_replace('/</','&#60;',$_POST['subject']);
-          $_POST['message']        = preg_replace('/</','&#60;',$_POST['message']);
-          mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Admin','{$member->login}','{$_POST['subject']}','{$_POST['message']}')") or die(mysql_error());
-        } 
-           print "Bericht naar alle members verzonden.";
-        }
+<?php
+/**
+ * Bericht sturen namens het beheer, aan één speler of aan iedereen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De rechtencontrole stond in de else-tak. Het verzenden gebeurde dus
+ *    zónder de controle op niveau 255; die draaide alleen wanneer het
+ *    formulier getoond werd. Precies omgekeerd: een moderator kon wel
+ *    versturen maar het formulier niet zien.
+ *  - Onderwerp en bericht werden gefilterd met preg_replace('/</','&#60;'),
+ *    dezelfde schijnfiltering als elders: alleen het kleiner-dan-teken werd
+ *    vervangen.
+ *  - Er werd niet gecontroleerd of de ontvanger bestond.
+ *  - Geen CSRF-bescherming.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/beheer.php';
+
+const ADM_BERICHT_MAX = 5000;
+
+$user    = require_level(beheerpaginas()['adm-msg.php'][1]);
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = versturen($user, post('naar'), post('subject'), post('message'), post('actie'));
+        $type    = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
     }
-print <<<ENDHTML
-	<form name="form1" method="POST" action="adm-msg.php"><table>
-	<input type="hidden" name="id" value="$id">
-	<input type="hidden" name="code" value="$code">
-	<tr><td width=100>Van:</td>		<td>Admin</td></tr>
-	<tr><td width=100>Naar:</td>		<td><input type="text" name="to" value="{$_REQUEST['to']}" maxlength=16> (leeg is iedereen)</td></tr>
-	<tr><td width=100>Onderwerp:</td>	<td><input type="text" name="subject" value="{$_REQUEST['subject']}" maxlength=25></td></tr>
-	<tr><td width=100 valign="top">Bericht:</td>
-						<td><textarea name="message" cols=40 rows=10>{$_REQUEST['message']}</textarea></td></tr>
-	<tr><td width=100></td>			<td align="right"><input type="submit" name="submit" value="Verzenden"></td></tr>
-  </td></tr>
-ENDHTML;
-?>
+}
+
+layout_header('Beheer');
+beheer_menu($user, 'adm-msg.php');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Bericht namens het beheer');
+
+echo '<p>Het bericht komt binnen met afzender <strong>Admin</strong>.</p>';
+
+echo '<form method="post">' . csrf_field();
+echo '<div class="veldenraster">';
+echo '<label for="naar">Aan</label>';
+echo '<input id="naar" name="naar" maxlength="16">';
+echo '<span></span><small>Laat leeg als je naar alle levende spelers stuurt.</small>';
+echo '<label for="subject">Onderwerp</label>';
+echo '<input id="subject" name="subject" maxlength="80" required>';
+echo '<label for="message">Bericht</label>';
+echo '<textarea id="message" name="message" maxlength="' . ADM_BERICHT_MAX . '" required></textarea>';
+echo '<span></span><div>'
+   . '<button type="submit" name="actie" value="een">Naar deze speler</button> '
+   . ((int) $user['level'] >= LEVEL_OWNER
+        ? '<button type="submit" name="actie" value="allen">Naar alle spelers</button>'
+        : '')
+   . '</div>';
+echo '</div></form>';
+
+if ((int) $user['level'] < LEVEL_OWNER) {
+    echo '<p class="uitleg">Een bericht aan alle spelers kan alleen de eigenaar versturen.</p>';
+}
+
+panel_close();
+
+beheer_logregels('beheerbericht');
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function versturen(array $user, string $naar, string $onderwerp, string $tekst, string $actie): string
+{
+    $onderwerp = trim($onderwerp);
+    $tekst     = trim($tekst);
+
+    if ($onderwerp === '' || $tekst === '') {
+        throw new SpelFout('Vul een onderwerp en een bericht in.');
+    }
+    if (mb_strlen($tekst) > ADM_BERICHT_MAX) {
+        throw new SpelFout('Het bericht is te lang.');
+    }
+
+    $onderwerp = mb_substr($onderwerp, 0, 80);
+
+    if ($actie === 'allen') {
+        if ((int) $user['level'] < LEVEL_OWNER) {
+            throw new SpelFout('Alleen de eigenaar kan naar alle spelers sturen.');
+        }
+
+        // Eén query in plaats van een lus met duizenden losse inserts.
+        $aantal = q_count(
+            "INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`)
+             SELECT NOW(), 'Admin', `login`, ?, ? FROM `users`
+              WHERE `status` = 'levend' AND `activated` = 1",
+            [$onderwerp, $tekst]
+        );
+
+        log_action((string) $user['login'], 'beheerbericht',
+            'Bericht aan alle spelers: ' . $onderwerp, $aantal);
+
+        return 'Het bericht is naar ' . num($aantal) . ' spelers gestuurd.';
+    }
+
+    $ontvanger = beheer_speler($naar);
+
+    q("INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`)
+            VALUES (NOW(), 'Admin', ?, ?, ?)",
+        [$ontvanger['login'], $onderwerp, $tekst]);
+
+    log_action((string) $user['login'], 'beheerbericht',
+        'Bericht: ' . $onderwerp, 0, (string) $ontvanger['login']);
+
+    return 'Het bericht is naar ' . $ontvanger['login'] . ' gestuurd.';
+}

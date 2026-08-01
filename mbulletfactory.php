@@ -1,142 +1,255 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(!check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Lokale kogelfabriek</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?PHP
-$time = time();
-$bwtime = ($time + 3600);
-$dbres = mysql_query("SELECT * FROM `casino` WHERE `spel`='kogelfabriek' AND `stad`='$data->stad'") or die (mysql_error());
-$casino = mysql_fetch_object($dbres);
-$exi = mysql_num_rows($dbres);
-$dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$casino->owner}'") or die (mysql_error());
-$eigenaar = mysql_fetch_object($dbres);
-$user = strtolower($data->login);
-$owner = strtolower($casino->owner);
-$exist = mysql_num_rows(mysql_query("SELECT * FROM `casino` WHERE `owner`='$data->login'"));
-if ($exi == 0) { echo "Er is een kogelfabriek gebouwd."; mysql_query("INSERT INTO `casino`(`spel`,`owner`,`stad`,`winst`) values('kogelfabriek','','$data->stad','')"); exit; }
-elseif (isset($_POST['koop'])) {
-if ($data->zak < 1000000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-elseif ($exist != 0) { echo "Je bezit al een object."; exit; }
-else { 
-mysql_query("UPDATE `users` SET `zak`=`zak`-1000000 WHERE `login`='{$data->login}'"); 
-mysql_query("UPDATE `users` SET `bank`=`bank`+1000000 WHERE `login`='{$casino->owner}'"); 
-mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$casino->owner}','Kogelfabriek','Je $casino->game in $casino->stad is verkocht.')");
-mysql_query("UPDATE `casino` SET `owner`='{$data->login}',`winst`='100' WHERE `spel`='{$casino->spel}' AND `stad`='{$data->stad}'") or die (mysql_error());
-echo "Je hebt $casino->spel gekocht."; exit;
-} 
+/**
+ * Lokale kogelfabriek: een fabriek met een speler als eigenaar.
+ *
+ * De eigenaar koopt kogels in en bepaalt de verkoopprijs. Andere spelers kopen
+ * eruit; de opbrengst gaat naar de bankrekening van de eigenaar. De voorraad
+ * staat in `casino`.`winst`, de verkoopprijs in `casino`.`inzet`.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De eigenaar kreeg maar de HELFT van de verkoopprijs uitbetaald, en de
+ *    andere helft ging nergens heen. Omdat inkopen 100 per kogel kost en de
+ *    minimumprijs 50 was, verloor de eigenaar per definitie geld op elke
+ *    verkoop. Hij krijgt nu de volle opbrengst.
+ *  - Bij het overdragen van de fabriek werd de voorraad op 100 gezet. Die
+ *    honderd kogels kwamen uit het niets. De voorraad blijft nu staan.
+ *  - Betalen, voorraad bijwerken en uitbetalen gebeurde in losse queries
+ *    zonder transactie.
+ *  - De minimumprijs werd gecontroleerd met een losse vergelijking op tekst,
+ *    zonder te controleren of er wel een getal was ingevuld.
+ *  - Kopen was mogelijk zonder CSRF-bescherming.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/casino.php';
+
+const FABRIEK_INKOOPPRIJS = 100;
+const FABRIEK_MINPRIJS    = 50;
+const FABRIEK_WACHTTIJD   = 3600;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-if (!$casino->owner) {
-echo "Deze kogelfabriek heeft geen eigenaar. Je kan de fabriek kopen voor &euro;1.000.000.<br><br>
-	<form method='post'>
-	<input type='submit' name='koop' value='Koop'>
-	</form>";
-exit;
-return;
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-elseif ($eigenaar->status == dood) {
-mysql_query("UPDATE `casino` SET `owner`='' WHERE `stad`='{$data->stad}' AND `spel`='{$casino->spel}'");
-echo "De eigenaar is overleden."; exit;
+
+$fabriek  = casino_spel('kogelfabriek', (string) $user['stad']);
+$eigenaar = casino_eigenaar($fabriek);
+$wacht    = cooldown_left((int) $user['slaap_ts']);
+
+layout_header('Lokale kogelfabriek');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-elseif($owner == $user){ 
-if(isset($_POST['verander'])) {
-$eigenaar = $_POST['eigenaar'];
-$exis = mysql_query("SELECT * FROM `users` WHERE `login`='{$eigenaar}' AND `status`='levend'");
-$exist = mysql_num_rows($exis);
-$is = mysql_query("SELECT * FROM `casino` WHERE `owner`='{$eigenaar}' AND `stad`='$data->stad'");
-$xist = mysql_num_rows($is);
-if ($eigenaar == $data->login) { print "Je bezit deze fabriek al."; }
-elseif ($exist == 0) {print "Deze gebruiker bestaat niet, of is dood."; }
-elseif ($xist == 1) { echo "Deze gebruiker heeft al een object."; exit;}
-else {
-      mysql_query("UPDATE `casino` SET `owner`='{$eigenaar}',`winst`='100' WHERE `spel`='$casino->spel' AND `stad`='$data->stad'");
-      print "De eigenaar van deze kogelfabriek is veranderd.
-<META HTTP-EQUIV='refresh' CONTENT='0; URL=$PHP_SELF'>";
-}
-}
-elseif(isset($_POST['VA'])){ 
-if($_POST['inzet'] < 50){ 
-print "De kogelprijs moet &euro;50 zijn."; 
-} 
-else {
-$inzet    = $_POST['inzet']; 
-mysql_query("UPDATE `casino` SET `inzet`='$inzet' WHERE `spel`='$casino->spel' AND `stad`='$data->stad'"); 
-print "De kogelprijs is veranderd naar &euro;$inzet."; 
-} 
-}
-elseif(isset($_POST['buybullets'])){ 
-if(preg_match('/^[0-9]+$/', $_POST['nrofbullets']) == 0) { print "Ongeldig aantal kogels.\n";exit; }
-$aantal = $_POST['nrofbullets'];
-$prijs = $aantal*100;
-if($prijs > $data->zak){ 
-print "Je hebt niet genoeg geld op zak."; 
-} 
-else {
-$bijgekocht   = $aantal; 
-mysql_query("UPDATE `users` SET `zak`=`zak`-{$prijs} WHERE `login`='{$data->login}'");
-mysql_query("UPDATE `casino` SET `winst`=`winst`+{$aantal} WHERE `spel`='$casino->spel' AND `stad`='$data->stad'"); 
-print "Je hebt $aantal kogels bijgekocht voor $prijs."; 
-} 
-}
-print "<form method='post'>
-	  <width=100>Nieuwe eigenaar:		<input type='text' name='eigenaar' maxlength=16>
-  				<align='right'><input type='submit' name='verander' value='Verander'>
-</form><br><br><form method='POST'> 
-    <p>De kogelprijs is nu &euro;$casino->inzet.</p> 
-    <p>&nbsp;Kogelprijs:<input type='text' name='inzet' size='20' maxlength=7></p> 
-    <p><input type='submit' value='Verander' name='VA'></p> 
-</form><br><br><form method='POST'> 
-	<p>Er zijn momenteel $casino->winst kogels.</p>
-    <p>&nbsp;Koop kogels bij (&euro;100 per stuk):<input type='text' name='nrofbullets' size='20' maxlength=7></p> 
-    <p><input type='submit' value='Verander' name='buybullets'></p> 
-</form>";
-exit;
-} 
-elseif($_POST['submit']) {
-	$inzet = $_POST['inzet'];
-	$prijs = $casino->inzet;
-	$winst = ($inzet * $prijs);
-	$win = round($winst/2);
-	if ($inzet > $casino->winst || $inzet < 1) {
-	echo "Zoveel kogels zijn er niet.";
-	}
-	elseif($data->zak < $winst) {
-		echo "Je hebt niet genoeg geld op zak.";
-	} else {
-			echo "Je hebt $inzet kogels gekocht voor &euro; $winst.";
-			mysql_query("UPDATE `users` SET `zak`=`zak`-$winst,`kogels`=`kogels`+$inzet,`slaap`=FROM_UNIXTIME($bwtime) WHERE `login`='{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `users` SET `bank`=`bank`+$win WHERE `login`='{$casino->owner}'") or die (mysql_error());
-			mysql_query("UPDATE `casino` set `winst`=`winst`-$inzet WHERE `spel`='$casino->spel' AND `stad`='$data->stad'") or die (mysql_error());
-		
-		 }
+
+panel_open('Kogelfabriek in ' . $user['stad']);
+
+if ($eigenaar === null) {
+    echo '<p>Deze fabriek heeft geen eigenaar. Je kunt hem kopen voor '
+       . money(CASINO_PRIJS) . '.</p>';
+    echo '<form method="post">' . csrf_field()
+       . '<input type="hidden" name="actie" value="koop">'
+       . '<button type="submit">Koop deze fabriek</button></form>';
+} elseif ($eigenaar['login'] === $user['login']) {
+    toon_beheer($user, $fabriek);
 } else {
-$btime = gmdate('i:s',($data->slaap - $time));
-if ($data->slaap - $time > 0) { echo "Je moet nog $btime wachten voordat je weer kogels kan kopen."; exit; }
-	$koop = floor($data->zak / $casino->inzet);
-echo "$casino->owner heeft de kogelprijs gezet op &euro;$casino->inzet.<br><br>Er zijn in deze kogelfabriek {$casino->winst} kogels<br>Je kan $koop kogels kopen voor &euro; {$casino->inzet} met het geld dat je bij hebt.<br><BR>
-	<form method='post'>
-	Aantal kogels: <input type='text' name='inzet' size='3' maxlength='7'><br><br>
-	<input type='submit' name='submit' value='Koop'>
-	</form>";
+    toon_winkel($user, $fabriek, $eigenaar, $wacht);
 }
-?></font></center></body></html>
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'koop'      => casino_kopen($user, 'kogelfabriek', (string) $user['stad']),
+        'prijs'     => prijs_zetten($user, int_input('prijs', 0)),
+        'inkopen'   => inkopen($user, int_input('aantal', 0)),
+        'verkoop'   => verkopen($user, int_input('aantal', 0)),
+        default     => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/** @throws SpelFout */
+function prijs_zetten(array $user, int $prijs): string
+{
+    $fabriek = casino_spel('kogelfabriek', (string) $user['stad']);
+
+    if ($fabriek['owner'] !== $user['login']) {
+        throw new SpelFout('Deze fabriek is niet van jou.');
+    }
+    if ($prijs < FABRIEK_MINPRIJS) {
+        throw new SpelFout('De prijs moet minstens ' . money(FABRIEK_MINPRIJS) . ' per kogel zijn.');
+    }
+
+    q('UPDATE `casino` SET `inzet` = ? WHERE `id` = ?', [$prijs, $fabriek['id']]);
+
+    return 'De kogelprijs staat nu op ' . money($prijs) . ' per stuk.';
+}
+
+/** @throws SpelFout */
+function inkopen(array $user, int $aantal): string
+{
+    if ($aantal < 1) {
+        throw new SpelFout('Vul een aantal van minstens 1 in.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal): string {
+        $fabriek = casino_spel('kogelfabriek', (string) $user['stad'], true);
+
+        if ($fabriek['owner'] !== $user['login']) {
+            throw new SpelFout('Deze fabriek is niet van jou.');
+        }
+
+        $kosten = $aantal * FABRIEK_INKOOPPRIJS;
+
+        lock_user((int) $user['id']);
+
+        if (!afboeken((int) $user['id'], $kosten, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($kosten) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `casino` SET `winst` = `winst` + ? WHERE `id` = ?', [$aantal, $fabriek['id']]);
+
+        return 'Je hebt ' . num($aantal) . ' kogels ingekocht voor ' . money($kosten) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function verkopen(array $user, int $aantal): string
+{
+    if ($aantal < 1) {
+        throw new SpelFout('Vul een aantal van minstens 1 in.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal): string {
+        $speler = lock_user((int) $user['id']);
+
+        if (cooldown_left((int) q_val('SELECT UNIX_TIMESTAMP(`slaap`) FROM `users` WHERE `id` = ?',
+                [$speler['id']], 0)) > 0) {
+            throw new SpelFout('Je moet nog wachten voordat je weer kogels kunt kopen.');
+        }
+
+        $fabriek = casino_spel('kogelfabriek', (string) $speler['stad'], true);
+
+        if (($fabriek['owner'] ?? '') === '') {
+            throw new SpelFout('Deze fabriek heeft geen eigenaar.');
+        }
+        if ($fabriek['owner'] === $speler['login']) {
+            throw new SpelFout('Je kunt niet bij jezelf kopen.');
+        }
+        if ($aantal > (int) $fabriek['winst']) {
+            throw new SpelFout('Er zijn maar ' . num((int) $fabriek['winst']) . ' kogels in voorraad.');
+        }
+
+        $prijs = $aantal * (int) $fabriek['inzet'];
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        // De eigenaar krijgt de volle opbrengst. In de oude versie was dat de
+        // helft en verdween de rest, waardoor de fabriek altijd verliesgevend was.
+        $eigenaar = lock_user_by_login((string) $fabriek['owner']);
+
+        if ($eigenaar !== null) {
+            bijschrijven((int) $eigenaar['id'], $prijs, 'bank');
+        }
+
+        q('UPDATE `casino` SET `winst` = `winst` - ? WHERE `id` = ?', [$aantal, $fabriek['id']]);
+        q('UPDATE `users` SET `kogels` = `kogels` + ?, `slaap` = DATE_ADD(NOW(), INTERVAL ? SECOND)
+            WHERE `id` = ?',
+            [$aantal, FABRIEK_WACHTTIJD, $speler['id']]);
+
+        return 'Je hebt ' . num($aantal) . ' kogels gekocht voor ' . money($prijs) . '.';
+    });
+}
+
+// ==========================================================================
+
+function toon_beheer(array $user, array $fabriek): void
+{
+    echo '<p>Deze fabriek is van jou. Voorraad: <strong>' . num((int) $fabriek['winst'])
+       . '</strong> kogels. Verkoopprijs: <strong>' . money((int) $fabriek['inzet'])
+       . '</strong> per stuk.</p>';
+    echo '<p>Inkopen kost ' . money(FABRIEK_INKOOPPRIJS) . ' per kogel. '
+       . 'Zet je prijs daarboven, dan verdien je eraan.</p>';
+
+    echo '<h3>Kogels inkopen</h3>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="inkopen">';
+    echo '<div class="veldenraster">';
+    echo '<label for="aantal">Aantal</label>';
+    echo '<input id="aantal" name="aantal" type="number" min="1" step="1" required>';
+    echo '<span></span><button type="submit">Inkopen</button>';
+    echo '</div></form>';
+
+    echo '<h3>Verkoopprijs</h3>';
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="prijs">';
+    echo '<div class="veldenraster">';
+    echo '<label for="prijs">Prijs per kogel</label>';
+    echo '<input id="prijs" name="prijs" type="number" min="' . FABRIEK_MINPRIJS
+       . '" step="1" value="' . (int) $fabriek['inzet'] . '" required>';
+    echo '<span></span><button type="submit">Aanpassen</button>';
+    echo '</div></form>';
+}
+
+function toon_winkel(array $user, array $fabriek, array $eigenaar, int $wacht): void
+{
+    $voorraad = (int) $fabriek['winst'];
+    $prijs    = (int) $fabriek['inzet'];
+
+    echo '<p>Eigenaar: <strong>' . e((string) $eigenaar['login']) . '</strong>. '
+       . 'Voorraad: ' . num($voorraad) . ' kogels à ' . money($prijs) . '.</p>';
+
+    if ($wacht > 0) {
+        echo '<p>Je moet nog <strong data-tot="' . (time() + $wacht) . '">' . e(duration($wacht))
+           . '</strong> wachten voordat je weer kogels kunt kopen.</p>';
+        return;
+    }
+    if ($voorraad < 1) {
+        echo '<p>De fabriek is uitverkocht.</p>';
+        return;
+    }
+
+    $max = min($voorraad, $prijs > 0 ? intdiv((int) $user['zak'], $prijs) : 0);
+
+    if ($max < 1) {
+        echo '<p>Je hebt niet genoeg geld voor een kogel.</p>';
+        return;
+    }
+
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="verkoop">';
+    echo '<div class="veldenraster">';
+    echo '<label for="aantal">Aantal kogels</label>';
+    echo '<input id="aantal" name="aantal" type="number" min="1" max="' . $max . '" step="1" required>';
+    echo '<span></span><button type="submit">Kopen</button>';
+    echo '</div></form>';
+    echo '<p class="uitleg">Je kunt er nu hoogstens ' . num($max) . ' kopen. '
+       . 'Na een aankoop moet je ' . e(duration(FABRIEK_WACHTTIJD)) . ' wachten.</p>';
+}

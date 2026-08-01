@@ -1,225 +1,394 @@
 <?php
-  include("config.php");
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-$data = mysql_fetch_object(mysql_query("SELECT * FROM `users` WHERE `login`='{$_SESSION['login']}'"));
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-echo "<table width=100%><tr> 
-    <td class=subTitle><b>Garage</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-if(isset($_POST['trans'])) {
-$id = $_POST['id'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$prijs = 1000;
-if ($data->zak < $prijs) { echo "Je hebt niet genoeg geld om deze auto te verschepen.";exit; }
-if ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je momenteel bent."; exit; }
-if ($c == 0) { echo "Deze auto bestaat niet of is niet van jou."; exit; }
-mysql_query("UPDATE `garage` SET `stad`='{$_POST['stad']}' WHERE `id`='{$id}'") or die(mysql_error()); 
-mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'") or die(mysql_error());
-echo "Je hebt de auto verscheept voor &euro; $prijs."; exit;
-}
-$au = mysql_query("SELECT * FROM garage WHERE `login`='{$data->login}'");
-$cars = mysql_num_rows($au);
-      $dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}'");
-$nummer = mysql_num_rows($dbres);
-      while($member = mysql_fetch_object($dbres))
-        $money				+= round(($member->waarde));
-echo "<b><center>Je garage bevat $cars auto's</b><br><b>De totaal waarde van je garage is &euro;{$money}</b><br><br></center>
-";
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
-if (isset($_POST['verkoopall'])) {
-      $dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$money = 0;
-      while($member = mysql_fetch_object($dbres)) {
-        $money				+= round(($member->waarde));
-}
-$dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$nummer = mysql_num_rows($dbres);
-echo "Je hebt $nummer auto's verkocht voor &euro; {$money}.";
-mysql_query("UPDATE `users` SET `zak`=`zak`+$money WHERE `login`='{$data->login}'");
-mysql_query("DELETE FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-}
-if (isset($_POST['crushall'])) {
-$dbres				= mysql_query("SELECT * FROM `garage` WHERE `login`='$data->login' AND `stad`='$data->stad'");
-$nummer = mysql_num_rows($dbres);
-$kogels = 0;
-      while($member = mysql_fetch_object($dbres)) {
-        $kogels				+= 15;
-if (!$kogels) { $kogels = 0; }
-}
-echo "Je hebt $nummer auto's gecrusht voor $kogels kogels.";
-mysql_query("UPDATE `users` SET `kogels`=`kogels`+$kogels WHERE `login`='{$data->login}'");
-mysql_query("UPDATE `famillie` SET `aantal`=`aantal`-$nummer WHERE `name`='{$data->famillie}'");
-mysql_query("DELETE FROM `garage` WHERE `login`='{$data->login}' AND `stad`='{$data->stad}'");
-}
-if(isset($_GET['crush'])) {
-$id = $_GET['crush'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$dbres = mysql_query("SELECT * FROM `famillie` WHERE `name`='{$data->famillie}'");
-$famillie = mysql_fetch_object($dbres);
-$exist = mysql_num_rows($dbres);
-if ($exist == 0) { echo "Je hebt geen famillie."; }
-elseif ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je momenteel bent."; exit; }
-elseif ($famillie->crusher == 0) { echo "Je famillie heeft geen crusher ingehuurd vandaag.";exit; }
-elseif ($famillie->aantal < 1) { echo "Het maximum aantal auto's is bereikt."; }
-elseif ($c == 0) { echo "Deze auto bestaat niet"; exit; }
-else {
-  mysql_query("DELETE FROM `garage` WHERE `id`='{$_GET['crush']}' AND `login`='{$data->login}'");
-  mysql_query("UPDATE `users` SET `kogels`=`kogels`+15 WHERE `login`='{$data->login}'");
-mysql_query("UPDATE `famillie` SET `aantal`=`aantal`-1 WHERE `name`='{$data->famillie}'");
-echo "Je auto is gecrusht.";
-}
-}
-if(isset($_GET['safe'])) {
-$id = $_GET['safe'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$prijs = 10000;
-if ($data->zak < $prijs) { echo "Je hebt niet genoeg geld om deze auto in een safehouse te zetten.";exit; }
-if ($c == 0) { echo "Deze auto bestaat niet"; exit; }
-else {
-  mysql_query("UPDATE `garage` SET `safe`='1' WHERE `id`='{$id}' AND `login`='{$data->login}'") or die(mysql_error());
-  mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'") or die(mysql_error());
-echo "Je auto is in een safehouse geplaatst. Het koste &euro;10.000.";
-}
-}
-if(isset($_GET['repair'])) {
-$id = $_GET['repair'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-$car = mysql_query("SELECT * FROM `cars` WHERE `naam`='{$b->naam}'");
-$garage = mysql_fetch_object($car);
-$value = $garage->waarde;
-$prijs = $garage->waarde - $b->waarde;
-if ($c == 0) { echo "Deze auto bestaat niet."; exit; }
-elseif ($b->stad != $data->stad) { echo "Deze auto staat niet in de stad waar je momenteel bent."; exit; }
-elseif ($b->damage == 0){ print"Deze wagen is niet beschadigd.";}
-elseif ($prijs > $data->zak) {print"Je hebt niet genoeg geld op zak.";}
-else {
-  mysql_query("UPDATE `garage` SET `waarde`='$value',`damage`='0' WHERE `id`='{$_GET['repair']}' AND `login`='{$data->login}'");
-  mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs WHERE `login`='{$data->login}'");
-echo "Je auto is gerepaired. Het koste &euro; $prijs.";
-}
-}
-if(isset($_GET['trans'])) {
-$id = $_GET['trans'];
-echo "	<form method=post>
-		ID: <input type=text name=id value='$id'><br>
-		<select name=stad>
-		<option value=Brussel>Brussel</option>
-		<option value=Leuven>Leuven</option>
-		<option value=Gent>Gent</option>
-		<option value=Brugge>Brugge</option>
-		<option value=Antwerpen>Antwerpen</option>
-		<option value=Hasselt>Hasselt</option>
-        <option value=Amsterdam>Amsterdam</option>
-		</select><br><br><form method=post><input type=submit name=trans value=Transporteer></form>
-";exit;
-}
-if(isset($_GET['x'])) {
-$id = $_GET['x'];
-$a = mysql_query("SELECT * FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}' AND `stad`='{$data->stad}'");
-$b = mysql_fetch_object($a);
-$c = mysql_num_rows($a);
-if ($c == 0) { echo "Deze auto bestaat niet, of is niet in het stad waar je nu bent."; }
-else {
-  mysql_query("UPDATE `users` SET `zak`=`zak`+$b->waarde WHERE `login`='{$data->login}'");
-  mysql_query("DELETE FROM `garage` WHERE `id`='{$id}' AND `login`='{$data->login}'");
-echo "Je auto is verkocht."; 
-}
-}
-echo "
+/**
+ * Garage: je wagens verkopen, repareren, verschepen, crushen of veiligstellen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Alle handelingen liepen via GET-links (garage.php?x=5 verkocht een wagen,
+ *    ?crush=5 vernietigde er een). Een afbeelding met zo'n URL in een bericht
+ *    liet de ontvanger zijn eigen garage leegruimen. Nu POST met CSRF-token.
+ *  - Bij het verschepen werd de bestemming ongefilterd uit het formulier in de
+ *    query gezet, zonder te controleren of het een bestaande stad was.
+ *  - "Alles crushen" sloeg de familielimiet volledig over: de losse knop
+ *    controleerde of er een crusher was ingehuurd en of het maximum bereikt was,
+ *    de verzamelknop niet.
+ *  - Repareren rekende `nieuwprijs - huidige waarde`. Was de huidige waarde
+ *    hoger, dan werd de prijs negatief en leverde repareren geld op.
+ */
 
+declare(strict_types=1);
 
-    <table align=center width=100%>";
-echo "  <tr>
-        <td align=center>
-        #</td>
-        <td align=center>
-        <b>Naam</b></td>
-        <td align=center>
-        <b>Waarde</b></td>
-        <td align=center>
-        <b>Schade</b></td>
-        <td align=center>
-        <b>Stad</b></td>
-	    <td align=center>
-        <b>Opties</b></td>
-	    </tr>";
+require __DIR__ . '/inc/bootstrap.php';
 
-/// Einde uitvoer van query
-$query = "SELECT * FROM garage WHERE `login`='{$data->login}' ORDER BY `waarde` DESC";
-$info = mysql_query($query) or die(mysql_error());
-$count = 0;
-while ($gegeven = mysql_fetch_array($info)) {
-$auto = mysql_fetch_object(mysql_query("SELECT * FROM `cars` WHERE `naam`='{$gegeven["naam"]}'"));
-$naam = $auto->auto;
-$waarde = $gegeven["waarde"];
-$schade = $gegeven["damage"];
-$verkoop = $gegeven["id"];
-$stad = $gegeven["stad"];
-$id = $gegeven["id"];
-$safe = $gegeven["safe"];
-$count++;
-$stad = strtolower($stad);
-$estad = strtolower($data->stad);
-/// De uit database gehaalde gegevens weergeven
-echo "
- <tr>
- 		<td width=5% align=center>{$id}</td>
-        <td width=20% align=center>{$naam}</td>
-		<td width=20% align=center>&euro;{$waarde}</td>
-		<td width=10% align=center>{$schade}%</td>
-		<td width=10% align=center>{$stad}</td>
-		<td width=20% align=center>";
-if ($estad == $stad) { echo "<a href=\"garage.php?x={$verkoop}\"><img alt=verkoop border=0 src=http://members.lycos.nl/js6287/images/sell.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=verkoop src=http://members.lycos.nl/js6287/images/sell2.gif width=32 height=32>"; }
-if ($estad == $stad) { echo "<a href=\"garage.php?repair={$verkoop}\"><img alt=repair border=0 src=http://members.lycos.nl/js6287/images/repair.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=repair src=http://members.lycos.nl/js6287/images/repair2.gif width=32 height=32>"; }
-if ($famillie->crusher == 1 && $famillie->aantal > 0 && $estad == $stad) { echo "<a href=\"garage.php?crush={$verkoop}\"><img alt=crush border=0 src=http://members.lycos.nl/js6287/images/crush.gif width=32 height=32></a>"; }
-else { echo "<img alt=crush src=http://members.lycos.nl/js6287/images/crush2.gif width=32 height=32>"; }
-if ($estad == $stad) { echo "<a href=\"garage.php?trans={$verkoop}\"><img alt=transporteer border=0 src=http://members.lycos.nl/js6287/images/trans.gif width=32 height=32></a>"; }
-if ($estad != $stad) { echo "<img alt=transporteer src=http://members.lycos.nl/js6287/images/trans2.gif width=32 height=32>"; }
-if ($safe == 0) { echo "<a href=\"garage.php?safe={$verkoop}\"><img alt=safehouse border=0 src=http://members.lycos.nl/js6287/images/safe.gif width=32 height=32></a>"; }
-if ($safe != 0) { echo "<img alt=safehouse src=http://members.lycos.nl/js6287/images/safe2.gif width=32 height=32>"; }
+const TRANSPORT_PRIJS = 1000;
+const SAFEHOUSE_PRIJS = 10000;
+const CRUSH_KOGELS    = 15;
 
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
+}
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
 
-echo "
-    </table>
-    </body>
-    </html>";
+$wagens = q_all(
+    'SELECT * FROM `garage` WHERE `login` = ? ORDER BY `stad`, `waarde` DESC',
+    [$user['login']]
+);
 
-echo"<form method='post'>
-	<input type='submit' name='verkoopall' value='Verkoop Alles'></form>";
-if ($famillie->crusher == 1 && $famillie->aantal > 0) {
-echo "<form method='post'>
-<input type='submit' name='crushall' value='Crush alles'></form>";
+$totaal   = array_sum(array_map(static fn (array $w): int => (int) $w['waarde'], $wagens));
+$hierNu   = array_filter($wagens, static fn (array $w): bool => $w['stad'] === $user['stad']);
+$familie  = $user['famillie'] !== ''
+    ? q_row('SELECT * FROM `famillie` WHERE `name` = ?', [$user['famillie']])
+    : null;
+
+layout_header('Garage');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-?>
-</td></tr>
-</table><br><br></table>
+
+panel_open('Garage');
+
+echo '<p>Je hebt <strong>' . count($wagens) . '</strong> ' . (count($wagens) === 1 ? 'wagen' : 'wagens')
+   . ' met een totale waarde van <strong>' . money($totaal) . '</strong>. '
+   . 'Je bevindt je in ' . e((string) $user['stad']) . '.</p>';
+
+if ($wagens === []) {
+    echo '<p>Je garage is leeg. Steel een auto of koop er een op de zwarte markt.</p>';
+} else {
+    toon_wagens($wagens, $user, $familie);
+
+    if ($hierNu !== []) {
+        toon_verzamelknoppen($hierNu, $familie);
+    }
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'verkoop'    => verkopen($user, int_input('id')),
+        'repareer'   => repareren($user, int_input('id')),
+        'verscheep'  => verschepen($user, int_input('id'), post('stad')),
+        'safehouse'  => veiligstellen($user, int_input('id')),
+        'crush'      => crushen($user, int_input('id')),
+        'verkoopall' => alles_verkopen($user),
+        'crushall'   => alles_crushen($user),
+        default      => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/**
+ * Haal een wagen op die van deze speler is, vergrendeld.
+ *
+ * @throws SpelFout
+ */
+function mijn_wagen(array $user, int $id, bool $moetHier = true): array
+{
+    $wagen = q_row('SELECT * FROM `garage` WHERE `id` = ? AND `login` = ? FOR UPDATE',
+        [$id, $user['login']]);
+
+    if ($wagen === null) {
+        throw new SpelFout('Die wagen staat niet in jouw garage.');
+    }
+    if ($moetHier && $wagen['stad'] !== $user['stad']) {
+        throw new SpelFout('Die wagen staat in ' . $wagen['stad'] . ', niet in ' . $user['stad'] . '.');
+    }
+    return $wagen;
+}
+
+/** @throws SpelFout */
+function verkopen(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $wagen = mijn_wagen($user, $id);
+
+        if ((int) $wagen['safe'] === 1) {
+            throw new SpelFout('Deze wagen staat in een safehouse. Haal hem daar eerst uit.');
+        }
+
+        bijschrijven((int) $user['id'], (int) $wagen['waarde'], 'zak');
+        q('DELETE FROM `garage` WHERE `id` = ?', [$id]);
+
+        return 'Je ' . $wagen['naam'] . ' is verkocht voor ' . money((int) $wagen['waarde']) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function repareren(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $wagen = mijn_wagen($user, $id);
+
+        if ((int) $wagen['damage'] === 0) {
+            throw new SpelFout('Deze wagen is niet beschadigd.');
+        }
+
+        $nieuwwaarde = (int) q_val('SELECT `waarde` FROM `cars` WHERE `naam` = ?', [$wagen['naam']], 0);
+
+        // Kan niet negatief worden: in de oude versie leverde repareren geld op
+        // zodra de huidige waarde hoger was dan de nieuwprijs.
+        $prijs = max(0, $nieuwwaarde - (int) $wagen['waarde']);
+
+        if ($prijs > 0 && !afboeken((int) $user['id'], $prijs, 'zak')) {
+            throw new SpelFout('Repareren kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `garage` SET `waarde` = ?, `damage` = 0 WHERE `id` = ?', [$nieuwwaarde, $id]);
+
+        return 'Je ' . $wagen['naam'] . ' is gerepareerd voor ' . money($prijs) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function verschepen(array $user, int $id, string $naar): string
+{
+    // Bestemming moet een bestaande stad zijn; in de oude versie ging elke
+    // ingevoerde tekst rechtstreeks de database in.
+    if (!is_city($naar)) {
+        throw new SpelFout('Dat is geen bestaande stad.');
+    }
+
+    return db_transaction(static function () use ($user, $id, $naar): string {
+        $wagen = mijn_wagen($user, $id);
+
+        if ($wagen['stad'] === $naar) {
+            throw new SpelFout('Die wagen staat al in ' . $naar . '.');
+        }
+        if (!afboeken((int) $user['id'], TRANSPORT_PRIJS, 'zak')) {
+            throw new SpelFout('Verschepen kost ' . money(TRANSPORT_PRIJS) . '.');
+        }
+
+        q('UPDATE `garage` SET `stad` = ? WHERE `id` = ?', [$naar, $id]);
+
+        return 'Je ' . $wagen['naam'] . ' is verscheept naar ' . $naar
+             . ' voor ' . money(TRANSPORT_PRIJS) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function veiligstellen(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $wagen = mijn_wagen($user, $id);
+
+        if ((int) $wagen['safe'] === 1) {
+            throw new SpelFout('Deze wagen staat al in een safehouse.');
+        }
+        if (!afboeken((int) $user['id'], SAFEHOUSE_PRIJS, 'zak')) {
+            throw new SpelFout('Een safehouse kost ' . money(SAFEHOUSE_PRIJS) . '.');
+        }
+
+        q('UPDATE `garage` SET `safe` = 1 WHERE `id` = ?', [$id]);
+
+        return 'Je ' . $wagen['naam'] . ' staat nu veilig, voor ' . money(SAFEHOUSE_PRIJS) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function crushen(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $wagen = mijn_wagen($user, $id);
+        crusher_controle($user, 1);
+
+        q('DELETE FROM `garage` WHERE `id` = ?', [$id]);
+        bijschrijven((int) $user['id'], CRUSH_KOGELS, 'kogels');
+        q('UPDATE `famillie` SET `aantal` = `aantal` - 1 WHERE `name` = ?', [$user['famillie']]);
+
+        return 'Je ' . $wagen['naam'] . ' is gecrusht. Je kreeg ' . CRUSH_KOGELS . ' kogels.';
+    });
+}
+
+/**
+ * Mag er gecrusht worden, en is er nog ruimte voor $aantal wagens?
+ *
+ * @throws SpelFout
+ */
+function crusher_controle(array $user, int $aantal): array
+{
+    if ($user['famillie'] === '') {
+        throw new SpelFout('Je hebt geen familie. Crushen kan alleen met een familiecrusher.');
+    }
+
+    $familie = q_row('SELECT * FROM `famillie` WHERE `name` = ? FOR UPDATE', [$user['famillie']]);
+
+    if ($familie === null) {
+        throw new SpelFout('Je familie bestaat niet meer.');
+    }
+    if ((int) $familie['crusher'] === 0) {
+        throw new SpelFout('Je familie heeft vandaag geen crusher ingehuurd.');
+    }
+    if ((int) $familie['aantal'] < $aantal) {
+        throw new SpelFout('Je familie heeft nog ruimte voor ' . (int) $familie['aantal']
+            . ' wagens vandaag; je probeert er ' . $aantal . ' te crushen.');
+    }
+
+    return $familie;
+}
+
+/** @throws SpelFout */
+function alles_verkopen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $wagens = q_all(
+            'SELECT * FROM `garage` WHERE `login` = ? AND `stad` = ? AND `safe` = 0 FOR UPDATE',
+            [$user['login'], $user['stad']]
+        );
+
+        if ($wagens === []) {
+            throw new SpelFout('Je hebt hier geen wagens die verkocht kunnen worden.');
+        }
+
+        $opbrengst = array_sum(array_map(static fn (array $w): int => (int) $w['waarde'], $wagens));
+
+        bijschrijven((int) $user['id'], $opbrengst, 'zak');
+        q("DELETE FROM `garage` WHERE `login` = ? AND `stad` = ? AND `safe` = 0",
+            [$user['login'], $user['stad']]);
+
+        return 'Je hebt ' . count($wagens) . ' ' . (count($wagens) === 1 ? 'wagen' : 'wagens')
+             . ' verkocht voor ' . money($opbrengst) . '.';
+    });
+}
+
+/** @throws SpelFout */
+function alles_crushen(array $user): string
+{
+    return db_transaction(static function () use ($user): string {
+        $wagens = q_all(
+            'SELECT * FROM `garage` WHERE `login` = ? AND `stad` = ? AND `safe` = 0 FOR UPDATE',
+            [$user['login'], $user['stad']]
+        );
+
+        if ($wagens === []) {
+            throw new SpelFout('Je hebt hier geen wagens die gecrusht kunnen worden.');
+        }
+
+        // Deze controle ontbrak volledig in de oude versie, waardoor je met
+        // "alles crushen" de familielimiet kon omzeilen.
+        crusher_controle($user, count($wagens));
+
+        $kogels = count($wagens) * CRUSH_KOGELS;
+
+        bijschrijven((int) $user['id'], $kogels, 'kogels');
+        q('UPDATE `famillie` SET `aantal` = `aantal` - ? WHERE `name` = ?',
+            [count($wagens), $user['famillie']]);
+        q("DELETE FROM `garage` WHERE `login` = ? AND `stad` = ? AND `safe` = 0",
+            [$user['login'], $user['stad']]);
+
+        return 'Je hebt ' . count($wagens) . ' wagens gecrusht voor ' . num($kogels) . ' kogels.';
+    });
+}
+
+// ==========================================================================
+
+function toon_wagens(array $wagens, array $user, ?array $familie): void
+{
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Wagen</th><th class="getal">Waarde</th><th class="getal">Schade</th>'
+       . '<th>Stad</th><th>Acties</th></tr></thead><tbody>';
+
+    foreach ($wagens as $wagen) {
+        $hier = $wagen['stad'] === $user['stad'];
+        $veilig = (int) $wagen['safe'] === 1;
+
+        echo '<tr>';
+        echo '<td>' . e((string) $wagen['naam']) . ($veilig ? ' <small>(safehouse)</small>' : '') . '</td>';
+        echo '<td class="getal">' . money((int) $wagen['waarde']) . '</td>';
+        echo '<td class="getal">' . (int) $wagen['damage'] . '%</td>';
+        echo '<td>' . e((string) $wagen['stad']) . '</td>';
+        echo '<td>';
+
+        if (!$hier) {
+            echo '<small>Je bent hier niet</small>';
+        } else {
+            if (!$veilig) {
+                actieknop('verkoop', (int) $wagen['id'], 'Verkoop');
+            }
+            if ((int) $wagen['damage'] > 0) {
+                actieknop('repareer', (int) $wagen['id'], 'Repareer');
+            }
+            if (!$veilig) {
+                actieknop('safehouse', (int) $wagen['id'], 'Safehouse');
+                if ($familie !== null && (int) $familie['crusher'] > 0 && (int) $familie['aantal'] > 0) {
+                    actieknop('crush', (int) $wagen['id'], 'Crush');
+                }
+            }
+            verscheepformulier((int) $wagen['id'], (string) $wagen['stad']);
+        }
+
+        echo '</td></tr>';
+    }
+
+    echo '</tbody></table></div>';
+}
+
+function actieknop(string $actie, int $id, string $label): void
+{
+    echo '<form method="post" style="display:inline">' . csrf_field()
+       . '<input type="hidden" name="actie" value="' . e($actie) . '">'
+       . '<input type="hidden" name="id" value="' . $id . '">'
+       . '<button type="submit">' . e($label) . '</button></form> ';
+}
+
+function verscheepformulier(int $id, string $huidig): void
+{
+    echo '<form method="post" style="display:inline">' . csrf_field()
+       . '<input type="hidden" name="actie" value="verscheep">'
+       . '<input type="hidden" name="id" value="' . $id . '">'
+       . '<select name="stad" aria-label="Bestemming">';
+    foreach (cities() as $stad) {
+        if ($stad !== $huidig) {
+            echo '<option value="' . e($stad) . '">' . e($stad) . '</option>';
+        }
+    }
+    echo '</select><button type="submit">Verscheep (' . money(TRANSPORT_PRIJS) . ')</button></form>';
+}
+
+function toon_verzamelknoppen(array $hierNu, ?array $familie): void
+{
+    $verkoopbaar = array_filter($hierNu, static fn (array $w): bool => (int) $w['safe'] === 0);
+
+    if ($verkoopbaar === []) {
+        return;
+    }
+
+    $waarde = array_sum(array_map(static fn (array $w): int => (int) $w['waarde'], $verkoopbaar));
+
+    echo '<h3>Alles in deze stad</h3>';
+    echo '<p>' . count($verkoopbaar) . ' ' . (count($verkoopbaar) === 1 ? 'wagen' : 'wagens')
+       . ', samen ' . money($waarde) . '.</p>';
+
+    echo '<form method="post" style="display:inline">' . csrf_field()
+       . '<input type="hidden" name="actie" value="verkoopall">'
+       . '<button type="submit">Verkoop alles</button></form> ';
+
+    if ($familie !== null && (int) $familie['crusher'] > 0) {
+        echo '<form method="post" style="display:inline">' . csrf_field()
+           . '<input type="hidden" name="actie" value="crushall">'
+           . '<button type="submit">Crush alles</button></form>';
+        echo '<p class="uitleg">Je familie kan vandaag nog ' . (int) $familie['aantal']
+           . ' wagens crushen.</p>';
+    }
+}

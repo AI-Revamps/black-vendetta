@@ -1,93 +1,176 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header("Location: login.php");
-    exit;
-  }
-if ($jisin == 1) { header("Location: jisin.php"); }
-if ($data->trans == 0) { $trans = Geen; }
-else { 
-$dbres = mysql_query("SELECT * FROM `items` WHERE `type`='trans' AND `nr`='{$data->trans}'");
-$tran = mysql_fetch_object($dbres);
-$trans = $tran->naam;
-$ptime = $tran->effect;
-}
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
- print <<<ENDHTML
-<table align=center width=100%>
-  <tr> 
-    <td class="subTitle"><b>Transport</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-ENDHTML;
-$msg = "Je hebt niet genoeg geld op zak.";
+/**
+ * Reizen tussen steden.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Reizen ging via een GET-link (transport.php?x=Amsterdam). Een afbeelding
+ *    met die URL in een forumbericht verplaatste de lezer naar een andere stad,
+ *    inclusief de reiskosten. Nu POST met CSRF-token.
+ *  - Regel 74 luidde `if ($data->rijbewijs = 0)`: één isgelijkteken, dus een
+ *    toewijzing in plaats van een vergelijking. De uitkomst was altijd onwaar,
+ *    waardoor de rijbewijscontrole nooit werkte, én de waarde in het geheugen
+ *    op nul werd gezet.
+ *  - Enschede toonde € 4.500, controleerde op € 4.500 maar schreef € 3.500 af.
+ *  - De prijzen stonden twee keer in het bestand: één keer voor de controle en
+ *    één keer voor de tabel. Ze konden dus uit de pas lopen, zoals bij Enschede.
+ *  - De stadsnamen waren kale woorden, wat in PHP 8 een fatale fout geeft.
+ */
 
-$time = time();
-$tc = gmdate('i:s', ($data->transport - $time));
-$vtime = (time() + round($ptime,0));
-$vltime = gmdate('i:s', ($data->transport - time()));
-if ($trans == Geen) { echo "Je hebt geen transportmiddel."; exit; }
-elseif ($data->transport - time() > 0) { echo "Je kan nog niet reizen, je moet nog $tc wachten..."; exit; }
-if (isset($_GET['x'])) {
-	if ($_GET['x'] == Brussel) { $prijs = 2000; if ($data->zak < 2000) { echo "$msg"; exit; } }
-	elseif ($_GET['x'] == Leuven) { $prijs = 2500; if ($data->zak < 2500) { echo "$msg"; exit; } }
-	elseif ($_GET['x'] == Gent) { $prijs = 1500; if ($data->zak < 1500) { echo "$msg"; exit; } }
-	elseif ($_GET['x'] == Brugge) { $prijs = 1300;if ($data->zak < 1300) {  echo "$msg"; exit; } }
-	elseif ($_GET['x'] == Antwerpen) { $prijs = 2250; if ($data->zak < 2250) { echo "$msg"; exit; } }
-	elseif ($_GET['x'] == Hasselt) { $prijs = 1000; if ($data->zak < 1000) { echo "$msg"; exit; } }
-        elseif ($_GET['x'] == Amsterdam) { $prijs = 3500; if ($data->zak < 3500) { echo "$msg"; exit; } }
-		elseif ($_GET['x'] == Enschede) { $prijs = 3500; if ($data->zak < 4500) { echo "$msg"; exit; } }
-		else{echo"Deze stad is onbekend";exit;}
-		echo "<BR><center><b>Je bent nu in {$_GET['x']}.</b></center>";
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$prijs,`transport`=FROM_UNIXTIME($vtime),`stad`='{$_GET['x']}' WHERE `login`='$data->login'"); 
+declare(strict_types=1);
 
+require __DIR__ . '/inc/bootstrap.php';
+
+/** Reiskosten per bestemming. Eén plek, gebruikt voor zowel tabel als afschrijving. */
+function reisprijzen(): array
+{
+    return [
+        'Hasselt'   => 1000,
+        'Brugge'    => 1300,
+        'Gent'      => 1500,
+        'Brussel'   => 2000,
+        'Antwerpen' => 2250,
+        'Leuven'    => 2500,
+        'Amsterdam' => 3500,
+        'Enschede'  => 4500,
+    ];
 }
-else {
-print <<<ENDHTML
-	<table align=center bordercolorlight="#000000" border="0" bordercolordark="#000000">
-	  <tr><td width=100><b>Stad</b></td>    
-	  <td align="right"><b>Prijs</b></td></tr>
-	  <tr><td width=100><a href="transport.php?x=Brussel">Brussel</a></td><td align="right">&euro;2000</td></tr>
-	  <tr><td width=100><a href="transport.php?x=Leuven">Leuven</a></td><td align="right">&euro;2500</td></tr>
-	  <tr><td width=100><a href="transport.php?x=Gent">Gent</a></td><td align="right">&euro;1500</td></tr>
-	  <tr><td width=100><a href="transport.php?x=Brugge">Brugge</a></td><td align="right">&euro;1300</td></tr>
-	  <tr><td width=100><a href="transport.php?x=Antwerpen">Antwerpen<a></td><td align="right">&euro;2250</td></tr>
-	  <tr><td width=100><a href="transport.php?x=Hasselt">Hasselt<a></td><td align="right">&euro;1000</td></tr>
-          <tr><td width=100><a href="transport.php?x=Amsterdam">Amsterdam<a></td><td align="right">&euro;3500</td></tr>
-		            <tr><td width=100><a href="transport.php?x=Enschede">Enschede<a></td><td align="right">&euro;4500</td></tr>
-	  </table>
-ENDHTML;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-if($data->rijbewijs = 0){
-    print <<<ENDHTML
-<html>
-<head>
-<title>Geen Rijbewijs</title>
-<link rel="stylesheet" type="text/css" href="css-v1.css">
-</head>
-<link rel="stylesheet" type="text/css" href="css-v1.css">
-<center><table width=50%>
- <tr><td class="subTitle"><b>Geen rijbewijs</b></td></tr>
-<tr><td class="mainTxt"><center>
-<tr><td class="mainTxt">
-<center>Je hebt geen rijbewijs, dus kan je ook niet reizen met de auto!</td></tr>
- </table>
-</body>
-</html>
-ENDHTML;
-    exit;
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = reizen($user, post('stad'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
     }
-?></table></table>
+}
+
+$vervoer   = (int) $user['trans'];
+$wachttijd = cooldown_left((int) $user['transport_ts']);
+
+layout_header('Transport');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Transport');
+
+if ($vervoer < 1) {
+    echo '<p>Je hebt geen vervoermiddel. Koop er een in de '
+       . '<a href="' . e(url('shop.php')) . '">winkel</a> voordat je kunt reizen.</p>';
+} elseif ((int) $user['rijbewijs'] !== 1) {
+    echo '<p>Je hebt geen rijbewijs. Haal er eerst een bij het '
+       . '<a href="' . e(url('rijbewijs.php')) . '">examencentrum</a>.</p>';
+} elseif ($wachttijd > 0) {
+    echo '<p>Je bent net gereisd. Je kunt over <strong data-tot="' . (time() + $wachttijd) . '">'
+       . e(duration($wachttijd)) . '</strong> weer weg.</p>';
+} else {
+    toon_bestemmingen($user);
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function reizen(array $user, string $naar): string
+{
+    $prijzen = reisprijzen();
+
+    if (!isset($prijzen[$naar]) || !is_city($naar)) {
+        throw new SpelFout('Die stad bestaat niet.');
+    }
+    if ($naar === $user['stad']) {
+        throw new SpelFout('Je bent al in ' . $naar . '.');
+    }
+
+    return db_transaction(static function () use ($user, $naar, $prijzen): string {
+        $speler = lock_user((int) $user['id']);
+
+        if ((int) $speler['trans'] < 1) {
+            throw new SpelFout('Je hebt geen vervoermiddel.');
+        }
+        if ((int) $speler['rijbewijs'] !== 1) {
+            throw new SpelFout('Je hebt geen rijbewijs.');
+        }
+        if (cooldown_left((int) q_val('SELECT UNIX_TIMESTAMP(`transport`) FROM `users` WHERE `id` = ?',
+                [$speler['id']], 0)) > 0) {
+            throw new SpelFout('Je moet nog even wachten voor je weer kunt reizen.');
+        }
+
+        $prijs = $prijzen[$naar];
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('De reis kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        // Hoe beter je vervoermiddel, hoe korter je moet wachten.
+        $wachttijd = (int) item_effect_trans((int) $speler['trans']);
+
+        q('UPDATE `users` SET `stad` = ?, `transport` = DATE_ADD(NOW(), INTERVAL ? SECOND) WHERE `id` = ?',
+            [$naar, $wachttijd, $speler['id']]);
+
+        // De stad geldt voortaan als bezocht.
+        q("UPDATE `users` SET `{$naar}` = GREATEST(`{$naar}`, 1) WHERE `id` = ?", [$speler['id']]);
+
+        return 'Je bent aangekomen in ' . $naar . '. De reis kostte ' . money($prijs) . '.';
+    });
+}
+
+/** Wachttijd in seconden die bij dit vervoermiddel hoort. */
+function item_effect_trans(int $nr): int
+{
+    $effect = q_val("SELECT `effect` FROM `items` WHERE `type` = 'trans' AND `nr` = ?", [$nr]);
+    return $effect === null ? 3600 : max(60, (int) round((float) $effect));
+}
+
+function toon_bestemmingen(array $user): void
+{
+    $vervoernaam = (string) q_val(
+        "SELECT `naam` FROM `items` WHERE `type` = 'trans' AND `nr` = ?",
+        [(int) $user['trans']],
+        'onbekend'
+    );
+    $wacht = item_effect_trans((int) $user['trans']);
+
+    echo '<p>Je reist met je <strong>' . e($vervoernaam) . '</strong>. Na aankomst moet je '
+       . e(duration($wacht)) . ' wachten voor je weer verder kunt.</p>';
+    echo '<p>Je bent nu in <strong>' . e((string) $user['stad']) . '</strong>. '
+       . 'Je hebt ' . money((int) $user['zak']) . ' op zak.</p>';
+
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Stad</th><th class="getal">Prijs</th><th></th></tr></thead><tbody>';
+
+    foreach (reisprijzen() as $stad => $prijs) {
+        if ($stad === $user['stad']) {
+            continue;
+        }
+
+        $tekort = (int) $user['zak'] < $prijs;
+
+        echo '<tr>';
+        echo '<td>' . e($stad) . '</td>';
+        echo '<td class="getal">' . money($prijs) . '</td>';
+        echo '<td><form method="post" style="margin:0">' . csrf_field()
+           . '<input type="hidden" name="stad" value="' . e($stad) . '">'
+           . '<button type="submit"' . ($tekort ? ' disabled' : '') . '>Reis</button></form></td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+}

@@ -1,0 +1,611 @@
+/* Black Vendetta - opmaak
+   Donker thema met oranje accent, in de lijn van de oorspronkelijke game.
+   Geen framework: alleen CSS-grid en flexbox. */
+
+:root {
+    --zwart:      #0d0d0d;
+    --paneel:     #1a1a1a;
+    --paneel-op:  #242424;
+    --rand:       #383838;
+    --tekst:      #d8d8d8;
+    --tekst-dof:  #8a8a8a;
+    --accent:     #ff9900;
+    --accent-dof: #b36b00;
+    --goed:       #4caf50;
+    --fout:       #e05252;
+    --radius:     4px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--zwart);
+    color: var(--tekst);
+    font: 14px/1.55 "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover, a:focus-visible { text-decoration: underline; }
+
+h1, h2, h3 { font-weight: 600; line-height: 1.25; }
+
+/* --- Kopbalk --------------------------------------------------------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem;
+    min-height: 52px;
+    background: linear-gradient(#232323, #141414);
+    border-bottom: 1px solid var(--rand);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.brand {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+.brand:hover { text-decoration: none; color: #ffb340; }
+
+.topnav {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.topnav a,
+.topnav button {
+    display: block;
+    padding: .4rem .7rem;
+    border-radius: var(--radius);
+    color: var(--tekst);
+    font-size: .875rem;
+}
+.topnav a:hover,
+.topnav button:hover { background: var(--paneel-op); color: var(--accent); text-decoration: none; }
+.topnav a.actief { background: var(--paneel-op); color: var(--accent); }
+
+.logout-form { display: inline; margin: 0; }
+.logout-form button {
+    background: none;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.menu-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    color: var(--tekst);
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: .35rem .6rem;
+    cursor: pointer;
+}
+
+/* --- Hoofdindeling ---------------------------------------------------- */
+
+.layout {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr) 230px;
+    gap: 1rem;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* --- Zijmenu ---------------------------------------------------------- */
+
+.sidebar {
+    position: sticky;
+    top: 68px;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.menugroep {
+    background: var(--paneel);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.menugroep > summary {
+    padding: .5rem .75rem;
+    background: linear-gradient(#2c2c2c, #1e1e1e);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    cursor: pointer;
+    list-style: none;
+}
+.menugroep > summary::-webkit-details-marker { display: none; }
+.menugroep > summary::after { content: " ▾"; float: right; color: var(--tekst-dof); }
+.menugroep[open] > summary::after { content: " ▴"; }
+
+.menugroep ul { margin: 0; padding: .25rem 0; list-style: none; }
+.menugroep li a {
+    display: block;
+    padding: .3rem .9rem;
+    color: var(--tekst);
+    font-size: .82rem;
+    border-left: 2px solid transparent;
+}
+.menugroep li a:hover {
+    background: var(--paneel-op);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    text-decoration: none;
+}
+.menugroep li a.actief {
+    background: var(--paneel-op);
+    color: var(--accent);
+    border-left-color: var(--accent);
+}
+
+.zoekform { display: flex; gap: .25rem; }
+.zoekform input { min-width: 0; flex: 1; }
+
+/* --- Inhoud ----------------------------------------------------------- */
+
+.content { min-width: 0; }
+
+.paneel {
+    background: var(--paneel);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.paneel > h1 {
+    margin: 0;
+    padding: .55rem 1rem;
+    background: linear-gradient(#2c2c2c, #1e1e1e);
+    border-bottom: 1px solid var(--rand);
+    color: var(--accent);
+    font-size: .9rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.paneelinhoud { padding: 1rem; }
+.paneelinhoud > :first-child { margin-top: 0; }
+.paneelinhoud > :last-child { margin-bottom: 0; }
+
+/* --- Statuspaneel ------------------------------------------------------ */
+
+.statuspaneel {
+    position: sticky;
+    top: 68px;
+    background: var(--paneel);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    padding: .9rem;
+}
+
+.statuspaneel h2 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--accent);
+    word-break: break-word;
+}
+.statuspaneel .rang { margin: .1rem 0 .7rem; color: var(--tekst-dof); font-size: .8rem; }
+
+.balk {
+    height: 7px;
+    background: #0a0a0a;
+    border: 1px solid var(--rand);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.balk span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dof), var(--accent));
+}
+.balklabel { margin: .3rem 0 .8rem; font-size: .72rem; color: var(--tekst-dof); }
+
+.statuspaneel dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: .2rem .5rem;
+    margin: 0;
+    font-size: .8rem;
+}
+.statuspaneel dt { color: var(--tekst-dof); }
+.statuspaneel dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+.statuspaneel .online {
+    margin: .8rem 0 0;
+    padding-top: .6rem;
+    border-top: 1px solid var(--rand);
+    font-size: .75rem;
+    color: var(--tekst-dof);
+    text-align: center;
+}
+
+.waarschuwing {
+    margin: .5rem 0;
+    padding: .4rem .6rem;
+    background: rgba(224, 82, 82, .12);
+    border-left: 3px solid var(--fout);
+    border-radius: var(--radius);
+    font-size: .78rem;
+}
+
+/* --- Meldingen --------------------------------------------------------- */
+
+.melding {
+    margin-bottom: 1rem;
+    padding: .6rem .9rem;
+    border-left: 3px solid var(--tekst-dof);
+    border-radius: var(--radius);
+    background: var(--paneel-op);
+    font-size: .875rem;
+}
+.melding-ok   { border-left-color: var(--goed); background: rgba(76, 175, 80, .1); }
+.melding-fout { border-left-color: var(--fout); background: rgba(224, 82, 82, .1); }
+.melding-info { border-left-color: var(--accent); background: rgba(255, 153, 0, .08); }
+
+/* --- Formulieren en knoppen -------------------------------------------- */
+
+input, select, textarea {
+    padding: .4rem .55rem;
+    background: #101010;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    color: var(--tekst);
+    font: inherit;
+    max-width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent-dof);
+    outline-offset: 1px;
+    border-color: var(--accent-dof);
+}
+input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+
+button,
+input[type="submit"],
+.knop {
+    display: inline-block;
+    padding: .45rem 1rem;
+    background: linear-gradient(#3a3a3a, #262626);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    color: var(--tekst);
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+}
+button:hover,
+input[type="submit"]:hover,
+.knop:hover {
+    border-color: var(--accent-dof);
+    color: var(--accent);
+    text-decoration: none;
+}
+button:disabled { opacity: .5; cursor: not-allowed; }
+
+.knop-nadruk {
+    display: block;
+    margin-top: .8rem;
+    background: linear-gradient(var(--accent), var(--accent-dof));
+    border-color: var(--accent-dof);
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: .8rem;
+}
+.knop-nadruk:hover { color: #000; }
+
+/* Formulier als label/veld-raster */
+.veldenraster {
+    display: grid;
+    grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
+    gap: .6rem .8rem;
+    align-items: center;
+    max-width: 32rem;
+}
+.veldenraster label { color: var(--tekst-dof); }
+.veldenraster .volle-breedte { grid-column: 1 / -1; }
+
+/* --- Beveiligingscode --------------------------------------------------- */
+
+.captcha {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    padding: .7rem;
+    background: var(--paneel-op);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+}
+.captcha img { border: 1px solid var(--rand); border-radius: var(--radius); display: block; }
+.captcha label { color: var(--tekst-dof); font-size: .85rem; }
+.captcha input { text-transform: uppercase; letter-spacing: .15em; font-family: ui-monospace, Consolas, monospace; }
+
+/* Tekst die spelers zelf geschreven hebben */
+.berichttekst {
+    padding: .8rem 1rem;
+    background: var(--paneel-op);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow-wrap: anywhere;
+}
+.berichttekst img { max-width: 100%; height: auto; }
+.berichttekst ul { margin: .4rem 0; padding-left: 1.5rem; }
+
+.forumbericht { margin-bottom: 1.2rem; }
+.forumbericht:last-child { margin-bottom: 0; }
+.forumkop {
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+    padding: .35rem .6rem;
+    background: linear-gradient(#2c2c2c, #1e1e1e);
+    border: 1px solid var(--rand);
+    border-bottom: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-size: .85rem;
+}
+.forumbericht .berichttekst {
+    margin-bottom: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.paginering { margin: .8rem 0 0; font-size: .85rem; }
+.paginering a, .paginering strong {
+    display: inline-block;
+    min-width: 1.8rem;
+    padding: .2rem .4rem;
+    text-align: center;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    margin-right: .2rem;
+}
+.paginering strong { background: var(--paneel-op); color: var(--accent); }
+
+img.smilie {
+    display: inline-block;
+    vertical-align: text-bottom;
+    width: auto;
+    height: 1.1em;
+}
+
+/* Fruitmachine */
+.rollen {
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+.rollen span {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    font-size: 2rem;
+    background: linear-gradient(#2f2f2f, #1a1a1a);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+}
+
+.getrokken { text-align: center; font-size: 1.1rem; }
+
+/* Blackjack */
+.kaarthand {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: .5rem;
+}
+.kaarthand img {
+    width: auto;
+    height: 6rem;
+    border-radius: 4px;
+    border: 1px solid var(--rand);
+    background: #fff;
+}
+
+/* Roulette */
+.bal {
+    display: inline-grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    color: #fff;
+    vertical-align: middle;
+}
+.bal-rood  { background: #b3241f; }
+.bal-zwart { background: #1a1a1a; border: 1px solid var(--rand); }
+.bal-groen { background: #1f7a34; }
+
+.rouletteveld {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: .3rem;
+    margin-bottom: 1rem;
+}
+.rouletteveld .vak {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .25rem;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+}
+.rouletteveld .vak span {
+    display: grid;
+    place-items: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    font-size: .75rem;
+    color: #fff;
+}
+.rouletteveld .vak-rood span  { background: #b3241f; }
+.rouletteveld .vak-zwart span { background: #000; }
+.rouletteveld .vak-groen span { background: #1f7a34; }
+.rouletteveld .vak input { min-width: 0; flex: 1; padding: .2rem .3rem; font-size: .8rem; }
+
+/* Kraslot: zes vakjes in een raster van drie */
+.kraslot {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .4rem;
+    max-width: 24rem;
+    margin: 0 0 1rem;
+}
+.kraslot span {
+    display: grid;
+    place-items: center;
+    min-height: 3rem;
+    padding: .4rem;
+    background: linear-gradient(#2f2f2f, #1f1f1f);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+    font-size: .8rem;
+    text-align: center;
+}
+
+blockquote {
+    margin: .8rem 0;
+    padding: .6rem .9rem;
+    border-left: 3px solid var(--accent-dof);
+    background: var(--paneel-op);
+    border-radius: var(--radius);
+}
+
+.uitleg { color: var(--tekst-dof); font-size: .875rem; }
+
+/* --- Tabellen ----------------------------------------------------------- */
+
+.tabelwikkel { overflow-x: auto; }
+
+table.lijst {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+table.lijst th,
+table.lijst td {
+    padding: .4rem .6rem;
+    border-bottom: 1px solid var(--rand);
+    text-align: left;
+}
+table.lijst th {
+    background: var(--paneel-op);
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+}
+table.lijst tbody tr:hover { background: rgba(255, 255, 255, .03); }
+table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* --- Voet --------------------------------------------------------------- */
+
+.paginavoet {
+    padding: 1rem;
+    border-top: 1px solid var(--rand);
+    color: var(--tekst-dof);
+    font-size: .78rem;
+    text-align: center;
+}
+
+/* --- Premium en advertenties --------------------------------------------- */
+
+.statuspaneel .premium {
+    margin: .5rem 0 0;
+    padding: .35rem .5rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: .8rem;
+    text-align: center;
+}
+
+.advertentie {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px dashed var(--rand);
+    border-radius: 5px;
+    min-height: 6rem;
+    overflow-x: auto;
+}
+
+/* --- Keuzelijst met toelichting (bv. de getuigeninstelling) --------------- */
+
+.keuzelijst {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.keuzelijst .keuze {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .15rem .6rem;
+    align-items: start;
+    padding: .7rem .9rem;
+    border: 1px solid var(--rand);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.keuzelijst .keuze:hover { border-color: var(--accent); }
+
+.keuzelijst .keuze.gekozen {
+    border-color: var(--accent);
+    background: rgba(255, 153, 0, .07);
+}
+
+.keuzelijst .keuze input { margin-top: .25rem; }
+.keuzelijst .keuze .uitleg { grid-column: 2; }
+
+/* --- Smallere schermen --------------------------------------------------- */
+
+@media (max-width: 1100px) {
+    .layout { grid-template-columns: 180px minmax(0, 1fr); }
+    .statuspaneel { grid-column: 1 / -1; position: static; }
+    .statuspaneel dl { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+    .statuspaneel dd { text-align: left; }
+}
+
+@media (max-width: 760px) {
+    .menu-toggle { display: block; order: 3; }
+    .topnav { order: 4; width: 100%; justify-content: center; }
+    .brand { margin-right: auto; }
+
+    .layout { grid-template-columns: minmax(0, 1fr); padding: .75rem; }
+    .sidebar { position: static; display: none; }
+    .sidebar.open { display: flex; }
+    .menugroep { }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}

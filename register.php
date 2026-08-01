@@ -1,131 +1,268 @@
-<?php /* ------------------------- */
-  include("config.php");
-?>
-<html>
+<?php
+/**
+ * Registreren en account activeren.
+ *
+ * Routes:
+ *   register.php                    aanmeldformulier
+ *   register.php?refer=12           aanmelden via een verwijzing
+ *   register.php?id=..&code=..      activatielink uit de e-mail
+ */
 
+declare(strict_types=1);
 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<table width=100%>
-  <tr> 
-    <td class="subTitle"><b>Registreren</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<?
-  if(isset($_GET['id'],$_GET['code'])) {
-    $id            = $_GET['id'];
-    $code          = $_GET['code'];
-    $dbres          = mysql_query("SELECT * FROM `temp` WHERE `area`='signup' AND `id`='$id' AND `code`='$code'");
-    if($data = mysql_fetch_object($dbres)) {
-      mysql_query("UPDATE `users` SET `activated`='1',`start`=NOW() WHERE `login`='{$data->login}'");
-      mysql_query("DELETE FROM `temp` WHERE `id`='$id'");
-	  if($data->forwerdedFor != ""){
-	  mysql_query("UPDATE `users` SET `respect`=`respect`+5 WHERE `id`='{$data->forwardedFor}'");
-	  mysql_query("INSERT INTO `logs`(`time`,`login`,`person`,`code`,`area`,`com`) values(NOW(),'{$data->login}','{$data->forwardedFor}','5','respect','ReferrerID')");}
-      print "De activatie is voltooid, je kunt nu inloggen.";
-    }
-    else
-      print "Incorrecte activatie-code...";
-  }
-elseif(isset($_POST['submit'])) {
-  $gebruiker = $_POST['gebruiker'];
-  $pass = $_POST['pass'];
-  $refer = $_POST['refer'];
-  $passconfirm = $_POST['passconfirm'];
-  $email = $_POST['email'];
-  $ip = $_SERVER['REMOTE_ADDR'];
-  $geslacht = $_POST['geslacht'];
-  $steden = Array("Brussel","Leuven","Gent","Brugge","Hasselt","Antwerpen","Amsterdam","Enschede");
-  $rstad = rand(0,7);
-  $stad = "$steden[$rstad]";
-  $ipexist = mysql_query("SELECT * FROM `users` WHERE `ip`='{$ip}' AND `status`='levend'");
-  $ipexist = mysql_num_rows($ipexist);
-  $ipallowed = mysql_query("SELECT * FROM `multiple` WHERE `ip`='{$ip}'");
-  $ipallowed = mysql_num_rows($ipallowed); 
-  $exist = mysql_query("SELECT * FROM `users` WHERE `login`='{$gebruiker}'");
-  $exist = mysql_num_rows($exist);
-  $eexist = mysql_query("SELECT * FROM `users` WHERE `login`='{$gebruiker}' AND `status`='levend'");
-  $eexist = mysql_num_rows($eexist);
-  $rexist = mysql_query("SELECT * FROM `users` WHERE `id`='{$refer}'");
-  $rexists = mysql_fetch_object($rexist);
-  $rexist = mysql_num_rows($rexist);
-  $referlogin = $rexists->login;
-  if(preg_match('/^[a-zA-Z0-9_\-]+$/', $gebruiker) == 0) { print "De opgegeven gebruikersnaam is ongeldig, je mag enkel letters of cijfers gebruiken.\n"; }
-  elseif(!$pass || $pass != $passconfirm) { print "De opgegeven wachtwoorden zijn niet identiek.\n"; }
-  elseif(preg_match('/^.+@.+\..+$/',$email) == 0) { print "Het opgegeven e-mailadres is ongeldig.\n"; }
-  elseif($ipexist == 1 && $ipallowed != 1) { print "Er is al een account gemaakt op dit IP adres.\n"; }
-  elseif($exist == 1) { print "De opgegeven gebruikersnaam is al in gebruik.\n"; }
-  elseif($eexist == 1) { print "Er is al iemand aangemeld met dit e-mailadres.\n"; }
-  elseif($rexist != 1 && $refer!= "") { print "De opgegeven referrerID bestaat niet.\n"; }
-  else {
-        $code          = rand(100000,999999);
-        mysql_query("INSERT INTO `users`(`start`,`login`,`pass`,`ip`,`email`,`stad`,`geslacht`,`activated`) values(NOW(),'{$gebruiker}',MD5('{$pass}'),'{$ip}','{$email}','{$stad}','{$geslacht}','1')");
-        mysql_query("INSERT INTO `temp`(login,ip,code,area,time,forwardedFor) values('$gebruiker','$ip',$code,'signup',NOW(),'$referlogin')"); 
-        $id          = mysql_insert_id();
-      mail($email,"Vendetta activatie-code","Hallo $gebruiker,\n\nBedankt voor het aanmelden op Vendetta (game 3-logd.nl).\nKlik hier om je account te activeren:\nhttp://logd.nl/game3/register.php?id=$id&code=$code","From: game3-logd.nl <noreply@logd.nl>\n"); 
-	  //print "Je bent geregistreerd, je kan je nu aanmelden <br><a href='login.php'>Login</a>";
-	  //mail($email,"Vendetta registratie","Hallo $gebruiker,\n\nBedankt voor het aanmelden op Vendetta.\n Je gebruikersnaam: $gebruiker \n Je wachtwoord: $pass","From: Vendetta <noreply@vendetta.com>\n"); 
-	  print "Je bent geregistreerd, er is een e-mail gestuurd naar $email met een activatie-code...\n";
-        
-      }
+require __DIR__ . '/inc/bootstrap.php';
+
+if (is_logged_in()) {
+    redirect('home.php');
 }
-$refer = $_GET['refer'];
- print <<<ENDHTML
-   <form method="post">
-        <table width="100%">
-          <tr> 
-            <td width="49%"><div align="right">Login:</div></td>
-            <td width="2%">&nbsp; </td>
-            <td width="49%"><input type="text" name="gebruiker" maxlength=16 width="150"></td>
-          </tr>
-          <tr> 
-            <td width="49%"><div align="right">Wachtwoord:</div></td>
-            <td width="2%">&nbsp;</td>
-            <td width="49%"><input type="password" name="pass" maxlength=12 width="150"></td>
-          </tr>
-          <tr> 
-            <td width="49%"><div align="right">Herhaal:</div></td>
-            <td width="2%">&nbsp;</td>
-            <td width="49%"><input type="password" name="passconfirm" maxlength=12 width="150"></td>
-          </tr>
-          <tr> 
-            <td width=431><div align="right">E-mail:</div></td>
-            <td>&nbsp;</td>
-            <td><input type="text" name="email" maxlength=64 width="150"></td>
-          </tr>
-          <tr> 
-            <td width=431><div align="right">Geslacht:</div></td>
-            <td>&nbsp;</td>
-            <td><select name="geslacht" width="150">
-                <option value="Man">Man</option>
-                <option value="Vrouw">Vrouw</option>
-              </select></td>
-          </tr>
-		  <tr> 
-            <td width=431><div align="right">ReferrerID (optioneel):</div></td>
-            <td>&nbsp;</td>
-            <td><input type="text" name="refer" value="$refer" maxlength=64 width="150"></td>
-          </tr>          <tr> 
-            <td></td>
-            <td></td>
-            <td>
-                <input type="submit" name="submit" with="100" value="Aanmelden">
-            </td>
-          </tr>
-        </table>
-      </form>
-</td></tr>
 
-</table>
-</body>
-</html>
-ENDHTML;
-?>
+// --- Activatielink geopend ------------------------------------------------
+if (get('id') !== '' && get('code') !== '') {
+    activeren(int_input('id'), get('code'));
+}
+
+// --- Aanmelding verwerken --------------------------------------------------
+$fout   = null;
+$gelukt = null;
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $gelukt = aanmelden($_POST);
+    } catch (RuntimeException $e) {
+        $fout = $e->getMessage();
+    }
+}
+
+toon_formulier($fout, $gelukt);
+
+// ==========================================================================
+
+/**
+ * @return string Melding voor de speler.
+ * @throws RuntimeException bij ongeldige invoer.
+ */
+function aanmelden(array $in): string
+{
+    $login    = trim((string) ($in['gebruiker'] ?? ''));
+    $pass     = (string) ($in['pass'] ?? '');
+    $pass2    = (string) ($in['passconfirm'] ?? '');
+    $email    = trim((string) ($in['email'] ?? ''));
+    $geslacht = ($in['geslacht'] ?? 'Man') === 'Vrouw' ? 'Vrouw' : 'Man';
+    $refer    = trim((string) ($in['refer'] ?? ''));
+    $ip       = client_ip();
+
+    // --- Vorm van de invoer ---
+    if (!preg_match('/^[a-zA-Z0-9_\-]{3,16}$/', $login)) {
+        throw new RuntimeException(
+            'De gebruikersnaam moet 3 tot 16 tekens lang zijn en mag alleen letters, '
+            . 'cijfers, - en _ bevatten.'
+        );
+    }
+    if (mb_strlen($pass) < 10) {
+        throw new RuntimeException('Kies een wachtwoord van minstens 10 tekens.');
+    }
+    if ($pass !== $pass2) {
+        throw new RuntimeException('De twee wachtwoorden zijn niet gelijk.');
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new RuntimeException('Het opgegeven e-mailadres is ongeldig.');
+    }
+
+    // --- Al in gebruik? ---
+    if (q_val('SELECT COUNT(*) FROM `users` WHERE `login` = ?', [$login], 0) > 0) {
+        throw new RuntimeException('Die gebruikersnaam is al in gebruik.');
+    }
+    // Ook hier tellen omgelegde accounts mee: één account per e-mailadres.
+    if (q_val('SELECT COUNT(*) FROM `users` WHERE `email` = ?', [$email], 0) > 0) {
+        throw new RuntimeException(
+            'Er bestaat al een account met dit e-mailadres. Ben je je wachtwoord kwijt, '
+            . 'gebruik dan "wachtwoord vergeten". Ben je omgelegd, log dan in: je begint '
+            . 'met datzelfde account opnieuw.'
+        );
+    }
+
+    // --- Meerdere accounts vanaf hetzelfde IP ---
+    //
+    // Alle accounts tellen mee, ook omgelegde. Eerder telden alleen levende
+    // accounts, omdat je na een moord een nieuw account moest maken. Dat hoeft
+    // niet meer: een omgelegd account begint via rip.php gewoon opnieuw. Er is
+    // dus geen legitieme reden meer voor een tweede account, en de uitzondering
+    // was een makkelijke manier om er alsnog meerdere te verzamelen.
+    if (!config('game.allow_multi_accounts')) {
+        $toegestaan = (int) q_val('SELECT `allo` FROM `multiple` WHERE `ip` = ?', [$ip], 0);
+        $bestaat    = (int) q_val('SELECT COUNT(*) FROM `users` WHERE `ip` = ?', [$ip], 0);
+
+        if ($bestaat > 0 && $toegestaan !== 1) {
+            throw new RuntimeException(
+                'Er bestaat al een account vanaf dit IP-adres. Ben je je wachtwoord kwijt, '
+                . 'gebruik dan "wachtwoord vergeten". Ben je omgelegd, log dan in: je begint '
+                . 'met datzelfde account opnieuw. Speel je samen met iemand op hetzelfde '
+                . 'netwerk? Vraag dan een beheerder om toestemming.'
+            );
+        }
+    }
+
+    // --- Verwijzer ---
+    $verwijzer = '';
+    if ($refer !== '') {
+        $verwijzer = (string) q_val('SELECT `login` FROM `users` WHERE `id` = ?', [(int) $refer], '');
+        if ($verwijzer === '') {
+            throw new RuntimeException('De opgegeven ReferrerID bestaat niet.');
+        }
+    }
+
+    // --- Account aanmaken ---
+    $activatieNodig = (bool) config('game.require_activation', true);
+    $stad           = random_city();
+
+    db_transaction(static function () use ($login, $pass, $email, $ip, $stad, $geslacht, $activatieNodig) {
+        q(
+            'INSERT INTO `users`
+                  (`login`, `pass`, `email`, `ip`, `stad`, `geslacht`, `activated`,
+                   `start`, `online`, `zak`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)',
+            [
+                $login,
+                auth_hash($pass),
+                $email,
+                $ip,
+                $stad,
+                $geslacht,
+                $activatieNodig ? 0 : 1,
+                (int) config('game.start_money', 1000),
+            ]
+        );
+        // De startstad geldt meteen als bezocht, anders kan de speler er niet terug.
+        q("UPDATE `users` SET `{$stad}` = 1 WHERE `login` = ?", [$login]);
+    });
+
+    if (!$activatieNodig) {
+        if ($verwijzer !== '') {
+            verwijzing_belonen($verwijzer, $login);
+        }
+        return 'Je account is aangemaakt. Je kunt nu <a href="' . e(url('login.php')) . '">inloggen</a>.';
+    }
+
+    // --- Activatiemail ---
+    $token = make_token($login, 'signup', $verwijzer);
+    $link  = url('register.php?id=' . $token['id'] . '&code=' . $token['code']);
+
+    $verstuurd = send_mail(
+        $email,
+        config('site.name') . ' - activeer je account',
+        "Hallo {$login},\n\n"
+        . 'Bedankt voor je aanmelding bij ' . config('site.name') . ".\n"
+        . "Klik op onderstaande link om je account te activeren:\n\n"
+        . $link . "\n\n"
+        . "Je startstad is {$stad}.\n\n"
+        . "Heb je je niet aangemeld? Dan kun je deze mail negeren.\n"
+    );
+
+    if (!$verstuurd) {
+        // Het account bestaat al; de mail is het probleem, niet de aanmelding.
+        return 'Je account is aangemaakt, maar de activatiemail kon niet verstuurd worden. '
+             . 'Neem contact op met een beheerder om je account te laten activeren.';
+    }
+
+    return 'Je bent aangemeld. Er is een e-mail met een activatielink gestuurd naar '
+         . e($email) . '. Kijk ook even in je spamfolder.';
+}
+
+/**
+ * @return never
+ */
+function activeren(int $id, string $code): void
+{
+    $token = take_token($id, $code, 'signup');
+
+    layout_header('Activeren');
+    panel_open('Account activeren');
+
+    if ($token === null) {
+        notice('Deze activatielink is ongeldig, verlopen of al gebruikt.', 'fout');
+        echo '<p>Is je account al geactiveerd? Probeer dan gewoon '
+           . '<a href="' . e(url('login.php')) . '">in te loggen</a>.</p>';
+    } else {
+        q("UPDATE `users` SET `activated` = 1, `start` = NOW() WHERE `login` = ?", [$token['login']]);
+
+        if (($token['forwardedFor'] ?? '') !== '') {
+            verwijzing_belonen((string) $token['forwardedFor'], (string) $token['login']);
+        }
+
+        notice('Je account is geactiveerd.', 'ok');
+        echo '<p><a class="knop" href="' . e(url('login.php')) . '">Inloggen</a></p>';
+    }
+
+    panel_close();
+    layout_footer();
+    exit;
+}
+
+/** Geef de verwijzer eerpunten en leg het vast in het logboek. */
+function verwijzing_belonen(string $verwijzer, string $nieuweSpeler): void
+{
+    db_transaction(static function () use ($verwijzer, $nieuweSpeler) {
+        q('UPDATE `users` SET `respect` = `respect` + 5 WHERE `login` = ?', [$verwijzer]);
+        q(
+            'INSERT INTO `logs` (`time`, `login`, `person`, `code`, `area`, `com`)
+                  VALUES (NOW(), ?, ?, 5, ?, ?)',
+            [$verwijzer, $nieuweSpeler, 'respect', 'Verwijzing']
+        );
+    });
+}
+
+// ==========================================================================
+
+function toon_formulier(?string $fout, ?string $gelukt): void
+{
+    layout_header('Registreren');
+    panel_open('Registreren');
+
+    if ($fout !== null)   { notice(e($fout), 'fout'); }
+    if ($gelukt !== null) { notice($gelukt, 'ok'); }
+
+    if ($gelukt === null) {
+        $refer = get('refer') !== '' ? get('refer') : post('refer');
+
+        echo '<form method="post">' . csrf_field();
+        echo '<div class="veldenraster">';
+
+        echo '<label for="gebruiker">Gebruikersnaam</label>';
+        echo '<input id="gebruiker" name="gebruiker" maxlength="16" pattern="[A-Za-z0-9_\-]{3,16}" '
+           . 'required autocomplete="username" value="' . e(post('gebruiker')) . '">';
+        echo '<span></span><small>3 tot 16 tekens. Deze naam kun je later niet meer wijzigen.</small>';
+
+        echo '<label for="pass">Wachtwoord</label>';
+        echo '<input id="pass" name="pass" type="password" minlength="10" required autocomplete="new-password">';
+        echo '<span></span><small>Minimaal 10 tekens.</small>';
+
+        echo '<label for="passconfirm">Herhaal wachtwoord</label>';
+        echo '<input id="passconfirm" name="passconfirm" type="password" minlength="10" required autocomplete="new-password">';
+
+        echo '<label for="email">E-mailadres</label>';
+        echo '<input id="email" name="email" type="email" maxlength="255" required '
+           . 'value="' . e(post('email')) . '">';
+        echo '<span></span><small>Hierheen gaat je activatielink.</small>';
+
+        $man   = post('geslacht') === 'Vrouw' ? '' : ' selected';
+        $vrouw = post('geslacht') === 'Vrouw' ? ' selected' : '';
+        echo '<label for="geslacht">Geslacht</label>';
+        echo '<select id="geslacht" name="geslacht">'
+           . '<option value="Man"' . $man . '>Man</option>'
+           . '<option value="Vrouw"' . $vrouw . '>Vrouw</option></select>';
+        echo '<span></span><small>Bepaalt alleen hoe je rang genoemd wordt.</small>';
+
+        echo '<label for="refer">ReferrerID</label>';
+        echo '<input id="refer" name="refer" maxlength="10" value="' . e($refer) . '">';
+        echo '<span></span><small>Optioneel. Het spelersnummer van wie je heeft uitgenodigd.</small>';
+
+        echo '<span></span><button type="submit">Aanmelden</button>';
+        echo '</div></form>';
+    }
+
+    echo '<p><a href="' . e(url('login.php')) . '">Heb je al een account? Log in.</a></p>';
+
+    panel_close();
+    layout_footer();
+}

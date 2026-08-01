@@ -1,116 +1,210 @@
 <?php
-  include('config.php');
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-print <<<ENDHTML
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Detectives</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-ENDHTML;
-if ($_POST['rall']) {
-mysql_query("DELETE FROM `detectives` WHERE `van`='{$data->login}'");
-}
-$user = mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['naar']}'");
-$exist = mysql_fetch_object($user);
-if (isset($_POST['submit'])) { 
-	if (!$exist->login) { echo "Deze gebruiker bestaat niet."; exit; }
-	elseif ($exist->status == dood) { echo "Deze gebruiker is dood."; exit; }
-	elseif (strtolower($data->login == $_POST['naar'])) { echo "Je kan jezelf niet laten zoeken."; exit; }
-	elseif ($_POST['stad'] != Alle) { 
-		if ($data->zak < 10000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-		else {
-mysql_query("INSERT INTO `log`(`wat`,`aantal`,`code`,`van`) values('Detective','1','{$_POST['stad']}','$data->login')");
-mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','{$_POST['stad']}',FROM_UNIXTIME($zoektijd))");
-			echo "Je detective is op pad gestuurd."; 
-			mysql_query("UPDATE `users` SET `zak`=`zak`-10000 WHERE `login`='{$data->login}'");
-		}
-	}
-	elseif ($_POST['stad'] == Alle) {
-		if ($data->zak < 60000) { echo "Je hebt niet genoeg geld op zak."; exit; }
-		else {
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Brussel',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Leuven',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Gent',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Brugge',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Antwerpen',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Hasselt',FROM_UNIXTIME($zoektijd))");
-        mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Amsterdam',FROM_UNIXTIME($zoektijd))");
-		mysql_query("INSERT INTO `detectives`(`van`,`naar`,`stad`,`time`) values('{$data->login}','{$_POST['naar']}','Enschede',FROM_UNIXTIME($zoektijd))");
-        mysql_query("UPDATE `users` SET `zak`=`zak`-70000 WHERE `login`='{$data->login}'");
-		echo "Je detectives zijn op pad gestuurd.";
-		}
-	}
-}
-print "
-	<form method='post'>
-Huur een detective in om iemand te zoeken. 1 detective kost &euro;10.000.<br><br><table><tr><td width=100 align=left><b>Zoek naar: </b><input type='text' name='naar' value=''><br>
-<b>Stad:</b><br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Brussel'>Brussel<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Leuven'>Leuven<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Gent'>Gent<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Brugge'>Brugge<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Antwerpen'>Antwerpen<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Hasselt'>Hasselt<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Amsterdam'>Amsterdam<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Enschede'>Enschede<br></td></tr>
-<tr><td width=100><input type='radio' name='stad' value='Alle' checked>Alle steden<br></td></tr>
-<tr><td width=100><br><input type='submit' name='submit' value='Zoek'></form></td></tr></html>";
-/// Einde uitvoer van query 
-$query = "SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `detectives` WHERE `van`='{$data->login}' ORDER BY `time` ASC"; 
-$huren = mysql_query("SELECT * FROM `detectives` WHERE `van`='{$data->login}'"); 
-$huur = mysql_num_rows($huren);
-$huur = 1;
-$info = mysql_query($query) or die(mysql_error()); 
-$count = 0; 
-if ($huur == 1) {
-echo "<tr><td width=5%> 
-        #</td> 
-        <td width=20%> 
-        <b>Zoeken naar</b></td> 
-                <td width=24%> 
-        <b>Stad</b></td> 
-                <td width=24%> 
-        <b>Tijd</b></td> 
-                      <td width=24%> 
-        <b>Verwijder</b></td></tr> 
-      "; 
-while ($gegeven = mysql_fetch_array($info)) { 
-$stad= $gegeven["stad"]; 
-$time = $gegeven["time"]; 
-$name = $gegeven["naar"]; 
-$id = $gegeven["id"];
-$zoektime = gmdate('i:s', ($time - TIME()));
-if (!$zoektime) { $zoektime = "Niet gevonden."; }
-$count++; 
+/**
+ * Detectivebureau: huur iemand in om een speler op te sporen.
+ *
+ * Een detective zoekt in één stad. Is het doelwit daar wanneer hij terugkomt,
+ * dan meldt hij dat. De afhandeling gebeurt in inc/cron.php.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Bij "alle steden" werd gecontroleerd of je € 60.000 had, maar er werd
+ *    € 70.000 afgeschreven. Met een saldo tussen die twee bedragen kwam je in
+ *    de min te staan.
+ *  - De controle of je jezelf zocht luidde
+ *    `strtolower($data->login == $_POST['naar'])`. Het haakje stond verkeerd,
+ *    dus strtolower werd op de uitkomst van de vergelijking losgelaten in
+ *    plaats van op de naam. Bij een verschil in hoofdletters werkte de controle
+ *    daardoor niet.
+ *  - De acht steden werden met acht losse, bijna identieke queries ingevoerd.
+ *  - Er werd geschreven naar een tabel `log` die niet in het schema staat.
+ *    Dat gaat nu via log_action() naar `logs`.
+ *  - Het aantal lopende opdrachten werd opgehaald en daarna overschreven met
+ *    de vaste waarde 1, waardoor het overzicht altijd getoond werd.
+ *  - Detectives terughalen kon zonder CSRF-bescherming.
+ *  - De afhandeling van teruggekeerde detectives stond midden in config.php en
+ *    draaide dus bij elk paginabezoek van elke speler opnieuw.
+ */
 
-/// De uit database gehaalde gegevens weergeven 
-echo "<tr> 
-                <td width=5%>".$count."</td> 
-		        <td width=20%>{$name}</td> 
-                <td width=24%>{$stad}</td>
-                <td width=24%>{$zoektime}</td>
-                <td width=24%><a href=detectives.php?x={$id}>[x]</a></td>";
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const DETECTIVE_PRIJS      = 10_000;
+const DETECTIVE_PRIJS_ALLE = 70_000;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-print "<tr><td><br><form method=POST><input type=submit name=rall value='Verwijder alles'></form></td></tr>";
-if (isset($_GET['x'])) { mysql_query("DELETE FROM `detectives` WHERE `id`='{$_GET['x']}' AND `van`='{$data->login}'"); echo "Je hebt je detective ontslagen.<br><br>"; }
-?>
+
+$lopend = q_all(
+    'SELECT *, UNIX_TIMESTAMP(`time`) AS `terug_ts` FROM `detectives`
+      WHERE `van` = ? ORDER BY `time` ASC',
+    [$user['login']]
+);
+
+layout_header('Detectivebureau');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Huur een detective');
+
+echo '<p>Een detective zoekt in één stad. Is je doelwit daar wanneer hij terugkomt, '
+   . 'dan krijg je bericht. Eén stad kost ' . money(DETECTIVE_PRIJS)
+   . ', alle steden tegelijk ' . money(DETECTIVE_PRIJS_ALLE) . '.</p>';
+echo '<p>Je hebt ' . money((int) $user['zak']) . ' op zak.</p>';
+
+echo '<form method="post">' . csrf_field();
+echo '<input type="hidden" name="actie" value="huren">';
+echo '<div class="veldenraster">';
+echo '<label for="naar">Zoek naar</label>';
+echo '<input id="naar" name="naar" maxlength="16" required>';
+echo '<label for="stad">Stad</label><select id="stad" name="stad">';
+echo '<option value="alle">Alle steden (' . strip_tags(money(DETECTIVE_PRIJS_ALLE)) . ')</option>';
+foreach (cities() as $stad) {
+    echo '<option value="' . e($stad) . '">' . e($stad) . '</option>';
+}
+echo '</select>';
+echo '<span></span><button type="submit">Stuur eropuit</button>';
+echo '</div></form>';
+
+panel_close();
+
+panel_open('Lopende opdrachten');
+
+if ($lopend === []) {
+    echo '<p>Je hebt geen detectives op pad.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Zoekt naar</th><th>Stad</th><th>Terug over</th></tr></thead><tbody>';
+    foreach ($lopend as $opdracht) {
+        $over = max(0, (int) $opdracht['terug_ts'] - time());
+        echo '<tr>';
+        echo '<td>' . e((string) $opdracht['naar']) . '</td>';
+        echo '<td>' . e((string) $opdracht['stad']) . '</td>';
+        echo '<td>' . ($over > 0
+            ? '<span data-tot="' . (int) $opdracht['terug_ts'] . '">' . e(duration($over)) . '</span>'
+            : 'meldt zich zo') . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table></div>';
+
+    echo '<form method="post">' . csrf_field()
+       . '<input type="hidden" name="actie" value="terughalen">'
+       . '<button type="submit">Roep al je detectives terug</button></form>';
+    echo '<p class="uitleg">Je krijgt het geld niet terug.</p>';
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'huren'      => huren($user, post('naar'), post('stad')),
+        'terughalen' => terughalen($user),
+        default      => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/** @throws SpelFout */
+function huren(array $user, string $naam, string $stad): string
+{
+    $naam = trim($naam);
+
+    if ($naam === '') {
+        throw new SpelFout('Vul in wie je wilt laten zoeken.');
+    }
+    // Deze vergelijking ging in de oude versie mis door een verkeerd haakje.
+    if (strcasecmp($naam, (string) $user['login']) === 0) {
+        throw new SpelFout('Je kunt jezelf niet laten zoeken.');
+    }
+
+    $alle = $stad === 'alle';
+
+    if (!$alle && !is_city($stad)) {
+        throw new SpelFout('Die stad bestaat niet.');
+    }
+
+    return db_transaction(static function () use ($user, $naam, $stad, $alle): string {
+        $doelwit = q_row('SELECT `login`, `status` FROM `users` WHERE `login` = ?', [$naam]);
+
+        if ($doelwit === null) {
+            throw new SpelFout('Die speler bestaat niet.');
+        }
+        if ($doelwit['status'] !== 'levend') {
+            throw new SpelFout($doelwit['login'] . ' is dood; die hoef je niet te zoeken.');
+        }
+
+        $steden = $alle ? cities() : [$stad];
+        $kosten = $alle ? DETECTIVE_PRIJS_ALLE : DETECTIVE_PRIJS;
+
+        // Bedrag en controle waren in de oude versie verschillend (60.000 tegen
+        // 70.000), waardoor je in de min kon komen.
+        lock_user((int) $user['id']);
+
+        if (!afboeken((int) $user['id'], $kosten, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($kosten) . ' en zoveel heb je niet op zak.');
+        }
+
+        foreach ($steden as $doelstad) {
+            // Geen dubbele opdracht op dezelfde speler in dezelfde stad.
+            $bestaat = (int) q_val(
+                'SELECT COUNT(*) FROM `detectives` WHERE `van` = ? AND `naar` = ? AND `stad` = ?',
+                [$user['login'], $doelwit['login'], $doelstad],
+                0
+            );
+
+            if ($bestaat === 0) {
+                q(
+                    'INSERT INTO `detectives` (`van`, `naar`, `stad`, `time`)
+                          VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+                    [$user['login'], $doelwit['login'], $doelstad, random_int(300, 3600)]
+                );
+            }
+        }
+
+        log_action((string) $user['login'], 'detective',
+            'Detective op ' . $doelwit['login'] . ($alle ? ' (alle steden)' : ' in ' . $stad),
+            $kosten, (string) $doelwit['login']);
+
+        return $alle
+            ? 'Je detectives zijn naar alle steden vertrokken om ' . $doelwit['login'] . ' te zoeken.'
+            : 'Je detective is naar ' . $stad . ' vertrokken om ' . $doelwit['login'] . ' te zoeken.';
+    });
+}
+
+/** @throws SpelFout */
+function terughalen(array $user): string
+{
+    $aantal = q_count('DELETE FROM `detectives` WHERE `van` = ?', [$user['login']]);
+
+    if ($aantal === 0) {
+        throw new SpelFout('Je hebt geen detectives op pad.');
+    }
+
+    return $aantal . ' ' . ($aantal === 1 ? 'detective is' : 'detectives zijn')
+         . ' teruggeroepen. Het geld krijg je niet terug.';
+}

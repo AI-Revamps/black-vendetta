@@ -1,148 +1,346 @@
 <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
+/**
+ * Misdaden plegen.
+ *
+ * Elke misdaad heeft een slagingskans die met je ervaring meegroeit, een eigen
+ * opbrengst en een lijst mislukkingsberichten. Sommige mislukkingen leveren
+ * gevangenisstraf of gezondheidsverlies op.
+ */
 
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-print <<<ENDHTML
-<table width=100% align=center>
-  <tr> 
-    <td class="subTitle"><b>Misdaad</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-ENDHTML;
-$time = time();
-$crime = gmdate('i:s',($data->crime - time()));
-if($data->crime - time() > 0) { echo "Je moet nog $crime wachten voor je volgende misdaad."; exit; }
-$kind = round(100 / (200 / $data->xp));
-if ($kind > 50) { $kind = 50; }
-$kkind = rand(1,(100 / $kind));
-if ($data->level > 254) { $kkind = rand(1,2);}
-$puber = round(100 / (333 / $data->xp));
-if ($puber > 50) { $puber = 50; }
-$kpuber = rand(1,(100 / $puber));
-if ($data->level > 254) { $kpuber = rand(1,2);}
-$juwelier = round(100 / (666 / $data->xp));
-if ($juwelier > 50) { $juwelier = 50; }
-$kjuwelier = rand(1,(100 / $juwelier));
-if ($data->level > 254) { $kjuwelier = rand(1,2);}
-$bar = 25; 
-$member = 10; 
-$kmember = rand(0,5);
-if ($data->level > 254) { $kmember = rand(1,2);}
-if ($data->se < 15) { $schietmsg = "Je kogel schraapte langst de brievenbus, blijf oefenen."; }
-elseif ($data->se < 25) { $schietmsg = "Je schoot de vogelstront van de brievenbus."; }
-elseif ($data->se < 30) { $schietmsg = "Je kogel boorde een groot gat in het dak van de brievenbus."; }
-elseif ($data->se < 50) { $schietmsg = "Je schoot recht in de gleuf van de brievenbus."; }
-elseif ($data->se < 75) { $schietmsg = "Je schoot de krant uit de brievenbus."; }
-elseif ($data->se > 74) { $schietmsg = "Je schoot de brievenbus van zijn staander."; }
+declare(strict_types=1);
 
-if (isset($_POST['submit'])) { 
-if (!$_POST['verify']){echo"Je moet een code opgeven.";}
-elseif($_POST['verify'] != $_SESSION['verify']){echo"De code die je hebt ingevoerd komt niet overeen met het plaatje.";}
-elseif ($_POST['crime'] == kind) {
-$ammount = rand(1,10);
-$msgnum = rand(0,4);
-$message = Array("Het kind had niets bij.","Het kind begon te schreeuwen, je bent dan maar gaan lopen.","Het kind droeg een kort rokje, je kon er niet aan weerstaan... Gelukkig kon je gaan lopen voordat de moeder je sloeg.","Je wou de portefeuille van het kind grijpen, maar ze liep weg. Je greep haar bij haar haar, de pruik kwam er af, maar het meisje kon wegkomen.","Je bent gearresteerd toen je het kind haar hoofd tussen je knie�n stak.");
-$msg = $message[$msgnum];
-if ($kkind == 1) { echo "Je hebt &euro;$ammount Gestolen."; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount WHERE `login`='{$data->login}'"); }
-else { 
-echo "$msg"; 
-if ($msgnum == 4) { mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))"); }
-}
-mysql_query("UPDATE `users` SET `xp`=`xp`+1,`crime`=FROM_UNIXTIME($crimetijd),`nrofcrime`=`nrofcrime`+1 WHERE `login`='{$data->login}'");
-} 
-elseif ($_POST['crime'] == puber) {
-$ammount = rand(1,100);
-$msgnum = rand(0,5);
-$message = Array("Hij had niets bij.","De puber kende je... Je had die ochtend tegen zijn fiets gepist. Hij kwam woedend achter je aan, je moest vluchten.","Die pubermeisjes zijn zo verrukkelijk, je wou haar net naaien toen haar vader afkwam.","Hij liep snel weg.","Je kon zijn portefeuille stelen, maar toen kwam hij achter je aan. Je wou hem net in elkaar slaan toen de politie arriveerde. Je zit nu in de gevangenis.","Zijn vrienden kwamen van overal, ze sloegen je in het ziekenhuis.");
-$msg = $message[$msgnum];
-if ($kpuber == 1) { echo "Je hebt &euro;$ammount gestolen."; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount WHERE `login`='{$data->login}'"); }
-else { 
-echo "$msg"; 
-if ($msgnum == 4) { mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))"); }
-if ($msgnum == 5) { mysql_query("UPDATE `users` SET `health`=`health`-2 WHERE `login`='{$data->login}'"); }
-}
-mysql_query("UPDATE `users` SET `xp`=`xp`+1,`crime`=FROM_UNIXTIME($crimetijd),`nrofcrime`=`nrofcrime`+1 WHERE `login`='{$data->login}'");
-}
-elseif ($_POST['crime'] == juwelier) {
-$ammount = rand(500,1000);
-$msgnum = rand(0,5);
-$message = Array("Er liep net een andere gangster met een lading juwelen naar buiten.","De juwelier nam zijn magmun 2.1 half automatich van achter de toonbank en begon op je te schieten. Je kon maar net op tijd wegkomen.","De juwelier was dicht.","Je wou net binnengaan toen de politie voorbijreed.","Je besloot de juweliersvrouw te neuken. Domme zet, de politie kwam en pakte je op.","Je was de winkel uit, maar je viel over een oude zwerver die buiten zat. Hij nam je juwelen en liep weg.");
-$msg = $message[$msgnum];
-if ($kjuwelier == 1) { echo "Je hebt &euro;$ammount gestolen."; mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount WHERE `login`='{$data->login}'"); }
-else { 
-echo "$msg"; 
-if ($msgnum == 4) { mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','$famillie',FROM_UNIXTIME($jailtime))"); }
-                    mysql_query("UPDATE `users` SET `health`=`100` WHERE `login`='{$data->login}'");
-}
-mysql_query("UPDATE `users` SET `xp`=`xp`+1,`crime`=FROM_UNIXTIME($crimetijd),`nrofcrime`=`nrofcrime`+1 WHERE `login`='{$data->login}'");
-}
-elseif ($_POST['crime'] == bar) {
-if ($data->level > 254) { $kbar = rand(1,2);}
-elseif ($data->se < 10) { $kbar = rand(1,6); }
-elseif ($data->se < 25) { $kbar = rand(1,5); }
-elseif ($data->se < 50) { $kbar = rand(1,4); }
-elseif ($data->se > 49) { $kbar = rand(1,3); }
-if ($data->wapon < 1) { echo "Je hebt nog geen wapen.<br>Ga naar de shop om een wapen te kopen."; exit; }
-if ($data->se > 99.9) { echo "Je kan niet meer dan 100% moordervaring hebben."; exit; }
-$msgnum = rand(0,5);
-$message = Array("Je schoot de hond dood die toevallig passeerde.","Je schoot in de grond. Zonde van de kogel.","Je kogel boorde zich in de band van een wagen die iets verder stond.","Je schoot een vogel dood die iets verder in een boom zat.","Je schoot tegen de pet van een politieman. Hij besloot je te arresteren.","Er vloog een stuk uit de brievenbus, recht in je wang. Je bent leven kwijtgeraakt.");
-$msg = $message[$msgnum];
-if ($kbar == 1) { echo "$schietmsg"; mysql_query("UPDATE `users` SET `se`=`se`+0.1 WHERE `login`='{$data->login}'"); }
-else { 
-echo "$msg"; 
-if ($msgnum == 4) { mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))"); }
-if ($msgnum == 5) { mysql_query("UPDATE `users` SET `health`=`health`-1 WHERE `login`='{$data->login}'"); }
-}
-mysql_query("UPDATE `users` SET `xp`=`xp`+1,`crime`=FROM_UNIXTIME($crimetijd),`nrofcrime`=`nrofcrime`+1 WHERE `login`='{$data->login}'");
-}
-elseif ($_POST['crime'] == member) {
-$msgnum = rand(0,6);
-$message = Array("Hij had geen geld bij zich.","Je wou net zijn portefeuille pikken toen hij een wapen bovenhaalde. Je ging lopen.","Je bent gearresteerd.","Opeens begon hij NOOOOOB te roepen, je bent gaan lopen.","Hij had geen portefeuille bij.","Hij begon NOOOOOB te roepen, je bent dan maar wegggegaan.","Je kwam langst de hoeren en vergat dat je geld wou pikken.");
-$msg = $message[$msgnum];
-$me = mysql_query("SELECT * FROM `users` WHERE `login`!='{$data->login}' AND `stad`='{$data->stad}' AND `status`='levend' AND `level`!='255' AND `level`!='1000' ORDER BY `zak` DESC LIMIT 0,1");
-$mem = mysql_fetch_object($me);
-$ammount = round($mem->zak * 0.25);
-if($ammount > 100000){$ammount = 100000;}
-if ($mem->zak < 10) { echo "Er is geen member in je stad met geld op zak."; exit; }
-elseif ($kmember == 1) { echo "Je hebt &euro;$ammount gestolen van $mem->login"; mysql_query("UPDATE `users` SET `zak`=`zak`-$ammount WHERE `login`='$mem->login'"); mysql_query("UPDATE `users` SET `zak`=`zak`+$ammount WHERE `login`='{$data->login}'"); mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'Notificatie','{$mem->login}','Zakkenroller','$data->login heeft &euro;$ammount uit je zak gestolen.')"); }
-else { 
-echo "$msg";
-if ($msgnum == 2) { mysql_query("INSERT INTO `jail`(`login`,`boete`,`stad`,`famillie`,`time`) VALUES('$data->login','{$boete}','{$data->stad}','{$famillie}',FROM_UNIXTIME($jailtime))"); }
-elseif ($msgnum == 6) { mysql_query("UPDATE `users` SET `health`=`health`-1 WHERE `login`='{$data->login}'"); }
-}
- mysql_query("UPDATE `users` SET `crime`=FROM_UNIXTIME($crimetijd),`nrofcrime`=`nrofcrime`+1 WHERE `login`='{$data->login}'"); 
-}
-exit;
-}
-print "
-	<form method='post'><table><tr><td width=100% align=left>
-<tr><td width=100%><input type='radio' name='crime' value='kind' checked>Steel van een kind {$kind}%<br></td></tr>
-<tr><td width=100%><input type='radio' name='crime' value='puber'>Steel van een puber {$puber}%<br></td></tr>
-<tr><td width=100%><input type='radio' name='crime' value='juwelier'>Beroof een juwelier {$juwelier}%<br></td></tr>
-<tr><td width=100%><input type='radio' name='crime' value='bar'>Schiet op brievenbussen {$bar}%<br></td></tr>
-<tr><td width=100%><input type='radio' name='crime' value='member'>Steel van een member {$member}%<br></td></tr>
-<tr><td><br>Je code is: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=img.php></td></tr>
-<tr><td>Typ hier de code in:    <input type=text name=verify></td></tr>";
-?>
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/captcha.php';
 
+$user = require_login();
 
-<tr><td width=100%><br><input type='submit' name='submit' value='Ok'></form></td></tr></html>
-</td></tr></table></table>
+if (is_dead()) {
+    redirect('rip.php');
+}
+block_if_jailed();
+
+$uitkomst = null;   // ['tekst' => ..., 'type' => 'ok'|'fout']
+
+if (is_post()) {
+    csrf_check();
+    $uitkomst = misdaad_plegen($user, post('crime'), post('verify'));
+    $user     = current_user(true);
+}
+
+$wacht = cooldown_left((int) $user['crime_ts']);
+
+layout_header('Misdaad');
+panel_open('Misdaad');
+
+if ($uitkomst !== null) {
+    notice(e($uitkomst['tekst']), $uitkomst['type']);
+}
+
+if ($wacht > 0) {
+    echo '<p>Je moet nog <strong data-tot="' . (time() + $wacht) . '">'
+       . e(duration($wacht)) . '</strong> wachten voor je volgende misdaad.</p>';
+} else {
+    toon_keuzes($user);
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+// De misdaden
+// ==========================================================================
+
+/**
+ * Definitie per misdaad.
+ *
+ * kans      : functie die de slagingskans in procenten teruggeeft
+ * opbrengst : functie die het buitgemaakte bedrag teruggeeft
+ * berichten : mislukkingsteksten; de index bepaalt het gevolg
+ * cel       : index van het bericht dat gevangenisstraf oplevert (of null)
+ * schade    : index van het bericht dat gezondheid kost (of null)
+ */
+function misdaden(): array
+{
+    return [
+        'kind' => [
+            'label'     => 'Steel van een kind',
+            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 2)),
+            'opbrengst' => static fn (): int => random_int(1, 10),
+            'berichten' => [
+                'Het kind had niets bij zich.',
+                'Het kind begon te schreeuwen, je bent er maar vandoor gegaan.',
+                'Je greep naar de portemonnee, maar het kind rende weg.',
+                'Een voorbijganger zag je bezig en riep om hulp. Je koos het hazenpad.',
+                'Je werd betrapt terwijl je het kind vastgreep. De politie nam je mee.',
+            ],
+            'cel'    => 4,
+            'schade' => null,
+        ],
+
+        'puber' => [
+            'label'     => 'Steel van een puber',
+            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 3.33)),
+            'opbrengst' => static fn (): int => random_int(1, 100),
+            'berichten' => [
+                'Hij had niets bij zich.',
+                'De puber kende je nog van een eerdere ruzie en kwam woedend op je af. Je moest vluchten.',
+                'Ze zag je aankomen en stapte een winkel binnen.',
+                'Hij liep snel weg.',
+                'Je had zijn portemonnee al te pakken toen de politie arriveerde. Je zit nu vast.',
+                'Zijn vrienden kwamen van alle kanten en sloegen je in elkaar.',
+            ],
+            'cel'    => 4,
+            'schade' => 5,
+        ],
+
+        'juwelier' => [
+            'label'     => 'Beroof een juwelier',
+            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 6.66)),
+            'opbrengst' => static fn (): int => random_int(500, 1000),
+            'berichten' => [
+                'Er liep net een andere gangster met een lading juwelen naar buiten.',
+                'De juwelier haalde een geweer van achter de toonbank en begon te schieten. Je kon net op tijd wegkomen.',
+                'De zaak was gesloten.',
+                'Je wilde net naar binnen toen er een politiewagen voorbijreed.',
+                'Het alarm ging af zodra je de vitrine opende. De politie stond binnen een minuut buiten.',
+                'Je was de winkel uit, maar struikelde over een zwerver. Hij griste de juwelen mee en verdween.',
+            ],
+            'cel'    => 4,
+            'schade' => null,
+        ],
+
+        'bar' => [
+            'label'     => 'Schiet op brievenbussen',
+            'kans'      => null,          // eigen berekening, zie hieronder
+            'opbrengst' => null,          // levert moordervaring op, geen geld
+            'berichten' => [
+                'Je schoot een hond dood die toevallig passeerde.',
+                'Je schoot in de grond. Zonde van de kogel.',
+                'Je kogel boorde zich in de band van een auto verderop.',
+                'Je schoot een vogel uit een boom.',
+                'Je schoot de pet van een politieman. Hij besloot je te arresteren.',
+                'Er vloog een stuk metaal uit de brievenbus, recht in je wang.',
+            ],
+            'cel'    => 4,
+            'schade' => 5,
+        ],
+
+        'member' => [
+            'label'     => 'Steel van een member',
+            'kans'      => static fn (int $xp): int => 10,
+            'opbrengst' => null,          // hangt af van het slachtoffer
+            'berichten' => [
+                'Hij had geen geld bij zich.',
+                'Je wilde net zijn portemonnee pakken toen hij een wapen trok. Je ging ervandoor.',
+                'Je werd betrapt en gearresteerd.',
+                'Hij zag je aankomen en riep de hele straat bij elkaar. Je bent gaan lopen.',
+                'Hij had geen portemonnee bij zich.',
+                'Ze had door wat je van plan was en liep snel een café binnen.',
+                'Je raakte in een handgemeen en kreeg een klap te verwerken.',
+            ],
+            'cel'    => 2,
+            'schade' => 6,
+        ],
+    ];
+}
+
+/** Slagingskans in procenten voor deze speler. */
+function slaagkans(string $sleutel, array $user): int
+{
+    $xp = (int) $user['xp'];
+
+    if ($sleutel === 'bar') {
+        // Schieten wordt beter naarmate je moordervaring stijgt.
+        $se = (float) $user['se'];
+        return match (true) {
+            $se < 10 => 17,
+            $se < 25 => 20,
+            $se < 50 => 25,
+            default  => 33,
+        };
+    }
+
+    $def = misdaden()[$sleutel];
+    return max(1, min(100, ($def['kans'])($xp)));
+}
+
+/**
+ * Voer een misdaad uit.
+ *
+ * @return array{tekst:string, type:string}
+ */
+function misdaad_plegen(array $user, string $keuze, string $captcha): array
+{
+    $lijst = misdaden();
+
+    if (!isset($lijst[$keuze])) {
+        return ['tekst' => 'Kies een geldige misdaad.', 'type' => 'fout'];
+    }
+    if (cooldown_left((int) $user['crime_ts']) > 0) {
+        return ['tekst' => 'Je moet nog even wachten voor je volgende misdaad.', 'type' => 'fout'];
+    }
+    if (!captcha_check($captcha)) {
+        return ['tekst' => 'De code die je invoerde klopt niet. Probeer het opnieuw.', 'type' => 'fout'];
+    }
+
+    // Extra voorwaarden voor het schieten op brievenbussen.
+    if ($keuze === 'bar') {
+        if ((int) $user['wapon'] < 1) {
+            return ['tekst' => 'Je hebt nog geen wapen. Koop er een in de winkel.', 'type' => 'fout'];
+        }
+        if ((float) $user['se'] >= 100) {
+            return ['tekst' => 'Je moordervaring is al 100%. Hier leer je niets meer.', 'type' => 'fout'];
+        }
+    }
+
+    $def     = $lijst[$keuze];
+    $geslaagd = random_int(1, 100) <= slaagkans($keuze, $user);
+
+    return db_transaction(static function () use ($user, $keuze, $def, $geslaagd): array {
+
+        // Afkoeltijd en teller lopen altijd, geslaagd of niet.
+        q(
+            'UPDATE `users`
+                SET `crime` = FROM_UNIXTIME(?), `nrofcrime` = `nrofcrime` + 1
+              WHERE `id` = ?',
+            [cooldown_until('crime'), $user['id']]
+        );
+
+        if (!$geslaagd) {
+            return misdaad_mislukt($user, $def);
+        }
+
+        $uitslag = misdaad_geslaagd($user, $keuze, $def);
+
+        // Bij een geslaagde misdaad kun je een diamant vinden. De kans staat
+        // in de beheerinstellingen; standaard één op vijfhonderd.
+        $diamanten = diamant_vondst($user, 'een misdaad');
+
+        if ($diamanten > 0) {
+            $uitslag['tekst'] .= ' ' . diamant_melding($diamanten);
+        }
+
+        return $uitslag;
+    });
+}
+
+/** @return array{tekst:string, type:string} */
+function misdaad_geslaagd(array $user, string $keuze, array $def): array
+{
+    // Schieten levert ervaring op in plaats van geld.
+    if ($keuze === 'bar') {
+        q('UPDATE `users` SET `se` = LEAST(100, `se` + 0.1) WHERE `id` = ?', [$user['id']]);
+        return ['tekst' => schietbericht((float) $user['se']), 'type' => 'ok'];
+    }
+
+    // Van een member stelen: het geld komt van een echte speler.
+    if ($keuze === 'member') {
+        return steel_van_member($user);
+    }
+
+    $buit = ($def['opbrengst'])();
+    q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + 1 WHERE `id` = ?', [$buit, $user['id']]);
+
+    return ['tekst' => 'Het is gelukt. Je hebt ' . money($buit) . ' gestolen.', 'type' => 'ok'];
+}
+
+/** @return array{tekst:string, type:string} */
+function misdaad_mislukt(array $user, array $def): array
+{
+    $index  = array_rand($def['berichten']);
+    $tekst  = $def['berichten'][$index];
+
+    q('UPDATE `users` SET `xp` = `xp` + 1 WHERE `id` = ?', [$user['id']]);
+
+    if ($def['cel'] !== null && $index === $def['cel']) {
+        jail_put((string) $user['login'], (int) $user['xp'], (string) $user['stad'], (string) $user['famillie']);
+        $tekst .= ' Je zit nu in de gevangenis.';
+    }
+
+    if ($def['schade'] !== null && $index === $def['schade']) {
+        q('UPDATE `users` SET `health` = GREATEST(1, `health` - 2) WHERE `id` = ?', [$user['id']]);
+        $tekst .= ' Je bent gezondheid kwijtgeraakt.';
+    }
+
+    return ['tekst' => $tekst, 'type' => 'fout'];
+}
+
+/**
+ * Steel van de rijkste speler in je stad.
+ *
+ * Het slachtoffer wordt met FOR UPDATE vergrendeld: twee dieven die tegelijk
+ * toeslaan kunnen zo niet allebei hetzelfde geld buitmaken.
+ */
+function steel_van_member(array $user): array
+{
+    $slachtoffer = q_row(
+        "SELECT `id`, `login`, `zak` FROM `users`
+          WHERE `login` <> :login AND `stad` = :stad AND `status` = 'levend'
+            AND `level` < :staf AND `zak` >= 10
+       ORDER BY `zak` DESC LIMIT 1
+       FOR UPDATE",
+        ['login' => $user['login'], 'stad' => $user['stad'], 'staf' => LEVEL_MODERATOR]
+    );
+
+    if ($slachtoffer === null) {
+        return ['tekst' => 'Er is niemand in je stad met genoeg geld op zak.', 'type' => 'fout'];
+    }
+
+    $buit = min(100_000, (int) round((int) $slachtoffer['zak'] * 0.25));
+
+    if ($buit < 1) {
+        return ['tekst' => 'Er is niemand in je stad met genoeg geld op zak.', 'type' => 'fout'];
+    }
+
+    q('UPDATE `users` SET `zak` = `zak` - ? WHERE `id` = ?', [$buit, $slachtoffer['id']]);
+    q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + 1 WHERE `id` = ?', [$buit, $user['id']]);
+
+    notify(
+        (string) $slachtoffer['login'],
+        'Zakkenroller',
+        $user['login'] . ' heeft ' . money($buit) . ' uit je zak gestolen.'
+    );
+
+    return [
+        'tekst' => 'Je hebt ' . money($buit) . ' gestolen van ' . $slachtoffer['login'] . '.',
+        'type'  => 'ok',
+    ];
+}
+
+/** Passend bericht bij het schieten, afhankelijk van je moordervaring. */
+function schietbericht(float $se): string
+{
+    return match (true) {
+        $se < 15 => 'Je kogel schampte langs de brievenbus. Blijf oefenen.',
+        $se < 25 => 'Je schoot de vogelpoep van de brievenbus af.',
+        $se < 30 => 'Je kogel boorde een gat in het dak van de brievenbus.',
+        $se < 50 => 'Je schoot recht door de gleuf van de brievenbus.',
+        $se < 75 => 'Je schoot de krant uit de brievenbus.',
+        default  => 'Je schoot de brievenbus van zijn paal.',
+    };
+}
+
+// ==========================================================================
+
+function toon_keuzes(array $user): void
+{
+    echo '<form method="post">' . csrf_field();
+    echo '<table class="lijst"><thead><tr><th></th><th>Misdaad</th><th class="getal">Slaagkans</th></tr></thead><tbody>';
+
+    $eerste = true;
+    foreach (misdaden() as $sleutel => $def) {
+        $gekozen = $eerste ? ' checked' : '';
+        $eerste  = false;
+
+        echo '<tr>'
+           . '<td><input type="radio" id="c_' . e($sleutel) . '" name="crime" value="' . e($sleutel) . '"' . $gekozen . '></td>'
+           . '<td><label for="c_' . e($sleutel) . '">' . e($def['label']) . '</label></td>'
+           . '<td class="getal">' . slaagkans($sleutel, $user) . '%</td>'
+           . '</tr>';
+    }
+
+    echo '</tbody></table>';
+    echo captcha_field();
+    echo '<p><button type="submit">Pleeg de misdaad</button></p>';
+    echo '</form>';
+}

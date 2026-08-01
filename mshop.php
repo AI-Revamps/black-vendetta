@@ -1,249 +1,507 @@
 <?php
-  include("config.php");
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");  
-$data    = mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header('Location: login.php');
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?> 
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP 
-if (!$_GET['x']) { 
-	echo "<table align=center width=100%> 
-	<tr> 
-    <td class=subTitle><b>Zwarte Markt</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-$kogels = mysql_num_rows(mysql_query("SELECT * FROM `kogels`"));
-$ws = mysql_num_rows(mysql_query("SELECT * FROM `ws` WHERE `status`='1'"));
-$cars = mysql_num_rows(mysql_query("SELECT * FROM `mgarage`"));
-	echo "<a href=mshop.php?x=bullets>Kogels</a>({$kogels})<br><a href=mshop.php?x=ws>Ooggetuigen</a>({$ws})<br><a href=mshop.php?x=cars>Auto's</a>({$cars})";
+/**
+ * Zwarte markt: kogels, auto's en ooggetuigenverklaringen verhandelen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Kopen ging via een GET-link (mshop.php?x=bullets&buy=5). Een afbeelding
+ *    met die URL in een forumbericht liet iedereen die het las kopen. Nu POST
+ *    met CSRF-token.
+ *  - Er zat geen transactie omheen: twee kopers konden dezelfde partij kopen,
+ *    want de DELETE kwam pas na beide afboekingen. Nu wordt de aanbieding
+ *    vergrendeld met FOR UPDATE.
+ *  - Bij het verkopen van een ooggetuige werd `login` overschreven met de
+ *    verkoper, waardoor iedereen andermans verklaring te koop kon zetten.
+ *    Nu moet de verklaring van jezelf zijn.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/inc/bootstrap.php';
+
+const VERKOOPDUUR      = 21600;      // zes uur
+const KOGELS_MIN       = 100;
+const KOGELS_MINPRIJS  = 25000;
+const KOGELS_MAXPERSTUK = 2000;
+const AUTO_MINPRIJS    = 500;
+const AUTO_MAXSCHADE   = 90;
+const WS_MINPRIJS      = 100;
+const WS_MAXPRIJS      = 10_000_000;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
 }
-if ($_GET['x'] == bullets) {
-	if ($_GET['buy']) {
-	echo "<table width=100%><tr> 
-    <td class=subTitle><b>Kogels</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	$s = mysql_fetch_object(mysql_query("SELECT * FROM `kogels` WHERE `id`='{$_GET['buy']}'"));
-	if (!$s) { echo "Deze aanbieding bestaat niet."; }
-	elseif ($s->prijs > $data->zak) { echo "Je hebt niet genoeg geld op zak."; }
-	else {
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$s->prijs,`kogels`=`kogels`+$s->aantal WHERE `login`='{$data->login}'");
-		mysql_query("UPDATE `users` SET `zak`=`zak`+$s->prijs WHERE `login`='{$s->login}'");
-		mysql_query("INSERT INTO `messages`(`from`,`to`,`subject`,`message`,`time`) values('Notificatie','$s->login','Kogels verkocht','Je hebt je kogels verkocht voor &euro;$s->prijs.',NOW())");
-		mysql_query("DELETE FROM `kogels` WHERE `id`='$s->id'");
-		echo "Je hebt $s->aantal kogels gekocht voor &euro;$s->prijs.";
-	}
+
+$afdeling = get('x');
+$pagina   = get('page');
+$melding  = null;
+$type     = 'info';
+
+if (is_post()) {
+    csrf_check();
+    block_if_jailed();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
 }
-	elseif ($_GET['page'] == sell) {
-		$selltime = (time() + 21600);
-		echo "<table width=100%><tr> 
-    <td class=subTitle><b>Kogels</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-		if ($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['aantal']) && preg_match('/^[0-9]+$/',$_POST['prijs'])) {
-			$aantal = $_POST['aantal'];
-			$mprijs = (2000 * $aantal);
-			if ($data->kogels < $_POST['aantal']) { echo "Je hebt niet zoveel kogels."; }
-			elseif ($_POST['aantal'] < 100) { echo "Het minimale aantal kogels dat je kan verkopen is 100."; }
-			elseif ($_POST['prijs'] < 25000) { echo "De minimum prijs van kogels is &euro;25000"; }
-			elseif ($_POST['prijs'] > $mprijs) { echo "Je mag kogels voor maximaal &euro;2000 per stuk verkopen."; }
-			else {
-				mysql_query("INSERT INTO `kogels`(`login`,`aantal`,`prijs`,`time`) values('$data->login','{$_POST['aantal']}','{$_POST['prijs']}',FROM_UNIXTIME($selltime))");
-				mysql_query("UPDATE `users` SET `kogels`=`kogels`-{$_POST['aantal']} WHERE `login`='{$data->login}'");
-				echo "Je hebt {$_POST['aantal']} kogels te koop gezet. Klik <a href=mshop.php?x=bullets>hier</a> om terug te gaan naar de kogels verkoop lijst.";
-			}
-		}
-		else {
-			echo "<form method='POST'><input type=text name=aantal maxlength=5>&nbsp;&nbsp;Aantal kogels<br>
-			<input type=text name=prijs maxlength=7>&nbsp;&nbsp;Prijs<br><br>
-			<input type=submit name=submit value='Zet te koop'></form></td></tr></table>";
-		}
-	}
-	else {	echo "<table width=100%><tr> 
-    <td class=subTitle><b>Kogels</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	echo "<a href=mshop.php?x=bullets&page=sell>Verkoop kogels</a>";
-	echo "<table width=100%><tr>
-	<td align=center><b>Aantal</b></td>
-	<td align=center><b>Deadline</b></td>
-	<td align=center><b>Prijs</b></td>
-	<td align=center><b>Koop</b></td>
-	</tr>";
-	$query = mysql_query("SELECT *,DATE_FORMAT(`time`,'%H:%i:%s') AS `time` FROM `kogels` ORDER BY `time` ASC");
-	while($s = mysql_fetch_object($query)) {
-		echo "<tr align=center>
-		<td>$s->aantal</td>
-		<td>$s->time</td>
-		<td>&euro;$s->prijs</td>
-		<td><a href=mshop.php?x=bullets&buy=$s->id>[X]</a></td>
-		</tr>";
-		}
-	}
+
+layout_header('Zwarte markt');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
 }
-if ($_GET['x'] == cars) {
-	if ($_GET['buy']) {
-	echo "<table width=100%><tr> 
-    <td class=subTitle><b>Auto's</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	$s = mysql_fetch_object(mysql_query("SELECT * FROM `mgarage` WHERE `id`='{$_GET['buy']}'"));
-	if (!$s) { echo "Deze aanbieding bestaat niet."; }
-	elseif ($s->prijs > $data->zak) { echo "Je hebt niet genoeg geld op zak."; }
-	else {
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$s->prijs WHERE `login`='{$data->login}'");
-		mysql_query("UPDATE `users` SET `zak`=`zak`+$s->prijs WHERE `login`='{$s->login}'");
-		mysql_query("INSERT INTO `garage`(`id`,`login`,`naam`,`waarde`,`damage`,`stad`) values('{$s->id}','$data->login','$s->naam','$s->waarde','$s->damage','$s->stad')");
-		mysql_query("INSERT INTO `messages`(`from`,`to`,`subject`,`message`,`time`) values('Notificatie','$s->login','Wagen verkocht','Je hebt je wagen verkocht voor &euro;$s->prijs.',NOW())");
-		mysql_query("DELETE FROM `mgarage` WHERE `id`='$s->id'");
-		$car = mysql_query("SELECT * FROM `cars` WHERE `naam`='{$s->naam}'");
-		$auto = mysql_fetch_object($car);
-		echo "Je hebt een $auto->auto gekocht met een waarde van &euro; $s->waarde en met $s->damage % schade.";
-	}
+
+match ($afdeling) {
+    'bullets' => $pagina === 'sell' ? kogels_verkopen($user) : kogels_lijst(),
+    'cars'    => $pagina === 'sell' ? autos_verkopen($user)  : autos_lijst(),
+    'ws'      => $pagina === 'sell' ? ws_verkopen($user)     : ws_lijst(),
+    default   => overzicht(),
+};
+
+layout_footer();
+
+// ==========================================================================
+// Verwerking
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'koop_kogels' => koop_kogels($user, int_input('id')),
+        'koop_auto'   => koop_auto($user, int_input('id')),
+        'koop_ws'     => koop_ws($user, int_input('id')),
+        'zet_kogels'  => zet_kogels($user, int_input('aantal', 0, 0), int_input('prijs', 0, 0)),
+        'zet_auto'    => zet_auto($user, int_input('car'), int_input('prijs', 0, 0)),
+        'zet_ws'      => zet_ws($user, int_input('id'), int_input('prijs', 0, 0)),
+        default       => throw new SpelFout('Onbekende handeling.'),
+    };
 }
-	elseif ($_GET['page'] == sell) {
-		$selltime = (time() + 21600);
-		echo "<table width=100%><tr> 
-    <td class=subTitle><b>Auto's</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-		if ($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['prijs'])) {
-			$auto = mysql_fetch_object(mysql_query("SELECT * FROM `garage` WHERE `id`='{$_POST['car']}' AND `login`='{$data->login}'"));
-			if (!$auto) { echo "Deze wagen is niet van jou."; exit; }
-			elseif ($auto->damage > 90) { echo "Deze wagen is te hard beschadigd."; exit; }
-			elseif ($_POST['prijs'] < 500) { echo "De minimum prijs een wagen is &euro;500."; }
-			else {
-			mysql_query("INSERT INTO `mgarage`(`id`,`login`,`naam`,`waarde`,`damage`,`stad`,`time`,`prijs`) values('{$_POST['car']}','{$auto->login}','{$auto->naam}','{$auto->waarde}','{$auto->damage}','{$auto->stad}',FROM_UNIXTIME($selltime),'{$_POST['prijs']}')")or die (mysql_error());
-			mysql_query("DELETE FROM `garage` WHERE `login`='$data->login' AND `id`='{$_POST['car']}'")or die (mysql_error());
-			echo "Je hebt deze wagen te koop gezet. Klik <a href=mshop.php?x=cars>hier</a> om terug te gaan naar de auto verkoop lijst.";
-			}
-		}
-		else {
-			echo "<form method='POST'><input type=text name=car maxlength=5>&nbsp;&nbsp;Wagen<br>
-			<input type=text name=prijs maxlength=7>&nbsp;&nbsp;Prijs<br><br>
-			<input type=submit name=submit value='Zet te koop'></form></td></tr></table>";
-		}
-	}
-	else {	echo "<table width=100%><tr> 
-    <td class=subTitle><b>Auto's</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	echo "<a href=mshop.php?x=cars&page=sell>Verkoop een auto</a>";
-	echo "<table width=100%><tr>
-	<td align=center><b>Type</b></td>
-	<td align=center><b>Schade</b></td>
-	<td align=center><b>Deadline</b></td>
-	<td align=center><b>Prijs</b></td>
-	<td align=center><b>Koop</b></td>
-	</tr>";
-	$query = mysql_query("SELECT *,DATE_FORMAT(`time`,'%H:%i:%s') AS `time` FROM `mgarage` ORDER BY `time` ASC");
-	while($s = mysql_fetch_object($query)) {
-		$car = mysql_query("SELECT * FROM `cars` WHERE `naam`='{$s->naam}'");
-		$auto = mysql_fetch_object($car);
-		echo "<tr align=center>
-		<td>$auto->auto</td>
-		<td>$s->damage</td>
-		<td>$s->time</td>
-		<td>&euro;$s->prijs</td>
-		<td><a href=mshop.php?x=cars&buy=$s->id>[X]</a></td>
-		</tr>";
-		}
-	}
+
+// --- Kogels ---------------------------------------------------------------
+
+/** @throws SpelFout */
+function koop_kogels(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $aanbod = q_row('SELECT * FROM `kogels` WHERE `id` = ? FOR UPDATE', [$id]);
+
+        if ($aanbod === null) {
+            throw new SpelFout('Deze aanbieding bestaat niet meer.');
+        }
+        if ($aanbod['login'] === $user['login']) {
+            throw new SpelFout('Je kunt je eigen kogels niet kopen.');
+        }
+
+        $prijs  = (int) $aanbod['prijs'];
+        $aantal = (int) $aanbod['aantal'];
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], $prijs, 'zak')) {
+            throw new SpelFout('Je hebt niet genoeg geld op zak.');
+        }
+
+        bijschrijven((int) $user['id'], $aantal, 'kogels');
+
+        $verkoper = lock_user_by_login((string) $aanbod['login']);
+        if ($verkoper !== null) {
+            bijschrijven((int) $verkoper['id'], $prijs, 'zak');
+            notify((string) $aanbod['login'], 'Kogels verkocht',
+                'Je hebt ' . num($aantal) . ' kogels verkocht voor ' . money($prijs) . '.');
+        }
+
+        q('DELETE FROM `kogels` WHERE `id` = ?', [$id]);
+
+        log_action((string) $user['login'], 'mshop',
+            'Kogels gekocht: ' . $aantal, $prijs, (string) $aanbod['login']);
+
+        return 'Je hebt ' . num($aantal) . ' kogels gekocht voor ' . money($prijs) . '.';
+    });
 }
-elseif ($_GET['x'] == ws) {
-	if ($_GET['buy']) {
-	echo "<table width=100%><tr> 
-    <td class=subTitle><b>Ooggetuigen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-	$s = mysql_fetch_object(mysql_query("SELECT * FROM `ws` WHERE `id`='{$_GET['buy']}' AND `status`='1'"));
-	if (!$s) { echo "Deze ooggetuige is niet te koop of is al verkocht."; }
-	elseif ($s->prijs > $data->zak) { echo "Je hebt niet genoeg geld op zak."; }
-	else {
-		mysql_query("UPDATE `users` SET `zak`=`zak`-$s->prijs WHERE `login`='{$data->login}'");
-		mysql_query("UPDATE `users` SET `zak`=`zak`+$s->prijs WHERE `login`='{$s->login}'");
-		mysql_query("INSERT INTO `messages`(`from`,`to`,`subject`,`message`,`time`) values('Notificatie','$s->login','Ooggetuige verkocht','Je ooggetuige van de moord op $s->victim is verkocht voor &euro;$s->prijs.',NOW())");
-		mysql_query("INSERT INTO `messages`(`from`,`to`,`subject`,`message`,`time`) values('Notificatie','$data->login','Ooggetuige','De moordenaar van $s->victim is $s->suspect',NOW())");
-		mysql_query("DELETE FROM `ws` WHERE `id`='$s->id'");
-		echo "Je hebt deze ooggetuige verklaring gekocht.";
-	}
+
+/** @throws SpelFout */
+function zet_kogels(array $user, int $aantal, int $prijs): string
+{
+    if ($aantal < KOGELS_MIN) {
+        throw new SpelFout('Je moet minstens ' . KOGELS_MIN . ' kogels tegelijk verkopen.');
+    }
+    if ($prijs < KOGELS_MINPRIJS) {
+        throw new SpelFout('De minimumprijs is ' . money(KOGELS_MINPRIJS) . '.');
+    }
+    if ($prijs > $aantal * KOGELS_MAXPERSTUK) {
+        throw new SpelFout('Je mag hoogstens ' . money(KOGELS_MAXPERSTUK) . ' per kogel vragen.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal, $prijs): string {
+        lock_user((int) $user['id']);
+
+        if (!afboeken((int) $user['id'], $aantal, 'kogels')) {
+            throw new SpelFout('Zoveel kogels heb je niet.');
+        }
+
+        q(
+            'INSERT INTO `kogels` (`login`, `aantal`, `prijs`, `time`)
+                  VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+            [$user['login'], $aantal, $prijs, VERKOOPDUUR]
+        );
+
+        return num($aantal) . ' kogels staan te koop voor ' . money($prijs) . '.';
+    });
 }
-	elseif ($_GET['page'] == sell) {
-echo "<table width=100%><tr> 
-    <td class=subTitle><b>Ooggetuigen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>";
-		if ($_POST['submit'] && preg_match('/^[0-9]+$/',$_POST['prijs'])) {
-			$s = mysql_fetch_object(mysql_query("SELECT *,DATE_FORMAT(`time`,'%H:%i') AS `time` FROM `ws` WHERE `id`='{$_POST['id']}' AND `status`='0'"));
-			if (!$s) { echo "Er is geen ooggetuige met dit ID nummer."; }
-			elseif ($s->status == 1) { echo "Deze ooggetuige verklaring is al te koop."; }
-			elseif ($_POST['prijs'] > 10000000) { echo "De maximum prijs van een ooggetuige verklaring is &euro;10.000.000."; }
-			elseif ($_POST['prijs'] < 100) { echo "De minimum prijs van een ooggetuige verklaring is &#164;100."; }
-			else {
-				$prijs = $_POST['prijs'];
-				mysql_query("UPDATE `ws` SET `login`='$data->login',`status`='1',`prijs`='$prijs' WHERE `id`='{$_POST['id']}'");
-				echo "Je hebt deze ooggetuige verklaring te koop gezet voor &euro;{$_POST['prijs']}. Deze ooggetuige verklaring is te koop tot $s->time. Klik <a href=mshop.php?x=ws>hier</a> om terug te gaan naar de ooggetuigen lijst.";
-			}
-		}
-		else {
-			echo "<form method='POST'><input type=text name=id>&nbsp;&nbsp;ID van de ooggetuige<br>
-			<input type=text name=prijs maxlength=7>&nbsp;&nbsp;Prijs<br><br>
-			<input type=submit name=submit value=Verkoop></form></td></tr></table>";
-		}
-	}
-	else {
-		echo "<table width=100%><tr> 
-    <td class=subTitle><b>Ooggetuigen</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class=mainTxt>
-		<a href=mshop.php?x=ws&page=sell>Verkoop ooggetuige</a>";
-		echo "<table width=100%><tr>
-		<td align=center><b>Moord op</b></td>
-		<td align=center><b>Deadline</b></td>
-		<td align=center><b>Prijs</b></td>
-		<td align=center><b>Koop</b></td>
-		</tr>";
-		$query = mysql_query("SELECT *,DATE_FORMAT(`time`,'%H:%i:%s') AS `time` FROM `ws` WHERE `status`='1' ORDER BY `time` ASC");
-		while($s = mysql_fetch_object($query)) {
-			echo "<tr align=center>
-			<td><a href=user.php?x=$s->victim>$s->victim</a></td>
-			<td>$s->time</td>
-			<td>&euro;$s->prijs</td>
-			<td><a href=mshop.php?x=ws&buy=$s->id>[X]</a></td>
-			</tr>";
-		}
-	}
+
+// --- Auto's ----------------------------------------------------------------
+
+/** @throws SpelFout */
+function koop_auto(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $aanbod = q_row('SELECT * FROM `mgarage` WHERE `id` = ? FOR UPDATE', [$id]);
+
+        if ($aanbod === null) {
+            throw new SpelFout('Deze wagen staat niet meer te koop.');
+        }
+        if ($aanbod['login'] === $user['login']) {
+            throw new SpelFout('Je kunt je eigen wagen niet kopen.');
+        }
+
+        $prijs = (int) $aanbod['prijs'];
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], $prijs, 'zak')) {
+            throw new SpelFout('Je hebt niet genoeg geld op zak.');
+        }
+
+        $verkoper = lock_user_by_login((string) $aanbod['login']);
+        if ($verkoper !== null) {
+            bijschrijven((int) $verkoper['id'], $prijs, 'zak');
+            notify((string) $aanbod['login'], 'Wagen verkocht',
+                'Je hebt je ' . $aanbod['naam'] . ' verkocht voor ' . money($prijs) . '.');
+        }
+
+        // De wagen komt in de garage van de koper, in de stad waar hij stond.
+        q(
+            'INSERT INTO `garage` (`login`, `naam`, `waarde`, `damage`, `stad`)
+                  VALUES (?, ?, ?, ?, ?)',
+            [$user['login'], $aanbod['naam'], $aanbod['waarde'], $aanbod['damage'], $aanbod['stad']]
+        );
+        q('DELETE FROM `mgarage` WHERE `id` = ?', [$id]);
+
+        log_action((string) $user['login'], 'mshop',
+            'Wagen gekocht: ' . $aanbod['naam'], $prijs, (string) $aanbod['login']);
+
+        return 'Je hebt een ' . $aanbod['naam'] . ' gekocht voor ' . money($prijs)
+             . ' met ' . (int) $aanbod['damage'] . '% schade.';
+    });
 }
-?> 
-</table>
+
+/** @throws SpelFout */
+function zet_auto(array $user, int $garageId, int $prijs): string
+{
+    if ($prijs < AUTO_MINPRIJS) {
+        throw new SpelFout('De minimumprijs voor een wagen is ' . money(AUTO_MINPRIJS) . '.');
+    }
+
+    return db_transaction(static function () use ($user, $garageId, $prijs): string {
+        // Eigendom in de query, niet in PHP: zo kun je geen andermans wagen verkopen.
+        $auto = q_row(
+            'SELECT * FROM `garage` WHERE `id` = ? AND `login` = ? FOR UPDATE',
+            [$garageId, $user['login']]
+        );
+
+        if ($auto === null) {
+            throw new SpelFout('Die wagen staat niet in jouw garage.');
+        }
+        if ((int) $auto['damage'] > AUTO_MAXSCHADE) {
+            throw new SpelFout('Deze wagen is te zwaar beschadigd om te verkopen.');
+        }
+
+        q(
+            'INSERT INTO `mgarage` (`login`, `naam`, `waarde`, `damage`, `stad`, `prijs`, `time`)
+                  VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+            [
+                $auto['login'], $auto['naam'], $auto['waarde'],
+                $auto['damage'], $auto['stad'], $prijs, VERKOOPDUUR,
+            ]
+        );
+        q('DELETE FROM `garage` WHERE `id` = ? AND `login` = ?', [$garageId, $user['login']]);
+
+        return 'Je ' . $auto['naam'] . ' staat te koop voor ' . money($prijs) . '.';
+    });
+}
+
+// --- Ooggetuigen ------------------------------------------------------------
+
+/** @throws SpelFout */
+function koop_ws(array $user, int $id): string
+{
+    return db_transaction(static function () use ($user, $id): string {
+        $aanbod = q_row("SELECT * FROM `ws` WHERE `id` = ? AND `status` = 1 FOR UPDATE", [$id]);
+
+        if ($aanbod === null) {
+            throw new SpelFout('Deze verklaring is niet meer te koop.');
+        }
+
+        $prijs = (int) $aanbod['prijs'];
+
+        lock_user((int) $user['id']);
+        if (!afboeken((int) $user['id'], $prijs, 'zak')) {
+            throw new SpelFout('Je hebt niet genoeg geld op zak.');
+        }
+
+        $verkoper = lock_user_by_login((string) $aanbod['login']);
+        if ($verkoper !== null) {
+            bijschrijven((int) $verkoper['id'], $prijs, 'zak');
+            notify((string) $aanbod['login'], 'Ooggetuige verkocht',
+                'Je verklaring over de moord op ' . $aanbod['victim'] . ' is verkocht voor '
+                . money($prijs) . '.');
+        }
+
+        notify((string) $user['login'], 'Ooggetuige',
+            'De moordenaar van ' . $aanbod['victim'] . ' is ' . $aanbod['suspect'] . '.');
+
+        q('DELETE FROM `ws` WHERE `id` = ?', [$id]);
+
+        return 'Je hebt de verklaring gekocht. De moordenaar van ' . $aanbod['victim']
+             . ' is ' . $aanbod['suspect'] . '.';
+    });
+}
+
+/** @throws SpelFout */
+function zet_ws(array $user, int $id, int $prijs): string
+{
+    if ($prijs < WS_MINPRIJS) {
+        throw new SpelFout('De minimumprijs is ' . money(WS_MINPRIJS) . '.');
+    }
+    if ($prijs > WS_MAXPRIJS) {
+        throw new SpelFout('De maximumprijs is ' . money(WS_MAXPRIJS) . '.');
+    }
+
+    return db_transaction(static function () use ($user, $id, $prijs): string {
+        // De verklaring moet van jou zijn. In de oude versie ontbrak deze
+        // voorwaarde en werd `login` domweg overschreven met de verkoper.
+        $ws = q_row(
+            'SELECT * FROM `ws` WHERE `id` = ? AND `login` = ? AND `status` = 0 FOR UPDATE',
+            [$id, $user['login']]
+        );
+
+        if ($ws === null) {
+            throw new SpelFout('Je hebt geen verklaring met dit nummer die nog te koop gezet kan worden.');
+        }
+
+        q('UPDATE `ws` SET `status` = 1, `prijs` = ? WHERE `id` = ?', [$prijs, $id]);
+
+        return 'Je verklaring over de moord op ' . $ws['victim'] . ' staat te koop voor '
+             . money($prijs) . '.';
+    });
+}
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function overzicht(): void
+{
+    $kogels = (int) q_val('SELECT COUNT(*) FROM `kogels`', [], 0);
+    $autos  = (int) q_val('SELECT COUNT(*) FROM `mgarage`', [], 0);
+    $ws     = (int) q_val('SELECT COUNT(*) FROM `ws` WHERE `status` = 1', [], 0);
+
+    panel_open('Zwarte markt');
+    echo '<p>Hier verhandel je onderling wat je niet in de gewone winkel kwijt kunt.</p>';
+    echo '<ul>';
+    echo '<li><a href="' . e(url('mshop.php?x=bullets')) . '">Kogels</a> (' . $kogels . ')</li>';
+    echo '<li><a href="' . e(url('mshop.php?x=cars')) . '">Auto\'s</a> (' . $autos . ')</li>';
+    echo '<li><a href="' . e(url('mshop.php?x=ws')) . '">Ooggetuigen</a> (' . $ws . ')</li>';
+    echo '</ul>';
+    panel_close();
+}
+
+/** Knop die één aanbieding koopt. */
+function koopknop(string $actie, int $id, string $label): string
+{
+    return '<form method="post" style="margin:0">' . csrf_field()
+         . '<input type="hidden" name="actie" value="' . e($actie) . '">'
+         . '<input type="hidden" name="id" value="' . $id . '">'
+         . '<button type="submit">' . e($label) . '</button></form>';
+}
+
+function kogels_lijst(): void
+{
+    $aanbod = q_all('SELECT * FROM `kogels` WHERE `time` > NOW() ORDER BY `time` ASC');
+
+    panel_open('Kogels');
+    echo '<p><a class="knop" href="' . e(url('mshop.php?x=bullets&page=sell')) . '">Kogels verkopen</a></p>';
+
+    if ($aanbod === []) {
+        echo '<p>Er staan geen kogels te koop.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Verkoper</th><th class="getal">Aantal</th><th class="getal">Prijs</th>'
+           . '<th class="getal">Per kogel</th><th>Loopt af</th><th></th></tr></thead><tbody>';
+        foreach ($aanbod as $r) {
+            $perStuk = (int) $r['aantal'] > 0 ? (int) round((int) $r['prijs'] / (int) $r['aantal']) : 0;
+            echo '<tr>'
+               . '<td>' . e((string) $r['login']) . '</td>'
+               . '<td class="getal">' . num((int) $r['aantal']) . '</td>'
+               . '<td class="getal">' . money((int) $r['prijs']) . '</td>'
+               . '<td class="getal">' . money($perStuk) . '</td>'
+               . '<td>' . e(datetime_nl($r['time'])) . '</td>'
+               . '<td>' . koopknop('koop_kogels', (int) $r['id'], 'Koop') . '</td>'
+               . '</tr>';
+        }
+        echo '</tbody></table></div>';
+    }
+    panel_close();
+}
+
+function kogels_verkopen(array $user): void
+{
+    panel_open('Kogels verkopen');
+    echo '<p>Je hebt ' . num((int) $user['kogels']) . ' kogels. Minimaal ' . KOGELS_MIN
+       . ' per partij, minimaal ' . money(KOGELS_MINPRIJS) . ' totaal, en hoogstens '
+       . money(KOGELS_MAXPERSTUK) . ' per kogel. Niet verkocht binnen zes uur? Dan krijg je ze terug.</p>';
+
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="zet_kogels">';
+    echo '<div class="veldenraster">';
+    echo '<label for="aantal">Aantal kogels</label>';
+    echo '<input id="aantal" name="aantal" type="number" min="' . KOGELS_MIN . '" step="1" required>';
+    echo '<label for="prijs">Vraagprijs</label>';
+    echo '<input id="prijs" name="prijs" type="number" min="' . KOGELS_MINPRIJS . '" step="1" required>';
+    echo '<span></span><button type="submit">Zet te koop</button>';
+    echo '</div></form>';
+    echo '<p><a href="' . e(url('mshop.php?x=bullets')) . '">Terug naar de kogellijst</a></p>';
+    panel_close();
+}
+
+function autos_lijst(): void
+{
+    $aanbod = q_all('SELECT * FROM `mgarage` WHERE `time` > NOW() ORDER BY `time` ASC');
+
+    panel_open('Auto\'s');
+    echo '<p><a class="knop" href="' . e(url('mshop.php?x=cars&page=sell')) . '">Een wagen verkopen</a></p>';
+
+    if ($aanbod === []) {
+        echo '<p>Er staan geen auto\'s te koop.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Wagen</th><th>Stad</th><th class="getal">Schade</th>'
+           . '<th class="getal">Waarde</th><th class="getal">Prijs</th><th>Loopt af</th><th></th></tr></thead><tbody>';
+        foreach ($aanbod as $r) {
+            echo '<tr>'
+               . '<td>' . e((string) $r['naam']) . '</td>'
+               . '<td>' . e((string) $r['stad']) . '</td>'
+               . '<td class="getal">' . (int) $r['damage'] . '%</td>'
+               . '<td class="getal">' . money((int) $r['waarde']) . '</td>'
+               . '<td class="getal">' . money((int) $r['prijs']) . '</td>'
+               . '<td>' . e(datetime_nl($r['time'])) . '</td>'
+               . '<td>' . koopknop('koop_auto', (int) $r['id'], 'Koop') . '</td>'
+               . '</tr>';
+        }
+        echo '</tbody></table></div>';
+    }
+    panel_close();
+}
+
+function autos_verkopen(array $user): void
+{
+    $garage = q_all(
+        'SELECT * FROM `garage` WHERE `login` = ? AND `damage` <= ? ORDER BY `waarde` DESC',
+        [$user['login'], AUTO_MAXSCHADE]
+    );
+
+    panel_open('Een wagen verkopen');
+
+    if ($garage === []) {
+        echo '<p>Je hebt geen wagens die verkocht kunnen worden. Wagens met meer dan '
+           . AUTO_MAXSCHADE . '% schade kun je niet aanbieden.</p>';
+    } else {
+        echo '<form method="post">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="zet_auto">';
+        echo '<div class="veldenraster">';
+        echo '<label for="car">Wagen</label><select id="car" name="car" required>';
+        foreach ($garage as $auto) {
+            echo '<option value="' . (int) $auto['id'] . '">'
+               . e((string) $auto['naam']) . ' - ' . e((string) $auto['stad'])
+               . ' - ' . (int) $auto['damage'] . '% schade'
+               . ' - waarde ' . money((int) $auto['waarde'])
+               . '</option>';
+        }
+        echo '</select>';
+        echo '<label for="prijs">Vraagprijs</label>';
+        echo '<input id="prijs" name="prijs" type="number" min="' . AUTO_MINPRIJS . '" step="1" required>';
+        echo '<span></span><button type="submit">Zet te koop</button>';
+        echo '</div></form>';
+    }
+
+    echo '<p><a href="' . e(url('mshop.php?x=cars')) . '">Terug naar de autolijst</a></p>';
+    panel_close();
+}
+
+function ws_lijst(): void
+{
+    $aanbod = q_all('SELECT * FROM `ws` WHERE `status` = 1 AND `time` > NOW() ORDER BY `time` ASC');
+
+    panel_open('Ooggetuigen');
+    echo '<p>Een ooggetuigenverklaring vertelt je wie een moord gepleegd heeft.</p>';
+    echo '<p><a class="knop" href="' . e(url('mshop.php?x=ws&page=sell')) . '">Een verklaring verkopen</a></p>';
+
+    if ($aanbod === []) {
+        echo '<p>Er staan geen verklaringen te koop.</p>';
+    } else {
+        echo '<div class="tabelwikkel"><table class="lijst">';
+        echo '<thead><tr><th>Moord op</th><th class="getal">Prijs</th><th>Loopt af</th><th></th></tr></thead><tbody>';
+        foreach ($aanbod as $r) {
+            echo '<tr>'
+               . '<td><a href="' . e(url('user.php?x=' . rawurlencode((string) $r['victim']))) . '">'
+               . e((string) $r['victim']) . '</a></td>'
+               . '<td class="getal">' . money((int) $r['prijs']) . '</td>'
+               . '<td>' . e(datetime_nl($r['time'])) . '</td>'
+               . '<td>' . koopknop('koop_ws', (int) $r['id'], 'Koop') . '</td>'
+               . '</tr>';
+        }
+        echo '</tbody></table></div>';
+    }
+    panel_close();
+}
+
+function ws_verkopen(array $user): void
+{
+    // Alleen je eigen, nog niet aangeboden verklaringen. In de oude versie
+    // typte je een nummer in en kon je die van een ander te koop zetten.
+    $eigen = q_all(
+        'SELECT * FROM `ws` WHERE `login` = ? AND `status` = 0 AND `time` > NOW() ORDER BY `time` ASC',
+        [$user['login']]
+    );
+
+    panel_open('Een verklaring verkopen');
+
+    if ($eigen === []) {
+        echo '<p>Je hebt geen ooggetuigenverklaringen die je te koop kunt zetten. '
+           . 'Je krijgt er een als je toevallig getuige bent van een moord.</p>';
+    } else {
+        echo '<form method="post">' . csrf_field();
+        echo '<input type="hidden" name="actie" value="zet_ws">';
+        echo '<div class="veldenraster">';
+        echo '<label for="id">Verklaring</label><select id="id" name="id" required>';
+        foreach ($eigen as $ws) {
+            echo '<option value="' . (int) $ws['id'] . '">Moord op ' . e((string) $ws['victim'])
+               . ' (geldig tot ' . e(datetime_nl($ws['time'])) . ')</option>';
+        }
+        echo '</select>';
+        echo '<label for="prijs">Vraagprijs</label>';
+        echo '<input id="prijs" name="prijs" type="number" min="' . WS_MINPRIJS
+           . '" max="' . WS_MAXPRIJS . '" step="1" required>';
+        echo '<span></span><button type="submit">Zet te koop</button>';
+        echo '</div></form>';
+    }
+
+    echo '<p><a href="' . e(url('mshop.php?x=ws')) . '">Terug naar de ooggetuigenlijst</a></p>';
+    panel_close();
+}

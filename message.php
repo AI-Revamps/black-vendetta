@@ -1,378 +1,315 @@
-<?PHP
-  include("config.php");
-    $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);
-  if(! check_login()) {
-    header("Location: login.php");
-    exit;
-  }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
+<?php
+/**
+ * Privéberichten: postvak in, verzonden, bewaard, lezen en versturen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - [inc]adres[/inc] werd omgezet naar <iframe src=adres>. Iedereen kon
+ *    daarmee een willekeurige externe pagina in andermans postvak tonen, wat
+ *    een kant-en-klare manier is om een nagemaakt inlogscherm voor te
+ *    schotelen. Die tag is niet overgenomen.
+ *  - De enige filtering was preg_replace('/</','&#60;') bij het opslaan. Die
+ *    verving alleen het kleiner-dan-teken, dus aanhalingstekens bleven staan
+ *    en attributen waren nog te openen. Berichten die al in de database
+ *    stonden bleven bovendien ongefilterd.
+ *  - Webadressen werden klikbaar gemaakt door de tekst rechtstreeks in een
+ *    href te zetten, zonder controle op het schema.
+ *  - Verwijderen, bewaren en ontbewaren liepen via GET-links.
+ */
 
-<script language="javascript">
-var checked = 0;
-function checkAll() {
-  checked = !checked;
-  for(i=0; i<document.form1.elements.length; i++)
-    document.form1.elements[i].checked = checked;
-}
-</script>
-</head>
+declare(strict_types=1);
 
-<body>
-<table width="100%">
-<?
-$pp = 10;
-$start = ($_GET['n'] >= 0) ? $_GET['n']*$pp : 0;
-$page = $_GET['p'];
-if($_GET['p']=="inbox"){
-  $title = ucfirst($_GET['p']);
-}
-elseif($_GET['p']=="new"){
-  $title = "Nieuw";
-}
-elseif($_GET['p']=="send"){
-  $title = "Verzonden";
-}
-elseif($_GET['p']=="saved"){
-  $title = "Opgeslagen";
-}
-elseif($_GET['p']=="read"){
-  $title = "Lezen";
-}
-else{
-  $title = "Berichten";
-}
-print <<<ENDHTML
-  <tr> 
-    <td class="subTitle"><b>$title</b></td>
-  </tr>
-  <tr> 
-    <td class="mainTxt">
-      <a href="?p=inbox">Inbox</a> | <a href="?p=new">Nieuw bericht</a> | <a href="?p=saved">Opgeslagen</a> | <a href="?p=send">Verzonden</a>
-      <br>
-	  <table width= 100%>
-ENDHTML;
+require __DIR__ . '/inc/bootstrap.php';
+require BV_INC . '/opmaak.php';
 
-if($_GET['p'] == "inbox") {
-  print "<form name=form1 method=post action=?p=del><table width= 100%>\n";
-  print "<tr><td width=10><input type=checkbox onClick=checkAll()></td>  <td align=center><i>Van:</i></td>  <td align=center width=225><i>Onderwerp:</i></td>  <td align=center width=175><i>Datum:</i></td></tr>\n";
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `messages` WHERE `to`='{$data->login}' AND `save`='0' ORDER BY `time` DESC LIMIT $start,$pp") or die(mysql_error());
-  while($message = mysql_fetch_object($dbres)) {
-    if(preg_match('/^\s*$/',$message->subject)){
-      $message->subject = "Geen";
-	}
-	$from = $message->from;
-	$time = date('H:i:s  d/m/Y',$message->time);
-	if($message->read == 1){
-      print "<tr><td width=10><input type=checkbox name=id[] value={$message->id}></td>  <td align=center><a href=\"user.php?x={$message->from}\">{$from}</a></td>  <td align=center><a href=?p=read&id={$message->id}>{$message->subject}</a></td>  <td align=center>{$time}</td>  <td><a href='?p=del&id[]={$message->id}'><img src=images/img_delete.gif border=0></a><a href='?p=save&id={$message->id}'><img src=images/img_save.gif border=0></a></td></tr>\n";
+const BERICHTEN_PER_PAGINA = 25;
+const ONDERWERP_MAX        = 80;
+const BERICHT_MAX          = 5000;
+
+$user = require_login();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = verwerk($user, post('actie'));
+        $type    = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
     }
-	else{
-	  print "<tr><td width=10><input type=checkbox name=id[] value={$message->id}></td>  <td align=center><b><a href=\"user.php?x={$message->from}\">{$from}</a></b></td>  <td align=center><b><a href=?p=read&id={$message->id}>{$message->subject}</a></b></td>  <td align=center>{$time}</td><td><a href='?p=del&id[]={$message->id}'><img src=images/img_delete.gif border=0></a><a href='?p=save&id={$message->id}'><img src=images/img_save.gif border=0></a></td></tr>\n";
-	}
-  }
-  print "</table><input type=submit value=Delete style=\"font-size: 10pt\"></form></td></tr>\n";
-  $sql = mysql_query("SELECT * FROM `messages` WHERE `to`='{$data->login}' AND `save`='0'");
-  $rows = mysql_num_rows($sql);
-  print "</table><tr><td><center>";
-      if($rows <= $pp){
-        print "&#60;&#60; &#60; 1 &#62; &#62;&#62;";
-	  }
-      else {
-        if($start/$pp == 0){
-          print "&#60;&#60; &#60; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=0\">&#60;&#60;</a> <a href=\"?p=$page&n=". ($start/$pp-1) ."\">&#60;</a> ";
-		}
-        for($i=0; $i<$rows/$pp; $i++) {
-		  if($i == $start/$pp){
-		    print "<u>". ($i+1) ."</u> ";
-		  }
-		  else{
-            print "<a href=\"?p=$page&n=$i\">". ($i+1) ."</a> ";
-		  }
-        }
-        if($start+$pp >= $rows){
-          print " &#62; &#62;&#62; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=". ($start/$pp+1) ."\">&#62;</a> <a href=\"?p=$page&n=". (ceil($rows/$pp)-1) ."\">&#62;&#62;</a>";
-		}
-	}
 }
-elseif($_GET['p'] == "send") {
-  print "<table width=100%>\n";
-  print "<tr><td align=center><i>Naar:</i></td>  <td align=center width=225><i>Onderwerp:</i></td>  <td align=center width=175><i>Datum:</i></td></tr>\n";
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `messages` WHERE `from`='{$data->login}' AND `save`='0' ORDER BY `time` DESC LIMIT $start,$pp") or die(mysql_error());
-  while($message = mysql_fetch_object($dbres)) {
-    if(preg_match('/^\s*$/',$message->subject)){
-      $message->subject = "Geen";
-	}
-	$to = $message->to;
-	$time = date('H:i:s  d/m/Y',$message->time);
-	if($message->read == 1){
-      print "<tr><td align=center><a href=\"user.php?x={$message->to}\">{$to}</a></td>  <td align=center><a href=?p=read&id={$message->id}>{$message->subject}</a></td>  <td align=center>{$time}</td></tr>\n";
+
+$pagina = get('p') !== '' ? get('p') : 'inbox';
+
+layout_header('Berichten');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+toon_tabs($pagina, $user);
+
+match ($pagina) {
+    'new'   => toon_nieuw(),
+    'read'  => toon_bericht($user, int_input('id')),
+    'send'  => toon_lijst($user, 'verzonden'),
+    'saved' => toon_lijst($user, 'bewaard'),
+    default => toon_lijst($user, 'inbox'),
+};
+
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function verwerk(array $user, string $actie): string
+{
+    return match ($actie) {
+        'versturen' => versturen($user, post('to'), post('subject'), post('message')),
+        'verwijder' => bulk($user, 'verwijder'),
+        'bewaar'    => bulk($user, 'bewaar'),
+        'ontbewaar' => bulk($user, 'ontbewaar'),
+        default     => throw new SpelFout('Onbekende handeling.'),
+    };
+}
+
+/** @throws SpelFout */
+function versturen(array $user, string $naar, string $onderwerp, string $tekst): string
+{
+    $naar      = trim($naar);
+    $onderwerp = trim($onderwerp);
+    $tekst     = trim($tekst);
+
+    if ($naar === '') {
+        throw new SpelFout('Vul in naar wie het bericht moet.');
     }
-	else{
-	  print "<tr><td align=center><b><a href=\"user.php?x={$message->to}\">{$to}</a></b></td>  <td align=center><b><a href=?p=read&id={$message->id}>{$message->subject}</a></b></td>  <td align=center>{$time}</td></tr>\n";
-	}
-  }
-  print "</table></td></tr>\n";
-  $sql = mysql_query("SELECT * FROM `messages` WHERE `from`='{$data->login}' AND `save`='0'");
-  $rows = mysql_num_rows($sql);
-  print "</table><tr><center>";
-      if($rows <= $pp){
-        print "&#60;&#60; &#60; 1 &#62; &#62;&#62;";
-	  }
-      else {
-        if($start/$pp == 0){
-          print "&#60;&#60; &#60; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=0\">&#60;&#60;</a> <a href=\"?p=$page&n=". ($start/$pp-1) ."\">&#60;</a> ";
-		}
-        for($i=0; $i<$rows/$pp; $i++) {
-		  if($i == $start/$pp){
-		    print "<u>". ($i+1) ."</u> ";
-		  }
-		  else{
-            print "<a href=\"?p=$page&n=$i\">". ($i+1) ."</a> ";
-		  }
-        }
-        if($start+$pp >= $rows){
-          print " &#62; &#62;&#62; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=". ($start/$pp+1) ."\">&#62;</a> <a href=\"?p=$page&n=". (ceil($rows/$pp)-1) ."\">&#62;&#62;</a>";
-		}
-	}
-}
-if($_GET['p'] == "saved") {
-  print "<table width= 100%>\n";
-  print "<tr><td align=center><i>Van:</i></td>  <td align=center width=225><i>Onderwerp:</i></td>  <td align=center width=175><i>Datum:</i></td></tr>\n";
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `messages` WHERE `to`='{$data->login}' AND `save`='1' ORDER BY `time` DESC LIMIT $start,$pp") or die(mysql_error());
-  while($message = mysql_fetch_object($dbres)) {
-    if(preg_match('/^\s*$/',$message->subject)){
-      $message->subject = "Geen";
-	}
-	$from = $message->from;
-	$time = date('H:i:s  d/m/Y',$message->time);
-    print "<tr><td align=center><a href=\"user.php?x={$message->from}\">{$from}</a></td>  <td align=center><a href=?p=read&id={$message->id}>{$message->subject}</a></td>  <td align=center>{$time}</td><td><a href='?p=unsave&id={$message->id}'><img src=images/img_unsave.gif border=0></a></td></tr>\n";
-  }
-  print "</table></td></tr>\n";
-  $sql = mysql_query("SELECT * FROM `messages` WHERE `to`='{$data->login}' AND `save`='1'");
-  $rows = mysql_num_rows($sql);
-  print "</table><tr><center>";
-      if($rows <= $pp){
-        print "&#60;&#60; &#60; 1 &#62; &#62;&#62;";
-	  }
-      else {
-        if($start/$pp == 0){
-          print "&#60;&#60; &#60; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=0\">&#60;&#60;</a> <a href=\"?p=$page&n=". ($start/$pp-1) ."\">&#60;</a> ";
-		}
-        for($i=0; $i<$rows/$pp; $i++) {
-		  if($i == $start/$pp){
-		    print "<u>". ($i+1) ."</u> ";
-		  }
-		  else{
-            print "<a href=\"?p=$page&n=$i\">". ($i+1) ."</a> ";
-		  }
-        }
-        if($start+$pp >= $rows){
-          print " &#62; &#62;&#62; ";
-		}
-        else{
-          print "<a href=\"?p=$page&n=". ($start/$pp+1) ."\">&#62;</a> <a href=\"?p=$page&n=". (ceil($rows/$pp)-1) ."\">&#62;&#62;</a>";
-		}
-	}
-}
-elseif($_GET['p'] == "read" && is_numeric($_GET['id'])) {
-$dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`time`) AS `time` FROM `messages` WHERE `id`='{$_GET['id']}' AND (`to`='{$data->login}' OR `from`='{$data->login}')") or die("The message couldn't be opened.");
-if($message = mysql_fetch_object($dbres)) {
-  if($message->to == $data->login)
-    mysql_query("UPDATE `messages` SET `read`='1' WHERE `id`='{$_GET['id']}'") or die("Couldn't update message status.");
-  }
-  $message->message		= preg_replace('/(http:\/\/\S+)/','<a href="$1" target=\"_blank\">$1</a>',$message->message);
-	    $message->message		= preg_replace("/\[invite](.*?)\[\/invite]/","<a href=invite.php?fam=$1>Accepteren/Weigeren</a>",$message->message);
-   	    $message->message		= preg_replace("/\[ws](.*?)\[\/ws]/","<a href=ws.php?sell=$1>[x]</a>",$message->message);
-        $message->message		= preg_replace("/\[inc](.*?)\[\/inc]/","<iframe src=\\1>",$message->message);
-	$message->message = eregi_replace("\\[url=([^\\[]*)\]([^\\[]*)\\[/url\\]","<a href=\"\\1\" target=_blank>\\2</a>",$message->message); 
-	$message->message = eregi_replace("\[b\]","<b>",$message->message);
-    $message->message = eregi_replace("\[/b\]","</b>",$message->message);
-    $message->message = eregi_replace("\[i\]","<i>",$message->message);
-    $message->message = eregi_replace("\[/i\]","</i>",$message->message);
-    $message->message = eregi_replace("\[s\]","<s>",$message->message);
-    $message->message = eregi_replace("\[/s\]","</s>",$message->message);
-    $message->message = eregi_replace("\[u\]","<u>",$message->message);
-    $message->message = eregi_replace("\[/u\]","</u>",$message->message);
-    $message->message = eregi_replace("\[move\]","<marquee>",$message->message);
-    $message->message = eregi_replace("\[/move\]","</marquee>",$message->message);
-    $message->message = eregi_replace("\[list\]","<UL>",$message->message);
-    $message->message = eregi_replace("\[/list\]","</UL>",$message->message);
-    $message->message = eregi_replace("\[\*\]","<LI>",$message->message);
-    $message->message = eregi_replace("\[small\]","<font size=1>",$message->message);
-    $message->message = eregi_replace("\[/small\]","</font>",$message->message); 
-    $message->message = eregi_replace("\\[color=([^\\[]*)\]([^\\[]*)\\[/color\\]","<font color=\\1>\\2</font>",$message->message); 
-    $message->message = eregi_replace("\(b\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$message->message);
-    $message->message = eregi_replace("\\[face=([^\\[]*)\]([^\\[]*)\\[/face\\]","<font face=\\1>\\2</font>",$message->message);	
-	    $message->message = eregi_replace("\\[size=([^\\[]*)\]([^\\[]*)\\[/size\\]","<font size=\\1>\\2</font>",$message->message);        
-$message->message = eregi_replace("\(B\)","<img src=http://members.lycos.nl/js6287/chat/img/biere.gif>",$message->message);
-	$message->message = eregi_replace(":\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$message->message);
-	$message->message = eregi_replace(":-\)","<img src=http://members.lycos.nl/js6287/chat/img/sourire.gif>",$message->message);
-	$message->message = eregi_replace(":d","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$message->message);
-	$message->message = eregi_replace(":-D","<img src=http://members.lycos.nl/js6287/chat/img/content.gif>",$message->message);
-	$message->message = eregi_replace(":-O","<img src=http://members.lycos.nl/js6287/chat/img/OH-2.gif>",$message->message);
-	$message->message = eregi_replace(":o","<img src=http://members.lycos.nl/js6287/chat/img/OH-1.gif>",$message->message);
-	$message->message = eregi_replace(":p","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$message->message);
-	$message->message = eregi_replace(":-P","<img src=http://members.lycos.nl/js6287/chat/img/langue.gif>",$message->message);
-	$message->message = eregi_replace("\;\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$message->message);
-	$message->message = eregi_replace("\;-\)","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil.gif>",$message->message);
-	$message->message = eregi_replace(":\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$message->message);
-	$message->message = eregi_replace(":-\(","<img src=http://members.lycos.nl/js6287/chat/img/triste.gif>",$message->message);
-	$message->message = eregi_replace(":\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$message->message);
-	$message->message = eregi_replace(":-\|","<img src=http://members.lycos.nl/js6287/chat/img/OH-3.gif>",$message->message);
-	$message->message = eregi_replace(":\'\(","<img src=http://members.lycos.nl/js6287/chat/img/pleure.gif>",$message->message);
-	$message->message = eregi_replace("\(h\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$message->message);
-	$message->message = eregi_replace("\(H\)","<img src=http://members.lycos.nl/js6287/chat/img/cool.gif>",$message->message);
-	$message->message = eregi_replace(":-@","<img src=http://members.lycos.nl/js6287/chat/img/enerve1.gif>",$message->message);
-	$message->message = eregi_replace(":@","<img src=http://members.lycos.nl/js6287/chat/img/enerve2.gif>",$message->message);
-	$message->message = eregi_replace(":s","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$message->message);
-	$message->message = eregi_replace(":-S","<img src=http://members.lycos.nl/js6287/chat/img/roll-eyes.gif>",$message->message);
-	$message->message = eregi_replace("\(k\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$message->message);
-	$message->message = eregi_replace("\(K\)","<img src=http://members.lycos.nl/js6287/chat/img/bouche.gif>",$message->message);
-	$message->message = eregi_replace("\(l\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$message->message);
-	$message->message = eregi_replace("\(L\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur.gif>",$message->message);
-	$message->message = eregi_replace("\(u\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$message->message);
-	$message->message = eregi_replace("\(U\)","<img src=http://members.lycos.nl/js6287/chat/img/coeur-brise.gif>",$message->message);
-	$message->message = eregi_replace("\;-P","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$message->message);
-	$message->message = eregi_replace("\;p","<img src=http://members.lycos.nl/js6287/chat/img/clin-oeuil-langue.gif>",$message->message);
-	$message->message = eregi_replace("\(y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$message->message);
-	$message->message = eregi_replace("\(Y\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-oui.gif>",$message->message);
-	$message->message = eregi_replace("\(n\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$message->message);
-	$message->message = eregi_replace("\(N\)","<img src=http://members.lycos.nl/js6287/chat/img/pouce-non.gif>",$message->message);
-	$message->message = eregi_replace("\(6\)","<img src=http://members.lycos.nl/js6287/chat/img/diable.gif>",$message->message);
-	$message->message = eregi_replace("\(d\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$message->message);
-	$message->message = eregi_replace("\(D\)","<img src=http://members.lycos.nl/js6287/chat/img/drink.gif>",$message->message);
-	$message->message = eregi_replace("_o_","<img src=http://members.lycos.nl/js6287/chat/img/worship.gif>",$message->message);
-	$message->message = eregi_replace("\(g\)","<img src=http://members.lycos.nl/js6287/chat/img/gun.gif>",$message->message);
-	$message->message = eregi_replace("\(G\)","<img src=http://members.lycos.nl/js6287/chat/img/guns.gif>",$message->message);
-	$messages = $message->message;
-  $from = $message->from;
-  $to = $message->to;
-  $time = date('H:i:s  d/m/Y',$message->time);
-  echo"
-        <tr><td width=100>Tijd:</td>     <td>{$time}</td></tr>
-        <tr><td width=100>Van:</td>     <td>{$from}</td></tr>
-        <tr><td width=100>Naar:</td>       <td>{$to}</td></tr>
-        <tr><td width=100>Onderwerp:</td>  <td>{$message->subject}</td></tr>
-        <tr><td width=100>Inhoud:</td>  <td></td></tr>
-        <tr><td width=100></td>  <td></td></tr>
-        <tr><td colspan=2 width=100%>{$messages}</td></tr>
-      </table></td></tr>
-      <tr><td align=\"right\"><table width= 100%>
-  ";
-  if($message->from != $data->login){
-    print "<td class=mainTxt align=center width=100><a href='?p=new&to={$message->from}&subject=Re: ". str_replace('Re:','',$message->subject) ."'>Antwoord</a></td>  ";
-  }
-  else{
-    print "<tr>";
-  }
-  if($message->from != $data->login){
-    print "<td class=mainTxt align=center width=100><a href='?p=del&id[]={$message->id}'>Delete</a></td></tr>\n";
-  }
-}
-elseif($_GET['p'] == "del") {
-  if(isset($_GET['id'])){
-    $_POST['id'] = $_GET['id'];
-  }
-  foreach($_POST['id'] as $msgid) {
-    $dbres = mysql_query("SELECT * FROM `messages` WHERE `id`='$msgid' AND (`from`='{$data->login}' OR `to`='{$data->login}')") or die(mysql_error());
-    if($message = mysql_fetch_object($dbres)) {
-      if($message->save != 1){
-        mysql_query("DELETE FROM `messages` WHERE `id`='$msgid'") or die(mysql_error());
-      }
-	  else{
-        echo"Dit bericht staat in je opgeslagen berichtenlijst.";
-		exit;
-      }
-	}
-  }
-  echo"Bericht(en) verwijderd.";
-}
-elseif($_GET['p'] == "save") {
-  if(isset($_GET['id'])){
-    $dbres = mysql_query("SELECT * FROM `messages` WHERE `id`='{$_GET['id']}' AND (`from`='{$data->login}' OR `to`='{$data->login}')") or die(mysql_error());
-    if($message = mysql_fetch_object($dbres)) {
-      if($message->save != 1){
-        mysql_query("UPDATE `messages` SET `save`='1' WHERE `id`='{$_GET['id']}'") or die("Couldn't update message status.");
-      }
-	  else{
-        echo"Dit bericht is reeds opgeslagen.";
-		exit;
-      }
-	  echo"Bericht opgeslagen.";
-	}
-  }
-}
-elseif($_GET['p'] == "unsave") {
-  if(isset($_GET['id'])){
-    $dbres = mysql_query("SELECT * FROM `messages` WHERE `id`='{$_GET['id']}' AND (`from`='{$data->login}' OR `to`='{$data->login}')") or die(mysql_error());
-    if($message = mysql_fetch_object($dbres)) {
-      if($message->save != 0){
-        mysql_query("UPDATE `messages` SET `save`='0' WHERE `id`='{$_GET['id']}'") or die("Couldn't update message status.");
-      }
-	  else{
-        echo"Dit bericht is niet opgeslagen.";
-		exit;
-      }
-	  echo"Bericht verwijderd uit opgeslagen berichtenlijst.";
-	}
-  }
-}
-elseif($_GET['p'] == "new") {
-  if(isset($_POST['to'],$_POST['message'])) {
-    if($_POST['to'] != $data->login) {
-      $dbres = mysql_query("SELECT * FROM `users` WHERE `login`='{$_POST['to']}'") or die("Kon de gegevens niet uit de database halen. Sorry voor het ongemak.");
-      $info = mysql_fetch_object($dbres);
-      if($info == false){
-        print "'{$_POST['to']}' bestaat niet.";
-	  }
-      elseif($info->activated == 0){
-        print "'{$_POST['to']}' heeft zijn account niet geactiveerd.";
-	  }
-      else {
-        $subject = preg_replace('/</','&#60;',$_POST['subject']);
-        $message = preg_replace('/</','&#60;',$_POST['message']);
-        $dbres = mysql_query("SELECT `id` FROM `users` WHERE `login`='{$_POST['to']}'") or die(mysql_error());
-        if($recp = mysql_fetch_object($dbres)) {
-          mysql_query("INSERT INTO `messages`(`time`,`from`,`to`,`subject`,`message`) values(NOW(),'{$data->login}','{$_POST['to']}','{$subject}','{$message}')") or die("Het bericht kon niet verzonden worden.");
-		  print "Het bericht is met succes verzonden.";
-        }
-      }
+    if (strcasecmp($naar, (string) $user['login']) === 0) {
+        throw new SpelFout('Je kunt jezelf geen bericht sturen.');
     }
-    else{
-      print "Je kan geen bericht naar jezelf sturen.";
-	}
-  }
-  $_REQUEST['message'] = stripslashes($_REQUEST['message']);
-  echo"
-  <table width= 100%><tr><td>
-    <form name=\"form1\" method=\"POST\" action=\"?p=new\"><table align=center>
-    <tr><td width=100>Naar:</td>        <td><input type=\"text\" name=\"to\" value=\"{$_REQUEST['to']}\" maxlength=16></td></tr>
-    <tr><td width=100>Onderwerp:</td>    <td><input type=\"text\" name=\"subject\" value=\"{$_REQUEST['subject']}\" maxlength=25></td></tr>
-    <tr><td width=100 valign=\"top\">Bericht:<br><br>
-    </td><td><textarea name=\"message\" cols=40 rows=10>{$_REQUEST['message']}</textarea></td></tr>
-    <tr><td width=100></td><td><input type=\"submit\" name=\"submit\" value=\"Verzenden\"></td></tr>
-  ";
+    if ($tekst === '') {
+        throw new SpelFout('Je bericht is leeg.');
+    }
+    if (mb_strlen($tekst) > BERICHT_MAX) {
+        throw new SpelFout('Je bericht mag hoogstens ' . num(BERICHT_MAX) . ' tekens lang zijn.');
+    }
+
+    $ontvanger = q_row('SELECT `login`, `activated`, `status` FROM `users` WHERE `login` = ?', [$naar]);
+
+    if ($ontvanger === null) {
+        throw new SpelFout('Die speler bestaat niet.');
+    }
+    if ((int) $ontvanger['activated'] !== 1) {
+        throw new SpelFout($ontvanger['login'] . ' heeft zijn account nog niet geactiveerd.');
+    }
+    if ($ontvanger['status'] !== 'levend') {
+        throw new SpelFout($ontvanger['login'] . ' is dood en leest geen berichten meer.');
+    }
+
+    // De tekst gaat onbewerkt de database in. Opmaken en onschadelijk maken
+    // gebeurt bij het tonen, zodat berichten die er al staan ook veilig zijn.
+    q(
+        'INSERT INTO `messages` (`time`, `from`, `to`, `subject`, `message`) VALUES (NOW(), ?, ?, ?, ?)',
+        [
+            $user['login'],
+            $ontvanger['login'],
+            mb_substr($onderwerp === '' ? '(geen onderwerp)' : $onderwerp, 0, ONDERWERP_MAX),
+            $tekst,
+        ]
+    );
+
+    return 'Je bericht aan ' . $ontvanger['login'] . ' is verstuurd.';
 }
-?>
+
+/**
+ * Verwijderen, bewaren of ontbewaren van aangevinkte berichten.
+ *
+ * @throws SpelFout
+ */
+function bulk(array $user, string $wat): string
+{
+    $ids = array_values(array_filter(array_map('intval', (array) ($_POST['id'] ?? []))));
+
+    if ($ids === []) {
+        throw new SpelFout('Je hebt geen berichten aangevinkt.');
+    }
+
+    // Plaatshouders opbouwen; de waarden blijven parameters.
+    $gaten  = implode(',', array_fill(0, count($ids), '?'));
+    // Eigendom staat in de WHERE: je komt alleen aan je eigen berichten.
+    $params = array_merge($ids, [$user['login'], $user['login']]);
+
+    $aantal = match ($wat) {
+        'verwijder' => q_count(
+            "DELETE FROM `messages` WHERE `id` IN ({$gaten}) AND (`to` = ? OR `from` = ?)", $params),
+        'bewaar'    => q_count(
+            "UPDATE `messages` SET `save` = 1 WHERE `id` IN ({$gaten}) AND (`to` = ? OR `from` = ?)", $params),
+        'ontbewaar' => q_count(
+            "UPDATE `messages` SET `save` = 0 WHERE `id` IN ({$gaten}) AND (`to` = ? OR `from` = ?)", $params),
+        default     => throw new SpelFout('Onbekende handeling.'),
+    };
+
+    $woord = $aantal === 1 ? 'bericht' : 'berichten';
+
+    return match ($wat) {
+        'verwijder' => $aantal . ' ' . $woord . ' verwijderd.',
+        'bewaar'    => $aantal . ' ' . $woord . ' bewaard.',
+        default     => $aantal . ' ' . $woord . ' niet meer bewaard.',
+    };
+}
+
+// ==========================================================================
+// Weergave
+// ==========================================================================
+
+function toon_tabs(string $huidig, array $user): void
+{
+    $tabs = [
+        'inbox' => 'Postvak in',
+        'send'  => 'Verzonden',
+        'saved' => 'Bewaard',
+        'new'   => 'Nieuw bericht',
+    ];
+
+    $ongelezen = (int) q_val('SELECT COUNT(*) FROM `messages` WHERE `to` = ? AND `read` = 0',
+        [$user['login']], 0);
+
+    echo '<p>';
+    foreach ($tabs as $sleutel => $label) {
+        $actief = $sleutel === $huidig ? ' knop-nadruk' : '';
+        $telnu  = $sleutel === 'inbox' && $ongelezen > 0 ? ' (' . $ongelezen . ')' : '';
+        echo '<a class="knop' . $actief . '" style="display:inline-block;margin-right:.3rem" href="'
+           . e(url('message.php?p=' . $sleutel)) . '">' . e($label) . $telnu . '</a>';
+    }
+    echo '</p>';
+}
+
+function toon_lijst(array $user, string $soort): void
+{
+    [$titel, $waar, $params] = match ($soort) {
+        'verzonden' => ['Verzonden berichten', '`from` = ?', [$user['login']]],
+        'bewaard'   => ['Bewaarde berichten', '(`to` = ? OR `from` = ?) AND `save` = 1',
+                        [$user['login'], $user['login']]],
+        default     => ['Postvak in', '`to` = ?', [$user['login']]],
+    };
+
+    $berichten = q_all(
+        "SELECT * FROM `messages` WHERE {$waar} ORDER BY `time` DESC LIMIT " . BERICHTEN_PER_PAGINA,
+        $params
+    );
+
+    panel_open($titel);
+
+    if ($berichten === []) {
+        echo '<p>Geen berichten.</p>';
+        panel_close();
+        return;
+    }
+
+    echo '<form method="post">' . csrf_field();
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th></th><th>' . ($soort === 'verzonden' ? 'Aan' : 'Van')
+       . '</th><th>Onderwerp</th><th>Wanneer</th></tr></thead><tbody>';
+
+    foreach ($berichten as $bericht) {
+        $nieuw       = $soort !== 'verzonden' && (int) $bericht['read'] === 0;
+        $tegenpartij = $soort === 'verzonden' ? $bericht['to'] : $bericht['from'];
+
+        echo '<tr>';
+        echo '<td><input type="checkbox" name="id[]" value="' . (int) $bericht['id']
+           . '" aria-label="Selecteer bericht"></td>';
+        echo '<td>' . e((string) $tegenpartij) . '</td>';
+        echo '<td><a href="' . e(url('message.php?p=read&id=' . (int) $bericht['id'])) . '">'
+           . ($nieuw ? '<strong>' : '') . e((string) $bericht['subject']) . ($nieuw ? '</strong>' : '')
+           . '</a>' . ((int) $bericht['save'] === 1 ? ' <small>(bewaard)</small>' : '') . '</td>';
+        echo '<td>' . e(datetime_nl($bericht['time'])) . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+    echo '<p><button type="submit" name="actie" value="verwijder">Verwijder</button> '
+       . '<button type="submit" name="actie" value="bewaar">Bewaar</button> '
+       . '<button type="submit" name="actie" value="ontbewaar">Niet meer bewaren</button></p>';
+    echo '</form>';
+
+    panel_close();
+}
+
+function toon_bericht(array $user, int $id): void
+{
+    $bericht = q_row(
+        'SELECT * FROM `messages` WHERE `id` = ? AND (`to` = ? OR `from` = ?)',
+        [$id, $user['login'], $user['login']]
+    );
+
+    if ($bericht === null) {
+        panel_open('Bericht');
+        notice('Dit bericht bestaat niet of is niet voor jou.', 'fout');
+        panel_close();
+        return;
+    }
+
+    if ($bericht['to'] === $user['login'] && (int) $bericht['read'] === 0) {
+        q('UPDATE `messages` SET `read` = 1 WHERE `id` = ?', [$id]);
+    }
+
+    panel_open($bericht['subject'] === '' ? '(geen onderwerp)' : (string) $bericht['subject']);
+
+    echo '<p class="uitleg">Van <strong>' . e((string) $bericht['from']) . '</strong> aan <strong>'
+       . e((string) $bericht['to']) . '</strong> op ' . e(datetime_nl($bericht['time'])) . '</p>';
+
+    // Alleen systeemberichten mogen spelknoppen tonen, nooit tekst van spelers.
+    $vanSysteem = $bericht['from'] === 'Notificatie';
+
+    echo '<div class="berichttekst">'
+       . bericht_html((string) $bericht['message'], ['spelacties' => $vanSysteem])
+       . '</div>';
+
+    if (!$vanSysteem && $bericht['from'] !== $user['login']) {
+        $onderwerp = 'Re: ' . preg_replace('/^(Re:\s*)+/i', '', (string) $bericht['subject']);
+        echo '<p><a class="knop" href="' . e(url('message.php?p=new&to='
+           . rawurlencode((string) $bericht['from']) . '&subject=' . rawurlencode($onderwerp)))
+           . '">Antwoorden</a></p>';
+    }
+
+    echo '<form method="post">' . csrf_field()
+       . '<input type="hidden" name="id[]" value="' . (int) $bericht['id'] . '">'
+       . '<button type="submit" name="actie" value="verwijder">Verwijder</button> '
+       . '<button type="submit" name="actie" value="'
+       . ((int) $bericht['save'] === 1 ? 'ontbewaar">Niet meer bewaren' : 'bewaar">Bewaar')
+       . '</button></form>';
+
+    panel_close();
+}
+
+function toon_nieuw(): void
+{
+    panel_open('Nieuw bericht');
+
+    echo '<form method="post">' . csrf_field();
+    echo '<input type="hidden" name="actie" value="versturen">';
+    echo '<div class="veldenraster">';
+
+    echo '<label for="to">Aan</label>';
+    echo '<input id="to" name="to" maxlength="16" required value="'
+       . e(get('to') !== '' ? get('to') : post('to')) . '">';
+
+    echo '<label for="subject">Onderwerp</label>';
+    echo '<input id="subject" name="subject" maxlength="' . ONDERWERP_MAX . '" value="'
+       . e(get('subject') !== '' ? get('subject') : post('subject')) . '">';
+
+    echo '<label for="message">Bericht</label>';
+    echo '<textarea id="message" name="message" maxlength="' . BERICHT_MAX . '" required>'
+       . e(post('message')) . '</textarea>';
+
+    echo '<span></span><button type="submit">Versturen</button>';
+    echo '</div></form>';
+
+    echo '<p class="uitleg">Opmaak: <code>[b]vet[/b]</code>, <code>[i]schuin[/i]</code>, '
+       . '<code>[u]onderstreept[/u]</code>, <code>[url]adres[/url]</code>, '
+       . '<code>[img]adres[/img]</code>, <code>[quote]citaat[/quote]</code>.</p>';
+
+    panel_close();
+}

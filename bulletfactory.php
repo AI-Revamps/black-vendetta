@@ -1,70 +1,138 @@
 <?php
-  include("config.php");
-  $dbres = mysql_query("SELECT *,UNIX_TIMESTAMP(`pc`) AS `pc`,UNIX_TIMESTAMP(`transport`) AS `transport`,UNIX_TIMESTAMP(`bc`) AS `bc`,UNIX_TIMESTAMP(`slaap`) AS `slaap`,UNIX_TIMESTAMP(`kc`) AS `kc`,UNIX_TIMESTAMP(`start`) AS `start`,UNIX_TIMESTAMP(`crime`) AS `crime`,UNIX_TIMESTAMP(`ac`) AS `ac` FROM `users` WHERE `login`='{$_SESSION['login']}'");
-  $data	= mysql_fetch_object($dbres);  
-  if(! check_login()) {
-    header("Location: login.php");
-    exit;
-  }
-if ($jisin == 1) { header('Location: jisin.php'); }
-?>
-<html>
-<head>
-<title>Vendetta</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-<meta name="keywords" content="Vendetta,Crimegame,crimegame,vendetta">
-<meta name="language" content="english">
-<META name="description" lang="nl" content="Vendetta crimegame met pit.">
-</head>
-<?PHP
-print <<<ENDHTML
-<table width="100%" align=center>
-<tr> 
-    <td class="subTitle"><b>Kogelfabriek</b></td>
-  </tr>
-  <tr><td>&nbsp;&nbsp;</td></tr>
-  <tr> 
-    <td class="mainTxt">
-<html>
-<center>
-ENDHTML;
-$time = time();
-$bwtime = ($time + 3600);
-$btime = gmdate('i:s',($data->slaap - $time));
-if ($data->slaap - $time > 0) { echo "Je moet nog $btime wachten voordat je weer kogels kan kopen."; exit; } 
-$fabriek = mysql_fetch_object(mysql_query("SELECT * FROM `stad` WHERE `stad`='{$data->stad}'"));
-$koop = floor($data->zak / $fabriek->prijs);
-$akogels = ($data->paid == 1) ? ($fabriek->kogels*2) : $fabriek->kogels;
-if($_SERVER['REQUEST_METHOD']=='POST' && preg_match('/^[0-9]+$/',$_POST['aantal'])) {
-$antal = $_POST['aantal'];
-$aantal = ($data->paid == 1) ? ($_POST['aantal'] / 2) : $_POST['aantal'];
-$prijs = $antal*$fabriek->prijs;
-if ($antal < 0) {
-echo "Ongeldig aantal."; exit;
-}
-if ($prijs > $data->zak) {
-echo "Je hebt niet genoeg geld op zak."; exit;
-}
-if ($aantal > $akogels) {
-echo "Zoveel kogels zijn er niet."; exit;
-}
-	if (!Empty($aantal)) {
-			mysql_query("UPDATE `users` SET `zak`=`zak`-{$prijs},`kogels`=`kogels`+{$antal},`slaap`=FROM_UNIXTIME($bwtime) WHERE `login`= '{$data->login}'") or die (mysql_error());
-			mysql_query("UPDATE `stad` SET `kogels`=`kogels`-{$aantal} WHERE `stad`='{$data->stad}'") or die (mysql_error());
-			
-			echo "Je hebt $antal kogels gekocht voor &euro; {$prijs}."; exit;
-			} 
-	else { echo "Ongeldig aantal."; exit; }
-	}
+/**
+ * Kogelfabriek: koop kogels uit de voorraad van de stad.
+ *
+ * De voorraad en de prijs per stad worden elke paar minuten ververst door de
+ * taak 'kogels' in inc/cron.php.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - De donateursbonus (dubbele voorraad) is eruit. Die werd gecontroleerd met
+ *    `$data->paid == 1`, terwijl `paid` het aantal actieve donaties bijhield —
+ *    met twee of drie donaties verloor je je bonus dus juist. De bonus zelf is
+ *    daarna helemaal geschrapt: premium hoort niemand sterker te maken.
+ *  - Betalen en de voorraad afboeken gebeurde in twee losse queries zonder
+ *    transactie, zodat de stadsvoorraad negatief kon worden bij gelijktijdige
+ *    aankopen.
+ *  - Er stond een controle op een negatief aantal die nooit kon vuren, omdat
+ *    de invoer al op alleen cijfers gecontroleerd was.
+ *  - Het invoerveld stond op hoogstens drie tekens, wat de aankoop stilzwijgend
+ *    op 999 begrensde zonder dat ergens te melden.
+ */
 
-echo "
-<br><br><br>
+declare(strict_types=1);
 
-<form method='post'>
-Er zijn $akogels kogels in deze kogelfabriek.<br>Je kan kogels kopen voor &euro; {$fabriek->prijs} per kogel.<br>Je hebt &euro;{$data->zak} op zak.<br>Je kan $koop kogels kopen voor &euro; {$fabriek->prijs} met het geld dat je bij hebt.<br><br>
-	<input type='text' name='aantal' size='20' maxlength=3>
-<br>
-<br>
-	<p><input type='submit' value='Kopen'></form></p>";
-?>
-</table></table>
+require __DIR__ . '/inc/bootstrap.php';
+
+/** Hoe lang je moet wachten tussen twee aankopen. */
+const KOGELS_WACHTTIJD = 3600;
+
+$user = require_login();
+
+if (is_dead()) {
+    redirect('rip.php');
+}
+block_if_jailed();
+
+$melding = null;
+$type    = 'info';
+
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = kopen($user, int_input('aantal', 0));
+        $type    = 'ok';
+        $user    = current_user(true);
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
+
+$stad      = q_row('SELECT * FROM `stad` WHERE `stad` = ?', [$user['stad']]);
+$wacht     = cooldown_left((int) $user['slaap_ts']);
+$voorraad  = (int) ($stad['kogels'] ?? 0);
+$prijs     = (int) ($stad['prijs'] ?? 0);
+$betaalbaar = $prijs > 0 ? intdiv((int) $user['zak'], $prijs) : 0;
+
+layout_header('Kogelfabriek');
+
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
+
+panel_open('Kogelfabriek in ' . ($stad['stad'] ?? '?'));
+
+if ($wacht > 0) {
+    echo '<p>Je moet nog <strong data-tot="' . (time() + $wacht) . '">' . e(duration($wacht))
+       . '</strong> wachten voordat je weer kogels kunt kopen.</p>';
+} else {
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<tr><th scope="row">Voorraad</th><td>' . num($voorraad) . ' kogels</td></tr>';
+    echo '<tr><th scope="row">Prijs per kogel</th><td>' . money($prijs) . '</td></tr>';
+    echo '<tr><th scope="row">Je hebt op zak</th><td>' . money((int) $user['zak']) . '</td></tr>';
+    echo '<tr><th scope="row">Je kunt er kopen</th><td>' . num(min($voorraad, $betaalbaar)) . '</td></tr>';
+    echo '</table></div>';
+
+    $max = min($voorraad, $betaalbaar);
+
+    if ($max < 1) {
+        echo '<p>Er is niets te koop, of je hebt niet genoeg geld.</p>';
+    } else {
+        echo '<form method="post">' . csrf_field();
+        echo '<div class="veldenraster">';
+        echo '<label for="aantal">Aantal kogels</label>';
+        echo '<input id="aantal" name="aantal" type="number" min="1" max="' . $max . '" step="1" required>';
+        echo '<span></span><button type="submit">Kopen</button>';
+        echo '</div></form>';
+        echo '<p class="uitleg">Na een aankoop moet je ' . e(duration(KOGELS_WACHTTIJD))
+           . ' wachten voor de volgende.</p>';
+    }
+}
+
+panel_close();
+layout_footer();
+
+// ==========================================================================
+
+/** @throws SpelFout */
+function kopen(array $user, int $aantal): string
+{
+    if ($aantal < 1) {
+        throw new SpelFout('Vul een aantal van minstens 1 in.');
+    }
+
+    return db_transaction(static function () use ($user, $aantal): string {
+        $speler = lock_user((int) $user['id']);
+
+        if (cooldown_left((int) q_val('SELECT UNIX_TIMESTAMP(`slaap`) FROM `users` WHERE `id` = ?',
+                [$speler['id']], 0)) > 0) {
+            throw new SpelFout('Je moet nog wachten voordat je weer kogels kunt kopen.');
+        }
+
+        $stad = q_row('SELECT * FROM `stad` WHERE `stad` = ? FOR UPDATE', [$speler['stad']]);
+
+        if ($stad === null) {
+            throw new SpelFout('Er is hier geen kogelfabriek.');
+        }
+
+        if ($aantal > (int) $stad['kogels']) {
+            throw new SpelFout('Zoveel kogels zijn er niet in voorraad.');
+        }
+
+        $prijs = $aantal * (int) $stad['prijs'];
+
+        if (!afboeken((int) $speler['id'], $prijs, 'zak')) {
+            throw new SpelFout('Dit kost ' . money($prijs) . ' en zoveel heb je niet op zak.');
+        }
+
+        q('UPDATE `users` SET `kogels` = `kogels` + ?, `slaap` = DATE_ADD(NOW(), INTERVAL ? SECOND)
+            WHERE `id` = ?',
+            [$aantal, KOGELS_WACHTTIJD, $speler['id']]);
+
+        q('UPDATE `stad` SET `kogels` = GREATEST(0, `kogels` - ?) WHERE `stad` = ?',
+            [$aantal, $speler['stad']]);
+
+        return 'Je hebt ' . num($aantal) . ' kogels gekocht voor ' . money($prijs) . '.';
+    });
+}

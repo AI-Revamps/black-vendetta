@@ -1,179 +1,209 @@
-<?PHP 
+<?php
+/**
+ * Poll: stem op de vraag van de beheerders en bekijk de uitslagen.
+ *
+ * Wat hier gerepareerd is ten opzichte van de oude versie:
+ *
+ *  - Het bestand gebruikte $HTTP_SERVER_VARS en $HTTP_GET_VARS. Die zijn in
+ *    PHP 5.4 verwijderd, dus het IP-adres en het poll-nummer waren altijd leeg.
+ *  - De klasse had een constructor in de oude stijl (een functie met dezelfde
+ *    naam als de klasse). Dat is in PHP 8 geen constructor meer.
+ *  - Wie gestemd had werd bijgehouden door de tekst "(ip,keuze)" aan een
+ *    tekstveld te plakken. Dat veld groeide onbeperkt en de controle of iemand
+ *    al gestemd had gebeurde met string-zoeken, wat op deelreeksen misgaat:
+ *    wie vanaf 10.0.0.1 gestemd had, blokkeerde ook 10.0.0.11. Stemmen staan
+ *    nu in een eigen tabel, met de speler als sleutel in plaats van het IP.
+ *  - De stemwaarde werd wel op bereik gecontroleerd, maar rechtstreeks in de
+ *    kolomnaam `antwoord{$vote}` gezet.
+ */
 
-include("config.php"); 
+declare(strict_types=1);
 
-?> 
-<html> 
+require __DIR__ . '/inc/bootstrap.php';
 
-<head> 
-<title>Vendetta</title> 
-<link rel="stylesheet" type="text/css" href="style.css"> 
+const POLL_MAX_KEUZES = 10;
 
-</head> 
+$user = require_login();
 
-<body> 
-<table align="center" width=100%> 
-  <tr><td class="subTitle"><b>Poll:</b></td></tr> 
-  <tr><td class="mainTxt"> 
+$melding = null;
+$type    = 'info';
 
-<?php 
-/* database verbinding */ 
+if (is_post()) {
+    csrf_check();
+    try {
+        $melding = stemmen($user, int_input('poll'), int_input('keuze'));
+        $type    = 'ok';
+    } catch (SpelFout $e) {
+        $melding = $e->getMessage();
+        $type    = 'fout';
+    }
+}
 
+$gevraagd = int_input('pollid');
 
-/* ip van de bezoeker bezoeker */ 
-if(isset($HTTP_SERVER_VARS['HTTP_X_FORWARDED_FOR'])) { 
-    $ip = $HTTP_SERVER_VARS['HTTP_X_FORWARDED_FOR']; 
-} else { 
-    $ip = $HTTP_SERVER_VARS['REMOTE_ADDR']; 
-} 
+$poll = $gevraagd > 0
+    ? q_row('SELECT * FROM `poll` WHERE `id` = ?', [$gevraagd])
+    : q_row('SELECT * FROM `poll` WHERE `actief` = 1 ORDER BY `id` DESC LIMIT 1');
 
-/* pollid, als er geen id is opgegeven wordt id 0 gebruikt en dan wordt de nieuwste actieve poll weergegeven */ 
-if(isset($HTTP_GET_VARS['pollid']) && is_numeric($HTTP_GET_VARS['pollid'])) { 
-    $pollid = $HTTP_GET_VARS['pollid']; 
-} else { 
-    $pollid = 0; 
-} 
+layout_header('Poll');
 
+if ($melding !== null) {
+    notice(e($melding), $type);
+}
 
-class wmpoll { 
-    function wmpoll($bezoeker) { 
-        $this->bezoeker = $bezoeker; 
-    } 
+if ($poll === null) {
+    panel_open('Poll');
+    echo '<p>Er is op dit moment geen poll.</p>';
+    panel_close();
+} else {
+    toon_poll($user, $poll);
+}
 
-    function htmlparse($string){ 
-        return htmlentities(trim($string), ENT_QUOTES); 
-    } 
+toon_archief($poll['id'] ?? 0);
 
-    function stem($vote) { 
-        if(is_numeric($vote) && $vote >= 1 && $vote <= 10) { 
-            $id = $this->list['id']; 
-            $gestemd = $this->list['gestemd']."(".$this->bezoeker.",".$vote.")"; 
-            $sql = @mysql_query("UPDATE poll SET antwoord".$vote."=antwoord".$vote."+1, gestemd='".$gestemd."' WHERE id='$id'"); 
-            if($sql) { 
-                $this->list["antwoord".$vote]++; 
-            } 
-        } 
-    } 
+layout_footer();
 
-    function archief($aantal=0) { 
-        GLOBAL $HTTP_SERVER_VARS; 
-        if($aantal != 0) { 
-            $limit = " LIMIT ".$aantal; 
-        } else { 
-            $limit = ""; 
-        } 
-        $sql = @mysql_query("SELECT id, vraag FROM poll ORDER BY id DESC".$limit); 
-        echo "<select name=\"pollarchief\" onChange=\"window.location=('".$HTTP_SERVER_VARS['PHP_SELF']."?pollid='+this.options[this.selectedIndex].value)\">\n<option value=\"\">Archief</option>/n"; 
-        while($list = @mysql_fetch_assoc($sql)) { 
-            echo "<option value=\"".$list['id']."\">".$this->htmlparse($list['vraag'])."</option>\n"; 
-        } 
-        echo "</select>\n"; 
-    } 
+// ==========================================================================
 
-    function toon($id=0, $magstemmen=1, $balkje=200, $kleur1="#A9A9A9", $kleur2="#FF9900") { 
-        GLOBAL $HTTP_POST_VARS, $HTTP_SERVER_VARS; 
-        if($id == 0) { 
-            $sql = @mysql_query("SELECT * FROM poll WHERE actief='1' ORDER BY id DESC LIMIT 1"); 
-        } else { 
-            $id = addslashes($id); 
-            $sql = @mysql_query("SELECT * FROM poll WHERE id='$id'"); 
-        } 
+/** De keuzes van een poll als [nummer => ['tekst' => ..., 'stemmen' => ...]]. */
+function poll_keuzes(array $poll): array
+{
+    $keuzes = [];
 
-        // bestaat poll? 
-        $bestaat = @mysql_num_rows($sql); 
-        if($bestaat == 0 && $id == 0) { 
-            echo "Error: er is geen actieve poll!\n"; 
-        } elseif($bestaat == 0) { 
-            echo "Error: deze poll bestaat niet!\n"; 
-        } else { 
+    for ($i = 1; $i <= POLL_MAX_KEUZES; $i++) {
+        $tekst = trim((string) ($poll['keuze' . $i] ?? ''));
 
-            $this->list = @mysql_fetch_assoc($sql); 
+        if ($tekst !== '') {
+            $keuzes[$i] = [
+                'tekst'   => $tekst,
+                'stemmen' => (int) ($poll['antwoord' . $i] ?? 0),
+            ];
+        }
+    }
 
-            // mag de bezoeker stemmen? 
-            if($magstemmen == 0 || preg_match("/\(".$this->bezoeker.",/", $this->list['gestemd'])) { 
-                $magstemmen = 0; 
-            } else { 
-                $magstemmen = 1; 
-            } 
+    return $keuzes;
+}
 
-            // poll type 
-            if($this->list['actief'] == 1) { 
-                $type = "Actief"; 
-            } else { 
-                $type = "Archief"; 
-                $magstemmen = 0; 
-            } 
+/** @throws SpelFout */
+function stemmen(array $user, int $pollId, int $keuze): string
+{
+    if ($keuze < 1 || $keuze > POLL_MAX_KEUZES) {
+        throw new SpelFout('Kies een geldig antwoord.');
+    }
 
-            // stem opslaan 
-            if($magstemmen == 1 && isset($HTTP_POST_VARS['pollvote']) && isset($HTTP_POST_VARS['pollid']) && $HTTP_POST_VARS['pollid'] == $this->list['id']) { 
-                $this->stem($HTTP_POST_VARS['pollvote']); 
-                $magstemmen = 0; 
-            } 
+    return db_transaction(static function () use ($user, $pollId, $keuze): string {
+        $poll = q_row('SELECT * FROM `poll` WHERE `id` = ? FOR UPDATE', [$pollId]);
 
-            // totaal aantal stemmen 
-            $totaal = 0; 
-            for($x=1; $x<=10; $x++) { 
-                $totaal = $totaal + $this->list["antwoord".$x]; 
-            } 
+        if ($poll === null) {
+            throw new SpelFout('Die poll bestaat niet.');
+        }
+        if ((int) $poll['actief'] !== 1) {
+            throw new SpelFout('Deze poll is gesloten.');
+        }
+        if (!isset(poll_keuzes($poll)[$keuze])) {
+            throw new SpelFout('Dat antwoord staat niet bij deze poll.');
+        }
 
-            // poll weergeven 
-            if($magstemmen == 1) { 
-                echo "<form action=\"".$HTTP_SERVER_VARS['REQUEST_URI']."\" method=\"POST\">\n<input type=\"hidden\" name=\"pollid\" value=\"".$this->list['id']."\">\n"; 
-            } 
-            echo "<b>".$this->htmlparse($this->list['vraag'])."</b><br>\nStemmen: ".$totaal."<br>\nDatum: ".date("d-m-Y", $this->list['datum'])."<br>\nType: ".$type."<br><br>\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\">\n"; 
+        // De sleutel op (poll_id, login) laat maar één stem per speler toe.
+        $nieuw = q_count(
+            'INSERT IGNORE INTO `poll_stemmen` (`poll_id`, `login`, `keuze`) VALUES (?, ?, ?)',
+            [$pollId, $user['login'], $keuze]
+        );
 
-            for($x=1; $x<=10; $x++) { 
-                if(!empty($this->list["keuze".$x])) { 
-                    // resultaten berekenen 
-                    if($totaal != 0) { 
-                        $procent = round(($this->list["antwoord".$x]/$totaal)*100); 
-                        $balk = ($this->list["antwoord".$x]/$totaal)*$balkje; 
-                    } else { 
-                        $procent = 0; 
-                        $balk = 0; 
-                    } 
+        if ($nieuw === 0) {
+            throw new SpelFout('Je hebt al gestemd op deze poll.');
+        }
 
-                    echo "<tr>"; 
-                    if($magstemmen == 1) { 
-                        echo "<td><input type=\"radio\" name=\"pollvote\" value=\"".$x."\"></td>"; 
-                    } 
-                    echo "<td><b>".$this->htmlparse($this->list["keuze".$x])."</b>&nbsp;&nbsp;&nbsp;</td><td>".$procent." %&nbsp;&nbsp;&nbsp;</td><td>\n<table width=\"".$balkje."\" height=\"10\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"border: 1px solid ".$kleur1.";\"><tr><td width=\"".$balk."\" bgcolor=\"".$kleur2."\"></td><td width=\"".($balkje-$balk)."\"></td></tr></table>\n</td></tr>\n"; 
-                } 
-            } 
+        // De kolomnaam komt uit een gecontroleerd getal, niet uit invoer.
+        $kolom = 'antwoord' . $keuze;
+        q("UPDATE `poll` SET `{$kolom}` = `{$kolom}` + 1 WHERE `id` = ?", [$pollId]);
 
-            echo "</table>\n"; 
+        return 'Je stem is geteld.';
+    });
+}
 
-            if($magstemmen == 1) { 
-                echo "<input type=\"submit\" name=\"submit\" value=\"Stem\">\n</form>\n"; 
-            } 
-        } 
-    } 
-} 
+// ==========================================================================
 
+function toon_poll(array $user, array $poll): void
+{
+    $keuzes = poll_keuzes($poll);
+    $totaal = array_sum(array_column($keuzes, 'stemmen'));
+    $actief = (int) $poll['actief'] === 1;
 
-/* class starten 
-params: 
-1: kenmerk van de bezoeker, dus bijv. ip of userid. Let op: als de bezoeker heeft gestemd zal dit kenmerk in de database worden gezet zodat de bezoeker niet nog een keer kan stemmen */ 
-$poll = new wmpoll($ip); 
+    $eigenStem = q_val('SELECT `keuze` FROM `poll_stemmen` WHERE `poll_id` = ? AND `login` = ?',
+        [$poll['id'], $user['login']]);
 
-/* poll weergeven 
-params: 
-1: pollid, 0: nieuwste actieve poll 
-2: mag de bezoekers stemmen, 1: ja 0: nee 
-3: breedte van de balkjes, in pixels 
-4: lijnkleur van de balkjes 
-5: vulkleur van de balkjes */ 
-$poll->toon($pollid, 1, 300, "#333333", "#333333"); 
+    panel_open($poll['vraag'] === '' ? 'Poll' : (string) $poll['vraag']);
 
-/* archief weergeven 
-params: 
-1: hoeveel pollen maximaal weergeven, 0: geen limiet */ 
+    if ($keuzes === []) {
+        echo '<p>Bij deze poll staan geen antwoorden.</p>';
+        panel_close();
+        return;
+    }
 
-echo "<br><br>\n<b>Archief:</b><br>\n"; 
-$poll->archief(0); 
-?> 
+    // Stemmen mag alleen als de poll open is en je nog niet gestemd hebt.
+    if ($actief && $eigenStem === null) {
+        echo '<form method="post">' . csrf_field();
+        echo '<input type="hidden" name="poll" value="' . (int) $poll['id'] . '">';
 
-  </td></tr> 
-</table> 
-</body> 
-</html>
+        foreach ($keuzes as $nr => $keuze) {
+            echo '<p><label><input type="radio" name="keuze" value="' . $nr . '" required> '
+               . e($keuze['tekst']) . '</label></p>';
+        }
+
+        echo '<p><button type="submit">Stem</button></p></form>';
+        echo '<p class="uitleg">Je kunt maar één keer stemmen.</p>';
+    } else {
+        toon_uitslag($keuzes, $totaal, $eigenStem === null ? null : (int) $eigenStem);
+
+        if (!$actief) {
+            echo '<p class="uitleg">Deze poll is gesloten.</p>';
+        }
+    }
+
+    panel_close();
+}
+
+function toon_uitslag(array $keuzes, int $totaal, ?int $eigenStem): void
+{
+    echo '<div class="tabelwikkel"><table class="lijst">';
+    echo '<thead><tr><th>Antwoord</th><th class="getal">Stemmen</th><th>Aandeel</th></tr></thead><tbody>';
+
+    foreach ($keuzes as $nr => $keuze) {
+        $deel = $totaal > 0 ? round($keuze['stemmen'] / $totaal * 100) : 0;
+
+        echo '<tr>';
+        echo '<td>' . e($keuze['tekst'])
+           . ($nr === $eigenStem ? ' <small>(jouw stem)</small>' : '') . '</td>';
+        echo '<td class="getal">' . num($keuze['stemmen']) . '</td>';
+        echo '<td><div class="balk"><span style="width:' . $deel . '%"></span></div>'
+           . '<small>' . $deel . '%</small></td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+    echo '<p class="uitleg">' . num($totaal) . ' ' . ($totaal === 1 ? 'stem' : 'stemmen')
+       . ' in totaal.</p>';
+}
+
+function toon_archief(int $huidig): void
+{
+    $oudere = q_all(
+        'SELECT `id`, `vraag`, `actief` FROM `poll` WHERE `id` <> ? ORDER BY `id` DESC LIMIT 15',
+        [$huidig]
+    );
+
+    if ($oudere === []) {
+        return;
+    }
+
+    panel_open('Eerdere polls');
+    echo '<ul>';
+    foreach ($oudere as $rij) {
+        echo '<li><a href="' . e(url('poll.php?pollid=' . (int) $rij['id'])) . '">'
+           . e((string) $rij['vraag']) . '</a>'
+           . ((int) $rij['actief'] === 1 ? ' <small>(loopt nog)</small>' : '') . '</li>';
+    }
+    echo '</ul>';
+    panel_close();
+}
