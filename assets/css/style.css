@@ -971,15 +971,27 @@ table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
         position: fixed;
         top: var(--kopbalk);
         left: 0;
-        bottom: 0;
         z-index: 26;
         width: min(84vw, 20rem);
         max-height: none;
+
+        /* Met bottom:0 liep de la door onder de adresbalk van de telefoon, en
+           was het laatste stuk van het menu niet te bereiken. Een vaste hoogte
+           in dvh volgt de balken die in- en uitschuiven; vh is de terugval voor
+           browsers die dvh nog niet kennen. */
+        height: calc(100vh - var(--kopbalk));
+        height: calc(100dvh - var(--kopbalk));
+
         padding: .75rem;
-        padding-bottom: calc(var(--onderbalk) + env(safe-area-inset-bottom, 0px) + 1rem);
+        /* Onderaan ruimte voor de onderbalk, die hier overheen ligt. */
+        padding-bottom: calc(var(--onderbalk) + env(safe-area-inset-bottom, 0px) + 1.5rem);
         background: var(--zwart);
         border-right: 1px solid var(--rand);
+
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+
         transform: translateX(-100%);
         transition: transform .2s ease;
     }
@@ -987,6 +999,9 @@ table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
     /* De overlay begint ook onder de kopbalk, zodat de hamburger bereikbaar
        blijft om het menu weer te sluiten. */
     .menu-overlay { top: var(--kopbalk); }
+
+    /* De la mag zelf scrollen, ook als de pagina eronder vastgezet is. */
+    .sidebar.open { touch-action: pan-y; }
     .sidebar.open { transform: translateX(0); }
     .menu-overlay.open { display: block; }
 
