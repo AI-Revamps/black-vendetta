@@ -125,9 +125,19 @@ function menu_groups(array $user): array
 /**
  * Kerncijfers voor het statuspaneel: één query in plaats van dertien
  * tabelscans zoals de oude right.php deed.
+ *
+ * De uitkomst wordt per verzoek onthouden. De onderbalk, de statusstrook en
+ * het statuspaneel vragen er alle drie om; zonder dit geheugen zouden dat drie
+ * dezelfde queries zijn.
  */
 function status_summary(array $user): array
 {
+    static $onthouden = null;
+
+    if ($onthouden !== null) {
+        return $onthouden;
+    }
+
     $rij = q_row(
         "SELECT
             (SELECT COUNT(*) + 1 FROM `users`
@@ -142,12 +152,27 @@ function status_summary(array $user): array
         ['xp' => (int) $user['xp'], 'login' => $user['login']]
     ) ?? [];
 
-    return [
+    $onthouden = [
         'positie'   => (int) ($rij['positie'] ?? 0),
         'spelers'   => (int) ($rij['spelers'] ?? 0),
         'ongelezen' => (int) ($rij['ongelezen'] ?? 0),
         'online'    => (int) ($rij['online'] ?? 0),
     ];
+
+    return $onthouden;
+}
+
+/**
+ * Pad naar een logobestand, of null als het er niet is.
+ *
+ * De logobestanden worden los aangeleverd. Ontbreken ze, dan valt de kopbalk
+ * terug op alleen de tekstnaam in plaats van een gebroken plaatje te tonen.
+ */
+function logo_url(string $bestand): ?string
+{
+    return is_file(BV_ROOT . '/assets/img/' . $bestand)
+        ? url('assets/img/' . $bestand)
+        : null;
 }
 
 // --- Opbouw van de pagina ---------------------------------------------------
@@ -165,18 +190,32 @@ function layout_header(string $titel = ''): void
     echo '<meta charset="utf-8">' . "\n";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
     echo '<title>' . e($volTitel) . "</title>\n";
-    echo '<link rel="stylesheet" href="' . e(url('assets/css/style.css')) . '?v=2">' . "\n";
-    echo '<link rel="icon" href="' . e(url('favicon.ico')) . '">' . "\n";
-    echo "</head>\n<body>\n";
+    echo '<link rel="stylesheet" href="' . e(url('assets/css/style.css')) . '?v=3">' . "\n";
 
-    // Zijmenu en statuspaneel horen bij een levende, ingelogde speler. Zijn ze
-    // er niet, dan moet het raster één kolom zijn in plaats van drie — anders
-    // valt de inhoud in de smalle menukolom.
+    $favicon = logo_url('favicon.png');
+    echo '<link rel="icon" href="' . e($favicon ?? url('favicon.ico')) . '">' . "\n";
+    echo '<meta name="theme-color" content="#0a1120">' . "\n";
+    echo "</head>\n";
+
+    // Zijmenu, statuspaneel en onderbalk horen bij een levende, ingelogde
+    // speler. Zijn ze er niet, dan moet het raster één kolom zijn in plaats
+    // van drie — anders valt de inhoud in de smalle menukolom.
     $metZijkanten = $user !== null && !is_dead();
+
+    // De klasse op body stuurt de mobiele weergave: alleen in spelmodus wordt
+    // de bovennavigatie ingeruild voor de onderbalk.
+    echo '<body' . ($metZijkanten ? ' class="spelmodus"' : '') . ">\n";
 
     // --- Kopbalk ---
     echo '<header class="topbar">' . "\n";
-    echo '<a class="brand" href="' . e(url('home.php')) . '">' . e($siteNaam) . "</a>\n";
+
+    $merk = logo_url('logo-mark.png');
+    echo '<a class="brand" href="' . e(url($user !== null ? 'home.php' : 'index.php')) . '">';
+    if ($merk !== null) {
+        echo '<img src="' . e($merk) . '" alt="" width="36" height="36">';
+    }
+    echo '<span>' . e($siteNaam) . "</span></a>\n";
+
     echo '<nav class="topnav">';
     if ($user !== null) {
         $top = [
@@ -216,6 +255,12 @@ function layout_header(string $titel = ''): void
     }
     echo "</header>\n";
 
+    // --- Statusstrook (alleen op smalle schermen zichtbaar) ---
+    if ($metZijkanten) {
+        status_strook($user);
+        echo '<button class="menu-overlay" type="button" hidden aria-label="Menu sluiten"></button>' . "\n";
+    }
+
     echo '<div class="layout' . ($metZijkanten ? '' : ' alleen-inhoud') . '">' . "\n";
 
     // --- Zijmenu ---
@@ -229,9 +274,27 @@ function layout_header(string $titel = ''): void
             }
             echo "</ul>\n</details>\n";
         }
+
+        // Op een telefoon staat de bovennavigatie niet in beeld; zonder deze
+        // groep zouden forum, nieuws en de spelregels daar onbereikbaar zijn.
+        // Op een breed scherm is hij overbodig en dus verborgen.
+        echo '<details class="menugroep alleen-mobiel" open><summary>Meer</summary>' . "\n<ul>\n";
+        foreach ($top as $bestand => $label) {
+            $klasse = $bestand === $huidig ? ' class="actief"' : '';
+            echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>' . e($label) . "</a></li>\n";
+        }
+        echo '<li><a href="' . e(url('premium.php')) . "\">Premium</a></li>\n";
+        echo "</ul>\n</details>\n";
+
         echo '<form class="zoekform" method="get" action="' . e(url('profile.php')) . '">'
            . '<input type="search" name="login" maxlength="16" placeholder="Zoek speler" aria-label="Zoek speler">'
            . '<button type="submit">Ga</button></form>' . "\n";
+
+        // Uitloggen hoort ook in de la; in de kopbalk is hij op een telefoon weg.
+        echo '<form class="alleen-mobiel uitlog-la" method="post" action="'
+           . e(url('logout.php')) . '">' . csrf_field()
+           . '<button type="submit">Uitloggen</button></form>' . "\n";
+
         echo "</nav>\n";
     }
 
@@ -243,13 +306,15 @@ function layout_header(string $titel = ''): void
     }
 }
 
-/** Statuspaneel rechts en de afsluiting van de pagina. */
+/** Statuspaneel rechts, onderbalk en de afsluiting van de pagina. */
 function layout_footer(): void
 {
     echo "</main>\n";
 
-    $user = current_user();
-    if ($user !== null && !is_dead()) {
+    $user         = current_user();
+    $metZijkanten = $user !== null && !is_dead();
+
+    if ($metZijkanten) {
         status_panel($user);
     }
 
@@ -259,8 +324,89 @@ function layout_footer(): void
        . ' &middot; <a href="' . e(url('help.php')) . '">Spelregels</a>'
        . ' &middot; <a href="' . e(url('tip.php')) . '">Hulp nodig?</a></footer>' . "\n";
 
-    echo '<script src="' . e(url('assets/js/app.js')) . '?v=2" defer></script>' . "\n";
+    // De onderbalk staat vast onderaan het scherm en vervangt op een telefoon
+    // de bovennavigatie. Hij komt na de voet zodat hij in de leesvolgorde niet
+    // tussen de inhoud valt.
+    if ($metZijkanten) {
+        onderbalk($user);
+    }
+
+    echo '<script src="' . e(url('assets/js/app.js')) . '?v=3" defer></script>' . "\n";
     echo "</body>\n</html>\n";
+}
+
+/** Groen, oranje of rood, afhankelijk van de gezondheid. */
+function health_klasse(int $health): string
+{
+    return match (true) {
+        $health >= 60 => 'vol',
+        $health >= 25 => 'middel',
+        default       => 'laag',
+    };
+}
+
+/**
+ * Smalle strook onder de kopbalk met de cijfers waar een speler het vaakst
+ * naar kijkt. Alleen zichtbaar op smalle schermen; op een breed scherm doet
+ * het statuspaneel rechts dit werk.
+ */
+function status_strook(array $user): void
+{
+    $health = max(0, min(100, (int) $user['health']));
+
+    echo '<div class="statusstrook">' . "\n";
+
+    echo '<div class="chip"><b>Gezondheid</b><span>' . $health . '%</span>'
+       . '<div class="balk balk-health ' . health_klasse($health) . '">'
+       . '<span style="width:' . $health . '%"></span></div></div>';
+
+    echo '<div class="chip"><b>Op zak</b><span>' . money((int) $user['zak']) . '</span></div>';
+    echo '<div class="chip"><b>Bank</b><span>' . money((int) $user['bank']) . '</span></div>';
+    echo '<div class="chip"><b>Kogels</b><span>' . num((int) $user['kogels']) . '</span></div>';
+    echo '<div class="chip"><b>Diamanten</b><span>'
+       . num((int) ($user['diamanten'] ?? 0)) . '</span></div>';
+
+    echo "\n</div>\n";
+}
+
+/**
+ * Vaste balk onderaan op een telefoon: de vier plekken waar je het vaakst
+ * heen gaat, plus een knop die het menu openschuift.
+ */
+function onderbalk(array $user): void
+{
+    $huidig = current_page();
+    $stat   = status_summary($user);
+
+    $tabs = [
+        ['home.php',    'Status',   '&#9679;'],
+        ['crime.php',   'Misdaad',  '&#9876;'],
+        ['shop.php',    'Winkel',   '&#128176;'],
+        ['message.php', 'Berichten', '&#9993;'],
+    ];
+
+    echo '<nav class="onderbalk" aria-label="Snelmenu">' . "\n<ul>\n";
+
+    foreach ($tabs as [$bestand, $label, $teken]) {
+        $klasse = $bestand === $huidig ? ' class="actief"' : '';
+
+        echo '<li><a href="' . e(url($bestand)) . '"' . $klasse . '>';
+        echo '<span class="teken" aria-hidden="true">' . $teken . '</span>';
+        echo '<span>' . e($label) . '</span>';
+
+        if ($bestand === 'message.php' && $stat['ongelezen'] > 0) {
+            echo '<span class="bolletje">' . num(min(99, $stat['ongelezen'])) . '</span>';
+        }
+
+        echo "</a></li>\n";
+    }
+
+    echo '<li><button class="menu-toggle-onder" type="button" aria-controls="zijmenu" '
+       . 'aria-expanded="false">'
+       . '<span class="teken" aria-hidden="true">&#9776;</span><span>Menu</span>'
+       . "</button></li>\n";
+
+    echo "</ul>\n</nav>\n";
 }
 
 /** Het rechterpaneel met de kerncijfers van de speler. */
@@ -283,22 +429,31 @@ function status_panel(array $user): void
         echo '<p class="waarschuwing">Je zit vast: nog ' . e(duration($cel['resterend'])) . '</p>' . "\n";
     }
 
+    // Gezondheid als balk: in één oogopslag zie je of je naar de bloedbank moet.
+    $health = max(0, min(100, (int) $user['health']));
+
+    echo '<div class="balk balk-health ' . health_klasse($health)
+       . '" role="img" aria-label="Gezondheid: ' . $health . ' procent">'
+       . '<span style="width:' . $health . '%"></span></div>' . "\n";
+    echo '<p class="balklabel">' . $health . '% gezondheid</p>' . "\n";
+
+    // Geld en kogels krijgen nadruk; daar kijkt een speler het vaakst naar.
     $regels = [
-        'Op zak'     => money((int) $user['zak']),
-        'Bank'       => money((int) $user['bank']),
-        'Kogels'     => num((int) $user['kogels']),
-        'Diamanten'  => num((int) ($user['diamanten'] ?? 0)),
-        'Gezondheid' => (int) $user['health'] . '%',
-        'Energie'    => num((float) $user['energie'], 1) . '%',
-        'Moordervaring' => num((float) $user['se'], 1) . '%',
-        'Stad'       => e((string) $user['stad']),
-        'Familie'    => $user['famillie'] !== '' ? e((string) $user['famillie']) : 'Geen',
-        'Positie'    => '#' . num($stat['positie']) . ' van ' . num($stat['spelers']),
+        ['Op zak',        money((int) $user['zak']), true],
+        ['Bank',          money((int) $user['bank']), true],
+        ['Kogels',        num((int) $user['kogels']), true],
+        ['Diamanten',     num((int) ($user['diamanten'] ?? 0)), false],
+        ['Energie',       num((float) $user['energie'], 1) . '%', false],
+        ['Moordervaring', num((float) $user['se'], 1) . '%', false],
+        ['Stad',          e((string) $user['stad']), false],
+        ['Familie',       $user['famillie'] !== '' ? e((string) $user['famillie']) : 'Geen', false],
+        ['Positie',       '#' . num($stat['positie']) . ' van ' . num($stat['spelers']), false],
     ];
 
     echo "<dl>\n";
-    foreach ($regels as $label => $waarde) {
-        echo '<dt>' . e($label) . '</dt><dd>' . $waarde . "</dd>\n";
+    foreach ($regels as [$label, $waarde, $nadruk]) {
+        echo '<dt>' . e($label) . '</dt>'
+           . '<dd' . ($nadruk ? ' class="nadruk"' : '') . '>' . $waarde . "</dd>\n";
     }
     echo "</dl>\n";
 
@@ -318,10 +473,19 @@ function status_panel(array $user): void
 
 // --- Bouwstenen voor in de inhoud -------------------------------------------
 
-/** Open een kader met een titel. */
-function panel_open(string $titel): void
+/**
+ * Open een kader met een titel.
+ *
+ * De titel wordt geëscaped, dus HTML werkt hier niet. Wil je ergens naartoe
+ * kunnen linken, geef dan $id mee; dat wordt een anker op het kader zelf.
+ * Eerder werd daarvoor een `<a id="...">` in de titel gezet, en dat kwam als
+ * platte tekst in beeld.
+ */
+function panel_open(string $titel, string $id = ''): void
 {
-    echo '<section class="paneel"><h1>' . e($titel) . '</h1><div class="paneelinhoud">' . "\n";
+    echo '<section class="paneel"'
+       . ($id !== '' ? ' id="' . e($id) . '"' : '')
+       . '><h1>' . e($titel) . '</h1><div class="paneelinhoud">' . "\n";
 }
 
 function panel_close(): void

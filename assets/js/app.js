@@ -4,19 +4,86 @@
 (function () {
     'use strict';
 
-    // Menuknop op smalle schermen.
-    var knop = document.querySelector('.menu-toggle');
-    var menu = document.getElementById('zijmenu');
+    // --- Menu-la op smalle schermen -------------------------------------
+    //
+    // Twee knoppen openen hetzelfde menu: die in de kopbalk en die in de
+    // onderbalk. De overlay erachter vangt een klik naast het menu op.
 
-    if (knop && menu) {
-        knop.addEventListener('click', function () {
-            var open = menu.classList.toggle('open');
+    var menu    = document.getElementById('zijmenu');
+    var overlay = document.querySelector('.menu-overlay');
+    var knoppen = document.querySelectorAll('.menu-toggle, .menu-toggle-onder');
+
+    function zetMenu(open) {
+        if (!menu) { return; }
+
+        menu.classList.toggle('open', open);
+
+        if (overlay) {
+            overlay.classList.toggle('open', open);
+            overlay.hidden = !open;
+        }
+
+        knoppen.forEach(function (knop) {
             knop.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        // Achtergrond niet mee laten scrollen zolang de la openstaat.
+        document.body.style.overflow = open ? 'hidden' : '';
+    }
+
+    if (menu && knoppen.length > 0) {
+        knoppen.forEach(function (knop) {
+            knop.addEventListener('click', function () {
+                zetMenu(!menu.classList.contains('open'));
+            });
+        });
+
+        if (overlay) {
+            overlay.addEventListener('click', function () { zetMenu(false); });
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && menu.classList.contains('open')) {
+                zetMenu(false);
+            }
+        });
+
+        // Een link aanklikken sluit de la; anders blijft hij openstaan
+        // terwijl de nieuwe pagina eronder laadt.
+        menu.addEventListener('click', function (e) {
+            if (e.target.closest('a')) { zetMenu(false); }
         });
     }
 
-    // Aftellers: elk element met data-tot="<unix-tijd>" telt af naar nul en
-    // laadt de pagina daarna één keer opnieuw, zodat de knop weer werkt.
+    // --- Schaduw bij tabellen die verder doorlopen -----------------------
+    //
+    // Een tabel die breder is dan het scherm scrollt horizontaal, maar dat is
+    // niet te zien. De schaduw rechts laat zien dát er meer staat en verdwijnt
+    // zodra je aan het eind bent.
+
+    var wikkels = document.querySelectorAll('.tabelwikkel');
+
+    function schaduw(wikkel) {
+        var meer = wikkel.scrollWidth - wikkel.clientWidth - wikkel.scrollLeft > 4;
+        wikkel.classList.toggle('meer-rechts', meer);
+    }
+
+    wikkels.forEach(function (wikkel) {
+        schaduw(wikkel);
+        wikkel.addEventListener('scroll', function () { schaduw(wikkel); }, { passive: true });
+    });
+
+    if (wikkels.length > 0) {
+        window.addEventListener('resize', function () {
+            wikkels.forEach(schaduw);
+        }, { passive: true });
+    }
+
+    // --- Aftellers -------------------------------------------------------
+    //
+    // Elk element met data-tot="<unix-tijd>" telt af naar nul en laadt de
+    // pagina daarna één keer opnieuw, zodat de knop weer werkt.
+
     var tellers = document.querySelectorAll('[data-tot]');
     if (tellers.length === 0) {
         return;

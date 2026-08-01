@@ -1,81 +1,135 @@
 /* Black Vendetta - opmaak
-   Donker thema met oranje accent, in de lijn van de oorspronkelijke game.
+   Donker thema met blauw accent, afgeleid van het logo: het marineblauw van
+   het pak, het cyaan van de hoedband, wit voor tekst.
    Geen framework: alleen CSS-grid en flexbox. */
 
 :root {
-    --zwart:      #0d0d0d;
-    --paneel:     #1a1a1a;
-    --paneel-op:  #242424;
-    --rand:       #383838;
-    --tekst:      #d8d8d8;
-    --tekst-dof:  #8a8a8a;
-    --accent:     #ff9900;
-    --accent-dof: #b36b00;
-    --goed:       #4caf50;
-    --fout:       #e05252;
-    --radius:     4px;
+    /* Blauw uit het logo */
+    --accent:      #3ba2f0;   /* links, koppen, actieve items */
+    --accent-fel:  #6ec8ff;   /* hover en nadruk: het cyaan uit de hoedband */
+    --accent-dof:  #1a5f9e;   /* randen en verlopen */
+    --accent-diep: #0f2f5e;   /* achtergrond van actieve vlakken */
+
+    /* Achtergronden: blauw-zwart in plaats van neutraal grijs */
+    --zwart:      #070b12;
+    --paneel:     #0f1724;
+    --paneel-op:  #16202f;
+    --paneel-kop: #142033;
+    --rand:       #22304a;
+    --rand-zacht: #1a2537;
+
+    --tekst:      #dde5f0;
+    --tekst-dof:  #8fa0b8;
+
+    --goed:       #35c17a;
+    --fout:       #e0596b;
+    --waarschuw:  #e8a33d;
+
+    --radius:     6px;
+    --radius-s:   4px;
+
+    /* Hoogte van de vaste balken; gebruikt om ruimte vrij te houden. */
+    --kopbalk:    54px;
+    --onderbalk:  58px;
 }
 
 * { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
 
 body {
     margin: 0;
     background: var(--zwart);
     color: var(--tekst);
-    font: 14px/1.55 "Segoe UI", Roboto, system-ui, sans-serif;
+    font: 15px/1.6 "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
 }
 
 a { color: var(--accent); text-decoration: none; }
-a:hover, a:focus-visible { text-decoration: underline; }
+a:hover { color: var(--accent-fel); text-decoration: underline; }
 
 h1, h2, h3 { font-weight: 600; line-height: 1.25; }
+h3 { font-size: .95rem; margin: 1.4rem 0 .5rem; color: var(--tekst); }
+
+/* Overal een zichtbare focus, ook op de knoppen die er geen hadden. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--accent-fel);
+    outline-offset: 2px;
+    border-radius: var(--radius-s);
+}
 
 /* --- Kopbalk --------------------------------------------------------- */
 
 .topbar {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: .75rem;
     padding: 0 1rem;
-    min-height: 52px;
-    background: linear-gradient(#232323, #141414);
+    min-height: var(--kopbalk);
+    background: linear-gradient(180deg, #14243c, #0a1120);
     border-bottom: 1px solid var(--rand);
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 30;
 }
 
 .brand {
-    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: 1.02rem;
     font-weight: 700;
-    letter-spacing: .06em;
+    letter-spacing: .05em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--tekst);
     white-space: nowrap;
 }
-.brand:hover { text-decoration: none; color: #ffb340; }
+.brand:hover { text-decoration: none; color: var(--accent-fel); }
+
+.brand img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-diep);
+    object-fit: cover;
+    flex: none;
+}
 
 .topnav {
     display: flex;
     align-items: center;
-    gap: .25rem;
+    gap: .15rem;
     margin-left: auto;
     flex-wrap: wrap;
 }
 
 .topnav a,
 .topnav button {
-    display: block;
-    padding: .4rem .7rem;
-    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0 .8rem;
+    border-radius: var(--radius-s);
     color: var(--tekst);
     font-size: .875rem;
 }
 .topnav a:hover,
-.topnav button:hover { background: var(--paneel-op); color: var(--accent); text-decoration: none; }
-.topnav a.actief { background: var(--paneel-op); color: var(--accent); }
+.topnav button:hover {
+    background: rgba(59, 162, 240, .14);
+    color: var(--accent-fel);
+    text-decoration: none;
+}
+.topnav a.actief {
+    background: rgba(59, 162, 240, .18);
+    color: var(--accent-fel);
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
 
-.logout-form { display: inline; margin: 0; }
+.logout-form { display: inline-flex; margin: 0; }
 .logout-form button {
     background: none;
     border: 0;
@@ -87,11 +141,11 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
     display: none;
     background: none;
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     color: var(--tekst);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     line-height: 1;
-    padding: .35rem .6rem;
+    padding: .4rem .7rem;
     cursor: pointer;
 }
 
@@ -99,17 +153,17 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 
 .layout {
     display: grid;
-    grid-template-columns: 190px minmax(0, 1fr) 230px;
+    grid-template-columns: 200px minmax(0, 1fr) 240px;
     gap: 1rem;
     align-items: start;
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 1rem;
 }
 
 /*
  * Uitgelogd zijn er geen zijmenu en geen statuspaneel. Zonder deze regel
- * belandde de inhoud in de eerste kolom van 190 pixels en stond de hele
+ * belandde de inhoud in de eerste kolom van 200 pixels en stond de hele
  * pagina in een smalle strook links.
  */
 .layout.alleen-inhoud {
@@ -121,7 +175,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 
 .sidebar {
     position: sticky;
-    top: 68px;
+    top: calc(var(--kopbalk) + 14px);
     display: flex;
     flex-direction: column;
     gap: .4rem;
@@ -135,42 +189,61 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 }
 
 .menugroep > summary {
-    padding: .5rem .75rem;
-    background: linear-gradient(#2c2c2c, #1e1e1e);
+    padding: .6rem .8rem;
+    background: var(--paneel-kop);
     color: var(--accent);
     font-weight: 600;
-    font-size: .8rem;
+    font-size: .78rem;
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .06em;
     cursor: pointer;
     list-style: none;
 }
 .menugroep > summary::-webkit-details-marker { display: none; }
-.menugroep > summary::after { content: " ▾"; float: right; color: var(--tekst-dof); }
-.menugroep[open] > summary::after { content: " ▴"; }
+.menugroep > summary::after { content: "▾"; float: right; color: var(--tekst-dof); }
+.menugroep[open] > summary::after { content: "▴"; }
 
 .menugroep ul { margin: 0; padding: .25rem 0; list-style: none; }
 .menugroep li a {
-    display: block;
-    padding: .3rem .9rem;
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    padding: .25rem .9rem;
     color: var(--tekst);
-    font-size: .82rem;
+    font-size: .85rem;
     border-left: 2px solid transparent;
 }
 .menugroep li a:hover {
     background: var(--paneel-op);
-    color: var(--accent);
+    color: var(--accent-fel);
     border-left-color: var(--accent);
     text-decoration: none;
 }
 .menugroep li a.actief {
-    background: var(--paneel-op);
-    color: var(--accent);
+    background: var(--accent-diep);
+    color: var(--accent-fel);
     border-left-color: var(--accent);
 }
 
-.zoekform { display: flex; gap: .25rem; }
+.zoekform { display: flex; gap: .3rem; }
 .zoekform input { min-width: 0; flex: 1; }
+
+/* Onderdelen van de la die alleen op een telefoon nodig zijn, omdat de
+   bovennavigatie daar niet in beeld staat. */
+.alleen-mobiel { display: none; }
+.uitlog-la { margin-top: .4rem; }
+.uitlog-la button { width: 100%; }
+
+/* De overlay achter de la; alleen zichtbaar op smalle schermen. */
+.menu-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 15, .65);
+    z-index: 25;
+    border: 0;
+    padding: 0;
+}
 
 /* --- Inhoud ----------------------------------------------------------- */
 
@@ -186,41 +259,51 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 
 .paneel > h1 {
     margin: 0;
-    padding: .55rem 1rem;
-    background: linear-gradient(#2c2c2c, #1e1e1e);
+    padding: .65rem 1rem;
+    background: var(--paneel-kop);
     border-bottom: 1px solid var(--rand);
+    box-shadow: inset 0 2px 0 var(--accent);
     color: var(--accent);
     font-size: .9rem;
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .06em;
 }
 
-.paneelinhoud { padding: 1rem; }
+.paneelinhoud { padding: 1.1rem; }
 .paneelinhoud > :first-child { margin-top: 0; }
 .paneelinhoud > :last-child { margin-bottom: 0; }
+
+/* Inhoudsopgave, bv. bovenaan de spelregels. */
+ul.inhoud {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: .3rem .8rem;
+    margin: 0;
+    padding-left: 1.1rem;
+}
 
 /* --- Statuspaneel ------------------------------------------------------ */
 
 .statuspaneel {
     position: sticky;
-    top: 68px;
+    top: calc(var(--kopbalk) + 14px);
     background: var(--paneel);
     border: 1px solid var(--rand);
     border-radius: var(--radius);
-    padding: .9rem;
+    padding: 1rem;
 }
 
 .statuspaneel h2 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--accent);
     word-break: break-word;
 }
-.statuspaneel .rang { margin: .1rem 0 .7rem; color: var(--tekst-dof); font-size: .8rem; }
+.statuspaneel .rang { margin: .15rem 0 .8rem; color: var(--tekst-dof); font-size: .8rem; }
 
 .balk {
-    height: 7px;
-    background: #0a0a0a;
+    height: 8px;
+    background: #060a11;
     border: 1px solid var(--rand);
     border-radius: 99px;
     overflow: hidden;
@@ -228,23 +311,33 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 .balk span {
     display: block;
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-dof), var(--accent));
+    background: linear-gradient(90deg, var(--accent-dof), var(--accent-fel));
 }
-.balklabel { margin: .3rem 0 .8rem; font-size: .72rem; color: var(--tekst-dof); }
+.balklabel { margin: .35rem 0 .9rem; font-size: .72rem; color: var(--tekst-dof); }
+
+/* Gezondheid krijgt een kleur die bij de stand hoort. De klasse wordt in
+   inc/layout.php gezet; puur met CSS kan het niet, want een verloop rekt mee
+   met de breedte van de balk in plaats van met de schaal erachter. */
+.balk-health.vol    span { background: linear-gradient(90deg, #26935c, var(--goed)); }
+.balk-health.middel span { background: linear-gradient(90deg, #b87a1f, var(--waarschuw)); }
+.balk-health.laag   span { background: linear-gradient(90deg, #a53040, var(--fout)); }
 
 .statuspaneel dl {
     display: grid;
     grid-template-columns: auto auto;
-    gap: .2rem .5rem;
+    gap: .3rem .5rem;
     margin: 0;
-    font-size: .8rem;
+    font-size: .82rem;
 }
 .statuspaneel dt { color: var(--tekst-dof); }
 .statuspaneel dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Geld en kogels zijn waar een speler het vaakst naar kijkt. */
+.statuspaneel dd.nadruk { font-size: .95rem; font-weight: 600; color: var(--tekst); }
+
 .statuspaneel .online {
-    margin: .8rem 0 0;
-    padding-top: .6rem;
+    margin: .9rem 0 0;
+    padding-top: .7rem;
     border-top: 1px solid var(--rand);
     font-size: .75rem;
     color: var(--tekst-dof);
@@ -253,54 +346,161 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; }
 
 .waarschuwing {
     margin: .5rem 0;
-    padding: .4rem .6rem;
-    background: rgba(224, 82, 82, .12);
-    border-left: 3px solid var(--fout);
-    border-radius: var(--radius);
-    font-size: .78rem;
+    padding: .45rem .65rem;
+    background: rgba(232, 163, 61, .12);
+    border-left: 3px solid var(--waarschuw);
+    border-radius: var(--radius-s);
+    font-size: .8rem;
+    color: var(--waarschuw);
+}
+
+/* --- Mobiele statusstrook ---------------------------------------------- */
+/* Alleen zichtbaar onder 760px; zie de mediaregel onderaan. */
+
+.statusstrook {
+    display: none;
+    gap: .5rem;
+    padding: .5rem .75rem;
+    background: var(--paneel);
+    border-bottom: 1px solid var(--rand);
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: var(--kopbalk);
+    z-index: 20;
+}
+.statusstrook::-webkit-scrollbar { display: none; }
+
+.statusstrook .chip {
+    flex: none;
+    min-width: 5.5rem;
+    padding: .35rem .6rem;
+    background: var(--paneel-op);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius-s);
+    line-height: 1.3;
+}
+.statusstrook .chip b {
+    display: block;
+    font-size: .62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--tekst-dof);
+}
+.statusstrook .chip span {
+    font-size: .85rem;
+    font-variant-numeric: tabular-nums;
+}
+.statusstrook .chip .balk { margin-top: .3rem; height: 5px; }
+
+/* --- Onderbalk met tabs ------------------------------------------------- */
+
+.onderbalk {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 28;
+    background: linear-gradient(180deg, #0e1a2c, #080e18);
+    border-top: 1px solid var(--rand);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.onderbalk ul {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.onderbalk a,
+.onderbalk button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .15rem;
+    width: 100%;
+    min-height: var(--onderbalk);
+    padding: .3rem .2rem;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    color: var(--tekst-dof);
+    font: inherit;
+    font-size: .66rem;
+    cursor: pointer;
+    position: relative;
+}
+.onderbalk a:hover,
+.onderbalk button:hover { color: var(--accent-fel); text-decoration: none; background: none; }
+.onderbalk a.actief { color: var(--accent-fel); box-shadow: inset 0 2px 0 var(--accent); }
+.onderbalk .teken { font-size: 1.15rem; line-height: 1; }
+
+.onderbalk .bolletje {
+    position: absolute;
+    top: .45rem;
+    left: 50%;
+    margin-left: .25rem;
+    min-width: 1.1rem;
+    padding: 0 .2rem;
+    background: var(--fout);
+    border-radius: 99px;
+    color: #fff;
+    font-size: .6rem;
+    line-height: 1.1rem;
+    text-align: center;
 }
 
 /* --- Meldingen --------------------------------------------------------- */
 
 .melding {
     margin-bottom: 1rem;
-    padding: .6rem .9rem;
+    padding: .7rem 1rem;
     border-left: 3px solid var(--tekst-dof);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     background: var(--paneel-op);
-    font-size: .875rem;
+    font-size: .9rem;
 }
-.melding-ok   { border-left-color: var(--goed); background: rgba(76, 175, 80, .1); }
-.melding-fout { border-left-color: var(--fout); background: rgba(224, 82, 82, .1); }
-.melding-info { border-left-color: var(--accent); background: rgba(255, 153, 0, .08); }
+.melding-ok   { border-left-color: var(--goed); background: rgba(53, 193, 122, .1); }
+.melding-fout { border-left-color: var(--fout); background: rgba(224, 89, 107, .1); }
+.melding-info { border-left-color: var(--accent); background: rgba(59, 162, 240, .1); }
 
 /* --- Formulieren en knoppen -------------------------------------------- */
 
 input, select, textarea {
-    padding: .4rem .55rem;
-    background: #101010;
+    padding: .5rem .6rem;
+    background: #0a1018;
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     color: var(--tekst);
     font: inherit;
     max-width: 100%;
 }
 input:focus, select:focus, textarea:focus {
-    outline: 2px solid var(--accent-dof);
-    outline-offset: 1px;
-    border-color: var(--accent-dof);
+    border-color: var(--accent);
 }
-input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); }
+input[type="radio"], input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 1.05rem;
+    height: 1.05rem;
+}
 textarea { width: 100%; min-height: 7rem; resize: vertical; }
 
 button,
 input[type="submit"],
 .knop {
-    display: inline-block;
-    padding: .45rem 1rem;
-    background: linear-gradient(#3a3a3a, #262626);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: .45rem 1.1rem;
+    background: var(--paneel-op);
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     color: var(--tekst);
     font: inherit;
     cursor: pointer;
@@ -309,30 +509,45 @@ input[type="submit"],
 button:hover,
 input[type="submit"]:hover,
 .knop:hover {
-    border-color: var(--accent-dof);
-    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-diep);
+    color: var(--accent-fel);
     text-decoration: none;
 }
-button:disabled { opacity: .5; cursor: not-allowed; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:disabled:hover { border-color: var(--rand); background: var(--paneel-op); color: var(--tekst); }
 
+/* De ene knop die eruit mag springen. */
 .knop-nadruk {
-    display: block;
+    display: flex;
     margin-top: .8rem;
-    background: linear-gradient(var(--accent), var(--accent-dof));
+    background: linear-gradient(180deg, var(--accent), var(--accent-dof));
     border-color: var(--accent-dof);
-    color: #1a1a1a;
+    color: #04121f;
     font-weight: 600;
-    font-size: .8rem;
+    font-size: .85rem;
 }
-.knop-nadruk:hover { color: #000; }
+.knop-nadruk:hover {
+    background: linear-gradient(180deg, var(--accent-fel), var(--accent));
+    color: #04121f;
+}
+
+/* Een rij knoppen naast elkaar, met ruimte ertussen. */
+.knoppenrij {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .8rem 0 0;
+}
 
 /* Formulier als label/veld-raster */
 .veldenraster {
     display: grid;
     grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
-    gap: .6rem .8rem;
+    gap: .7rem .9rem;
     align-items: center;
-    max-width: 32rem;
+    max-width: 34rem;
 }
 .veldenraster label { color: var(--tekst-dof); }
 .veldenraster .volle-breedte { grid-column: 1 / -1; }
@@ -342,29 +557,43 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .captcha {
     display: flex;
     align-items: center;
-    gap: .6rem;
+    gap: .7rem;
     flex-wrap: wrap;
     margin: 1rem 0;
-    padding: .7rem;
+    padding: .8rem;
     background: var(--paneel-op);
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
 }
-.captcha img { border: 1px solid var(--rand); border-radius: var(--radius); display: block; }
+.captcha img { border: 1px solid var(--rand); border-radius: var(--radius-s); display: block; }
 .captcha label { color: var(--tekst-dof); font-size: .85rem; }
 .captcha input { text-transform: uppercase; letter-spacing: .15em; font-family: ui-monospace, Consolas, monospace; }
 
 /* Tekst die spelers zelf geschreven hebben */
-.berichttekst {
-    padding: .8rem 1rem;
+.berichttekst,
+.profieltekst {
+    padding: .9rem 1rem;
     background: var(--paneel-op);
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     margin-bottom: 1rem;
     overflow-wrap: anywhere;
 }
-.berichttekst img { max-width: 100%; height: auto; }
-.berichttekst ul { margin: .4rem 0; padding-left: 1.5rem; }
+.berichttekst img,
+.profieltekst img { max-width: 100%; height: auto; }
+.berichttekst ul,
+.profieltekst ul { margin: .4rem 0; padding-left: 1.5rem; }
+
+/* Profielfoto: de speler vult zelf een adres in, dus begrenzen. Zonder deze
+   regel duwt een grote afbeelding de hele indeling uit elkaar. */
+.profielfoto {
+    max-width: 100%;
+    max-height: 15rem;
+    width: auto;
+    height: auto;
+    border: 1px solid var(--rand);
+    border-radius: var(--radius);
+}
 
 .forumbericht { margin-bottom: 1.2rem; }
 .forumbericht:last-child { margin-bottom: 0; }
@@ -373,29 +602,38 @@ button:disabled { opacity: .5; cursor: not-allowed; }
     justify-content: space-between;
     gap: .5rem;
     flex-wrap: wrap;
-    padding: .35rem .6rem;
-    background: linear-gradient(#2c2c2c, #1e1e1e);
+    padding: .45rem .7rem;
+    background: var(--paneel-kop);
     border: 1px solid var(--rand);
     border-bottom: 0;
-    border-radius: var(--radius) var(--radius) 0 0;
+    border-radius: var(--radius-s) var(--radius-s) 0 0;
     font-size: .85rem;
 }
 .forumbericht .berichttekst {
     margin-bottom: 0;
-    border-radius: 0 0 var(--radius) var(--radius);
+    border-radius: 0 0 var(--radius-s) var(--radius-s);
 }
 
-.paginering { margin: .8rem 0 0; font-size: .85rem; }
+/* Nieuwsbericht op news.php en in het beheer. */
+.nieuwsbericht {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--rand-zacht);
+}
+.nieuwsbericht:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+.nieuwsbericht h3 { margin: 0 0 .2rem; color: var(--accent); font-size: 1rem; }
+
+.paginering { margin: 1rem 0 0; font-size: .85rem; }
 .paginering a, .paginering strong {
     display: inline-block;
-    min-width: 1.8rem;
-    padding: .2rem .4rem;
+    min-width: 2.2rem;
+    padding: .35rem .4rem;
     text-align: center;
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
-    margin-right: .2rem;
+    border-radius: var(--radius-s);
+    margin: 0 .2rem .2rem 0;
 }
-.paginering strong { background: var(--paneel-op); color: var(--accent); }
+.paginering strong { background: var(--accent-diep); color: var(--accent-fel); border-color: var(--accent-dof); }
 
 img.smilie {
     display: inline-block;
@@ -403,6 +641,46 @@ img.smilie {
     width: auto;
     height: 1.1em;
 }
+
+/* --- Kleine tekstmarkeringen -------------------------------------------- */
+
+.uitleg { color: var(--tekst-dof); font-size: .875rem; }
+.klein  { color: var(--tekst-dof); font-size: .78rem; }
+
+/* Iets dat niet (meer) kan: geen knop, alleen een aanduiding. */
+.uit { color: var(--tekst-dof); font-style: italic; }
+
+.levend { color: var(--goed); }
+.dood   { color: var(--fout); }
+
+/* Eerpunten omhoog of omlaag, en een negatief bedrag. */
+.eer     { color: var(--goed); }
+.schande { color: var(--fout); }
+.verlies { color: var(--fout); }
+
+/* Staflid naast een naam. */
+.staf {
+    display: inline-block;
+    padding: .05rem .4rem;
+    background: var(--accent-diep);
+    border: 1px solid var(--accent-dof);
+    border-radius: 99px;
+    color: var(--accent-fel);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    vertical-align: middle;
+}
+
+blockquote {
+    margin: .8rem 0;
+    padding: .7rem 1rem;
+    border-left: 3px solid var(--accent-dof);
+    background: var(--paneel-op);
+    border-radius: var(--radius-s);
+}
+
+/* --- Spelonderdelen ------------------------------------------------------ */
 
 /* Fruitmachine */
 .rollen {
@@ -417,7 +695,7 @@ img.smilie {
     width: 4rem;
     height: 4rem;
     font-size: 2rem;
-    background: linear-gradient(#2f2f2f, #1a1a1a);
+    background: var(--paneel-op);
     border: 1px solid var(--rand);
     border-radius: var(--radius);
 }
@@ -434,7 +712,7 @@ img.smilie {
 .kaarthand img {
     width: auto;
     height: 6rem;
-    border-radius: 4px;
+    border-radius: var(--radius-s);
     border: 1px solid var(--rand);
     background: #fff;
 }
@@ -450,7 +728,7 @@ img.smilie {
     vertical-align: middle;
 }
 .bal-rood  { background: #b3241f; }
-.bal-zwart { background: #1a1a1a; border: 1px solid var(--rand); }
+.bal-zwart { background: #10151f; border: 1px solid var(--rand); }
 .bal-groen { background: #1f7a34; }
 
 .rouletteveld {
@@ -465,7 +743,7 @@ img.smilie {
     gap: .3rem;
     padding: .25rem;
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
 }
 .rouletteveld .vak span {
     display: grid;
@@ -477,9 +755,9 @@ img.smilie {
     color: #fff;
 }
 .rouletteveld .vak-rood span  { background: #b3241f; }
-.rouletteveld .vak-zwart span { background: #000; }
+.rouletteveld .vak-zwart span { background: #0a0d14; }
 .rouletteveld .vak-groen span { background: #1f7a34; }
-.rouletteveld .vak input { min-width: 0; flex: 1; padding: .2rem .3rem; font-size: .8rem; }
+.rouletteveld .vak input { min-width: 0; flex: 1; padding: .25rem .3rem; font-size: .8rem; }
 
 /* Kraslot: zes vakjes in een raster van drie */
 .kraslot {
@@ -494,36 +772,42 @@ img.smilie {
     place-items: center;
     min-height: 3rem;
     padding: .4rem;
-    background: linear-gradient(#2f2f2f, #1f1f1f);
+    background: var(--paneel-op);
     border: 1px solid var(--rand);
-    border-radius: var(--radius);
+    border-radius: var(--radius-s);
     font-size: .8rem;
     text-align: center;
 }
 
-blockquote {
-    margin: .8rem 0;
-    padding: .6rem .9rem;
-    border-left: 3px solid var(--accent-dof);
-    background: var(--paneel-op);
-    border-radius: var(--radius);
-}
-
-.uitleg { color: var(--tekst-dof); font-size: .875rem; }
-
 /* --- Tabellen ----------------------------------------------------------- */
 
-.tabelwikkel { overflow-x: auto; }
+/* De wikkel scrollt horizontaal. De schaduw rechts laat zien dát er meer
+   staat; hij verdwijnt zodra je aan het eind bent (klasse van app.js). */
+.tabelwikkel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
+.tabelwikkel.meer-rechts::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2rem;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--paneel));
+}
 
 table.lijst {
     width: 100%;
     border-collapse: collapse;
-    font-size: .85rem;
+    font-size: .87rem;
 }
 table.lijst th,
 table.lijst td {
-    padding: .4rem .6rem;
-    border-bottom: 1px solid var(--rand);
+    padding: .5rem .7rem;
+    border-bottom: 1px solid var(--rand-zacht);
     text-align: left;
 }
 table.lijst th {
@@ -532,13 +816,15 @@ table.lijst th {
     font-weight: 600;
     white-space: nowrap;
 }
-table.lijst tbody tr:hover { background: rgba(255, 255, 255, .03); }
-table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
+table.lijst tbody tr:last-child td { border-bottom: 0; }
+table.lijst tbody tr:hover { background: rgba(59, 162, 240, .06); }
+table.lijst td.getal,
+table.lijst th.getal { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* --- Voet --------------------------------------------------------------- */
 
 .paginavoet {
-    padding: 1rem;
+    padding: 1.2rem 1rem;
     border-top: 1px solid var(--rand);
     color: var(--tekst-dof);
     font-size: .78rem;
@@ -549,12 +835,12 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
 
 .codeblok {
     margin: .75rem 0;
-    padding: .75rem 1rem;
-    background: #000;
+    padding: .8rem 1rem;
+    background: #05080e;
     border: 1px solid var(--rand);
-    border-radius: 4px;
+    border-radius: var(--radius-s);
     font: .8rem/1.5 Consolas, "Courier New", monospace;
-    color: #b8d8b8;
+    color: #9fd0a8;
     overflow-x: auto;
     white-space: pre;
 }
@@ -562,12 +848,13 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
 /* --- Premium en advertenties --------------------------------------------- */
 
 .statuspaneel .premium {
-    margin: .5rem 0 0;
-    padding: .35rem .5rem;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    color: var(--accent);
-    font-size: .8rem;
+    margin: .6rem 0 0;
+    padding: .4rem .5rem;
+    background: var(--accent-diep);
+    border: 1px solid var(--accent-dof);
+    border-radius: var(--radius-s);
+    color: var(--accent-fel);
+    font-size: .75rem;
     text-align: center;
 }
 
@@ -575,7 +862,7 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
     margin: 1rem 0;
     padding: 1rem;
     border: 1px dashed var(--rand);
-    border-radius: 5px;
+    border-radius: var(--radius);
     min-height: 6rem;
     overflow-x: auto;
 }
@@ -594,9 +881,9 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
     grid-template-columns: auto 1fr;
     gap: .15rem .6rem;
     align-items: start;
-    padding: .7rem .9rem;
+    padding: .8rem .9rem;
     border: 1px solid var(--rand);
-    border-radius: 5px;
+    border-radius: var(--radius);
     cursor: pointer;
 }
 
@@ -604,18 +891,27 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
 
 .keuzelijst .keuze.gekozen {
     border-color: var(--accent);
-    background: rgba(255, 153, 0, .07);
+    background: var(--accent-diep);
 }
 
 .keuzelijst .keuze input { margin-top: .25rem; }
 .keuzelijst .keuze .uitleg { grid-column: 2; }
+
+/* --- Voorpagina ----------------------------------------------------------- */
+
+.voorpagina-logo {
+    display: block;
+    max-width: min(100%, 28rem);
+    height: auto;
+    margin: 0 auto 1.5rem;
+}
 
 /* --- Smallere schermen --------------------------------------------------- */
 
 @media (max-width: 1100px) {
     /* Niet op .layout zelf: dan krijgt de uitgelogde weergave er weer een
        lege menukolom bij. */
-    .layout:not(.alleen-inhoud) { grid-template-columns: 180px minmax(0, 1fr); }
+    .layout:not(.alleen-inhoud) { grid-template-columns: 190px minmax(0, 1fr); }
     .statuspaneel { grid-column: 1 / -1; position: static; }
     .statuspaneel dl { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
     .statuspaneel dd { text-align: left; }
@@ -623,13 +919,55 @@ table.lijst td.getal { text-align: right; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 760px) {
     .menu-toggle { display: block; order: 3; }
-    .topnav { order: 4; width: 100%; justify-content: center; }
     .brand { margin-right: auto; }
 
-    .layout { grid-template-columns: minmax(0, 1fr); padding: .75rem; }
-    .sidebar { position: static; display: none; }
-    .sidebar.open { display: flex; }
-    .menugroep { }
+    /* In spelmodus neemt de onderbalk de navigatie over. Uitgelogd is er geen
+       onderbalk, dus dan moet de bovennavigatie juist blijven staan. */
+    .spelmodus .topnav { display: none; }
+    .topnav { justify-content: center; width: 100%; order: 4; }
+
+    .layout,
+    .layout:not(.alleen-inhoud) {
+        grid-template-columns: minmax(0, 1fr);
+        padding: .75rem;
+        /* Ruimte voor de onderbalk, anders valt de laatste knop eronder. */
+        padding-bottom: calc(var(--onderbalk) + env(safe-area-inset-bottom, 0px) + 1rem);
+    }
+
+    /* Het zijmenu wordt een la die van links inschuift. */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 26;
+        width: min(84vw, 20rem);
+        padding: .75rem;
+        background: var(--zwart);
+        border-right: 1px solid var(--rand);
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .menu-overlay.open { display: block; }
+
+    /* Nu wél tonen: hier is de bovennavigatie niet in beeld. */
+    .alleen-mobiel { display: block; }
+
+    /* Het statuspaneel staat al bovenaan als strook; hieronder is het dubbelop. */
+    .statuspaneel { display: none; }
+
+    .statusstrook { display: flex; }
+    .onderbalk    { display: block; }
+
+    .veldenraster { grid-template-columns: minmax(0, 1fr); gap: .35rem; max-width: none; }
+    .veldenraster label { margin-top: .4rem; }
+
+    table.lijst { font-size: .82rem; }
+    table.lijst th, table.lijst td { padding: .45rem .5rem; }
+
+    .paneelinhoud { padding: .9rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
