@@ -65,5 +65,9 @@ Werk je met een AI-assistent aan dit project? Begin dan bij
 
 ## Licentie
 
-Geen. Dit is een privéproject; neem contact op met de eigenaar voordat je er
-iets mee doet.
+MIT — zie [LICENSE](LICENSE). Je mag dit gebruiken, aanpassen en verspreiden,
+ook voor een spel waar je geld mee verdient. De enige voorwaarde is dat de
+licentietekst meegaat met je kopie. Er zit geen enkele garantie op.
+
+Het logo en de plaatjes in `images/` en `smilies/` vallen daar niet
+vanzelfsprekend onder; controleer zelf of je die mag hergebruiken.

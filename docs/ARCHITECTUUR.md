@@ -107,7 +107,7 @@ oplossen hoort geen `SpelFout` te zijn.
 
 ## De database
 
-38 tabellen, InnoDB en `utf8mb4`. Het schema staat in `install/schema.sql` —
+40 tabellen, InnoDB en `utf8mb4`. Het schema staat in `install/schema.sql` —
 bewust in die map, zodat het samen met de installer verdwijnt.
 
 **Spelers worden gekoppeld op `login`, niet op `id`.** Dat is een bewuste

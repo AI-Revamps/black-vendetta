@@ -25,7 +25,7 @@ Deze staan vast en zijn niet ter discussie:
 ```
 /                 de ~70 pagina's van het spel
 /inc              bootstrap, database, sessies, opmaak, spellogica, layout
-/install          installer plus schema.sql (38 tabellen)
+/install          installer plus schema.sql (40 tabellen)
 /assets           style.css, app.js, logo
 /docs             documentatie
 /tests            testscripts, met LEESMIJ.md
