@@ -132,6 +132,38 @@ check('totaal daalt met precies het banksaldo', $voor - $na === 222222,
     'verschil ' . ($voor - $na));
 check('er is geen geld bijgekomen', $na <= $voor);
 
+// --- Huis --------------------------------------------------------------------
+
+kop('huis: geen gratis huis bij registratie of herstart');
+
+$vraagHuizen = $db->prepare('SELECT COUNT(*) FROM huizen WHERE login = ?');
+
+// Registratie: een gloednieuwe speler krijgt geen huis cadeau dat meteen
+// weer verkocht kan worden voor gratis startgeld.
+$nieuweLogin = 'Huistest' . random_int(10000, 99999);
+doe('register.php', [
+    'gebruiker'   => $nieuweLogin,
+    'pass'        => 'eenlangwachtwoord',
+    'passconfirm' => 'eenlangwachtwoord',
+    'email'       => strtolower($nieuweLogin) . '@voorbeeld.test',
+    'geslacht'    => 'Man',
+], nieuwe_sessie());
+
+$vraagHuizen->execute([$nieuweLogin]);
+check('nieuwe speler krijgt geen gratis huis', (int) $vraagHuizen->fetchColumn() === 0);
+
+// Herstart na overlijden: Doelwit is hierboven vermoord. Diezelfde truc mag
+// niet herhaalbaar zijn door telkens dood te gaan en opnieuw te beginnen.
+$doelwitJar = login('Doelwit', 'eenlangwachtwoord');
+doe('rip.php', [], $doelwitJar);
+
+$vraagHuizen->execute(['Doelwit']);
+check('herstart na overlijden geeft geen gratis huis', (int) $vraagHuizen->fetchColumn() === 0);
+
+// Registreren en inloggen als Doelwit hebben de gedeelde standaardsessie
+// verlegd; de tests hierna verwachten weer Speler als ingelogde speler.
+login('Speler', 'eenlangwachtwoord');
+
 // --- Promotie ----------------------------------------------------------------
 
 kop('promotie: bericht ook zonder (betalende) familie');
