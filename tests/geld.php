@@ -309,12 +309,14 @@ $db->exec("UPDATE users SET level=1 WHERE login='Speler'");
 
 // --- Misdaad: opbrengst, kans en xp -----------------------------------------
 
-kop('misdaad: nieuwe speler kan binnen ~40 pogingen het goedkoopste wapen verdienen');
+kop('misdaad: nieuwe speler kan binnen ~50 pogingen het goedkoopste wapen verdienen');
 
+// 50 pogingen bij een afkoeltijd van 60s komt overeen met de bovenkant van
+// het beoogde venster van 30-60 minuten actief spelen.
 $db->exec("UPDATE users SET xp=0, zak=0, crime=NULL WHERE login='Speler'");
 $db->exec("DELETE FROM jail WHERE login='Speler'");
 
-for ($poging = 0; $poging < 40; $poging++) {
+for ($poging = 0; $poging < 50; $poging++) {
     $db->exec("UPDATE users SET crime=NULL WHERE login='Speler'");
     $db->exec("DELETE FROM jail WHERE login='Speler'");
     doe('crime.php', ['crime' => 'juwelier']);
@@ -323,7 +325,7 @@ for ($poging = 0; $poging < 40; $poging++) {
 $zak = (int) $db->query("SELECT zak FROM users WHERE login='Speler'")->fetchColumn();
 $xp  = (int) $db->query("SELECT xp FROM users WHERE login='Speler'")->fetchColumn();
 
-check('goedkoopste wapen (€10.000) is haalbaar binnen 40 pogingen op "beroof een juwelier"',
+check('goedkoopste wapen (€10.000) is haalbaar binnen 50 pogingen op "beroof een juwelier"',
     $zak >= 10000, 'zak ' . $zak . ', xp ' . $xp);
 
 // --- Rijlessen ---------------------------------------------------------------
