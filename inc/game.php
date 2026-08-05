@@ -404,11 +404,6 @@ function speler_herstarten(int $userId): string
         q('DELETE FROM `friends` WHERE `login` = ? OR `friend` = ?', [$naam, $naam]);
         q("UPDATE `casino` SET `owner` = '', `winst` = 0 WHERE `owner` = ?", [$naam]);
 
-        // Net als een nieuwe speler begin je met een huis in je startstad.
-        // Toen huisbezit nog een kolom per stad was viel dit buiten de reset,
-        // waardoor je na een doorstart je oude huizen gewoon hield.
-        huis_geven($naam, $stad);
-
         log_action($naam, 'herstart',
             'Opnieuw begonnen na overlijden nummer ' . ((int) $speler['gestorven'] + 1));
 

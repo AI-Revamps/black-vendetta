@@ -679,7 +679,7 @@ INSERT IGNORE INTO `cars` (`auto`, `naam`, `url`, `waarde`) VALUES
   ('Mercury Cougar',               'Mercury Cougar',                'images/autos/mercury_cougar.jpg',           95000),
   ('Chevy Camaro SS',              'Chevy Camaro SS',               'images/autos/chevy_camaro_ss.jpg',         125000),
   ('Ford Mustang',                 'Ford Mustang',                  'images/autos/ford_mustang.jpg',            150000),
-  ('Alfa Romeo FNM 2000 JK',       'Alfa Romeo FNM 2000 JK',        'images/autos/alfa_romeo _fnm_2000_jk.jpg', 175000),
+  ('Alfa Romeo FNM 2000 JK',       'Alfa Romeo FNM 2000 JK',        'images/autos/alfa_romeo_fnm_2000_jk.jpg',  175000),
   ('Porsche 356B Cabriolet',       'Porsche 356B Cabriolet',        'images/autos/porsche_356b_cabriolet.jpg',  200000),
   ('Mercedes W124 Avus Streamling','Mercedes W124 Avus Streamling', 'images/autos/streamliner.jpg',             400000);
 

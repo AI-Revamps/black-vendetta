@@ -51,8 +51,8 @@ panel_close();
 panel_open('Hoe je begint', 'begin');
 
 echo '<p>Je begint als <strong>' . e(rank_name(0)) . '</strong> met '
-   . money((int) config('game.start_money', 1000)) . ' op zak, in een willekeurige stad, '
-   . 'en met een huis in die stad. Vanaf daar is het de bedoeling dat je opklimt tot '
+   . money((int) config('game.start_money', 1000)) . ' op zak, in een willekeurige stad. '
+   . 'Vanaf daar is het de bedoeling dat je opklimt tot '
    . '<strong>' . e(rank_name(999999)) . '</strong>.</p>';
 
 echo '<p>Dat doe je met misdaden, auto\'s stelen, overvallen, handel in drank en drugs, '
@@ -190,7 +190,7 @@ echo '<tr><td>een casino of kogelfabriek</td><td></td></tr>';
 echo '</tbody></table></div>';
 
 echo '<p>Je begint weer in een willekeurige stad met '
-   . money((int) config('game.start_money', 1000)) . ', een huis daar, en de '
+   . money((int) config('game.start_money', 1000)) . ', en de '
    . 'beginnersbescherming loopt opnieuw. Hoe vaak je omgelegd bent staat op je profiel.</p>';
 
 panel_close();
