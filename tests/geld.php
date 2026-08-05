@@ -146,6 +146,57 @@ $aantal = (int) $db->query(
 )->fetchColumn();
 check('promotiebericht zonder familie', $aantal > 0);
 
+// --- Auto stelen -------------------------------------------------------------
+
+kop('auto stelen: slaagkans daalt nooit als xp stijgt');
+
+function auto_percentages(string $html): array
+{
+    $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NOWARNING | LIBXML_NOERROR);
+    libxml_clear_errors();
+
+    $percentages = [];
+    foreach ($doc->getElementsByTagName('td') as $td) {
+        if ($td->getAttribute('class') === 'getal') {
+            $percentages[] = (int) rtrim(trim($td->textContent), '%');
+        }
+    }
+    return $percentages;
+}
+
+$zetXp  = $db->prepare("UPDATE users SET xp = ? WHERE login = 'Speler'");
+$reeksen = [];
+
+foreach ([0, 50, 100, 300, 600, 1000] as $xp) {
+    $zetXp->execute([$xp]);
+    $reeksen[$xp] = auto_percentages(haal('nickacar.php')['body']);
+}
+
+$kolommen = ['parkeerplaats', 'woonwijk', 'tankstation', 'garage van een speler'];
+
+foreach ($kolommen as $index => $naam) {
+    $vorige = null;
+    $gestegen = false;
+
+    foreach ($reeksen as $xp => $rij) {
+        $waarde = $rij[$index] ?? null;
+        check($naam . ': percentage aanwezig bij xp ' . $xp, $waarde !== null);
+
+        if ($vorige !== null) {
+            check($naam . ': ' . $vorige . '% bij lagere xp stijgt niet naar ' . $waarde . '% bij xp ' . $xp,
+                $waarde >= $vorige, $vorige . '% -> ' . $waarde . '%');
+            if ($waarde > $vorige) {
+                $gestegen = true;
+            }
+        }
+        $vorige = $waarde;
+    }
+
+    check($naam . ': stijgt ergens tussen xp 0 en 1000', $gestegen);
+}
+
 // --- Cron ------------------------------------------------------------------
 
 kop('cron: alle taken draaien');
