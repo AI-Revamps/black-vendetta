@@ -60,6 +60,10 @@ foreach (['home.php', 'crime.php', 'shop.php', 'help.php'] as $pagina) {
         && $o['la'] && $o['statuspaneel']);
 }
 
+$menu = haal('home.php')['body'];
+check('menu bevat Loterij',
+    (bool) preg_match('#<a href="[^"]*loterij[^"]*"[^>]*>Loterij</a>#', $menu));
+
 // --- Dood ------------------------------------------------------------------
 
 kop('dood');

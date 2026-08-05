@@ -93,6 +93,7 @@ function menu_groups(array $user): array
             'blackjack.php'=> 'Blackjack',
             'krassen.php'  => 'Krassen',
             'slots.php'    => 'Fruitmachine',
+            'loterij.php'  => 'Loterij',
         ],
     ];
 
