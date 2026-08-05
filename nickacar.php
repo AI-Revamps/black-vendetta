@@ -109,8 +109,13 @@ layout_header('Auto stelen');
 if ($uitkomst !== null) {
     notice(e($uitkomst['tekst']), $uitkomst['type']);
 
-    if (($uitkomst['auto'] ?? null) !== null && ($uitkomst['auto']['url'] ?? '') !== '') {
-        echo '<p><img src="' . e((string) $uitkomst['auto']['url']) . '" alt="'
+    $autoPad = (string) ($uitkomst['auto']['url'] ?? '');
+
+    // Alleen tonen als het bestand er ook echt staat: de catalogus (cars.url)
+    // verwijst naar foto's die niet allemaal aangeleverd zijn, en een kapot
+    // plaatje-icoon oogt slordiger dan gewoon niets tonen.
+    if ($autoPad !== '' && is_file(BV_ROOT . '/' . $autoPad)) {
+        echo '<p><img src="' . e(url($autoPad)) . '" alt="'
            . e((string) $uitkomst['auto']['auto']) . '" style="max-width:100%;border-radius:4px"></p>';
     }
 }

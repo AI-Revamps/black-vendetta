@@ -253,6 +253,29 @@ for ($i = 1; $i < count($kolommen); $i++) {
     check($kolommen[$i - 1] . ' ligt écht boven ' . $kolommen[$i] . ' bij minstens één xp', $strikt);
 }
 
+// --- Autoafbeeldingen ---------------------------------------------------------
+
+kop('auto stelen: geen kapot plaatje als de afbeelding ontbreekt');
+
+// Level boven LEVEL_ADMIN geeft een vaste slaagkans van 50%, zodat een
+// geslaagde diefstal binnen een paar pogingen gegarandeerd is. De afkoeltijd
+// wordt voor elke poging losgelaten: op de testserver hoeft niet echt
+// gewacht te worden.
+$db->exec("UPDATE users SET level=1000 WHERE login='Speler'");
+
+$gelukt = false;
+for ($poging = 0; $poging < 20 && !$gelukt; $poging++) {
+    $db->exec("UPDATE users SET ac=NULL WHERE login='Speler'");
+    $r = doe('nickacar.php', ['waar' => 'parkeerplaats']);
+    $gelukt = str_contains(melding($r['body']), '[ok]') && str_contains($r['body'], 'gestolen');
+}
+
+check('een autodiefstal is gelukt binnen 20 pogingen', $gelukt);
+check('geen kapot plaatje-icoon: geen <img> naar images/autos zonder dat het bestand bestaat',
+    !preg_match('#<img src="[^"]*images/autos/[^"]*"#', $r['body']), $r['body']);
+
+$db->exec("UPDATE users SET level=1 WHERE login='Speler'");
+
 // --- Cron ------------------------------------------------------------------
 
 kop('cron: alle taken draaien');
