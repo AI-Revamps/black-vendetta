@@ -69,6 +69,7 @@ function menu_groups(array $user): array
             'bulletfactory.php'   => 'Kogelfabriek',
             'garage.php'          => 'Garage',
             'bloodbank.php'       => 'Bloedbank',
+            'rijbewijs.php'       => 'Rijschool',
             'transport.php'       => 'Transport',
             'detectives.php'      => 'Detectivebureau',
             'mshop.php'           => 'Zwarte markt',

@@ -63,6 +63,8 @@ foreach (['home.php', 'crime.php', 'shop.php', 'help.php'] as $pagina) {
 $menu = haal('home.php')['body'];
 check('menu bevat Loterij',
     (bool) preg_match('#<a href="[^"]*loterij[^"]*"[^>]*>Loterij</a>#', $menu));
+check('menu bevat Rijschool',
+    (bool) preg_match('#<a href="[^"]*rijbewijs[^"]*"[^>]*>Rijschool</a>#', $menu));
 
 // --- Gevangenistimer ---------------------------------------------------------
 
