@@ -67,12 +67,18 @@ echo '<span><label><input type="checkbox" id="captcha" name="captcha" value="1"'
    . (ads_captcha() ? ' checked' : '') . '> Speler moet een code overtypen voordat '
    . 'hij door kan</label></span>';
 
+echo '<label for="outgame">Ook op de voorpagina</label>';
+echo '<span><label><input type="checkbox" id="outgame" name="outgame" value="1"'
+   . (ads_outgame() ? ' checked' : '') . '> Dezelfde advertentiecode ook tonen aan '
+   . 'bezoekers die niet ingelogd zijn</label></span>';
+
 echo '<span></span><button type="submit">Opslaan</button>';
 echo '</div></form>';
 
 echo '<p class="uitleg">Op 0 zetten schakelt de advertentiepagina helemaal uit. Is het '
    . 'codeveld leeg, dan gebeurt er ook niets — spelers worden dan nooit onderbroken. '
-   . 'Premiumspelers krijgen de pagina nooit te zien.</p>';
+   . 'Premiumspelers krijgen de pagina nooit te zien. "Ook op de voorpagina" staat los van '
+   . 'het aantal pagina\'s hierboven: die teller bestaat pas na het inloggen.</p>';
 
 if (ads_html() !== '') {
     echo '<p><a class="knop" href="' . e(url('advertentie.php')) . '">Bekijk de pagina</a> '
@@ -207,6 +213,7 @@ function advertentie_opslaan(array $user): string
     instelling_zetten('ads_html', $html);
     instelling_zetten('ads_interval', (string) $interval);
     instelling_zetten('ads_captcha', post('captcha') === '1' ? '1' : '0');
+    instelling_zetten('ads_outgame', post('outgame') === '1' ? '1' : '0');
 
     log_action((string) $user['login'], 'premium',
         'Advertentie-instellingen gewijzigd (interval ' . $interval . ')');
