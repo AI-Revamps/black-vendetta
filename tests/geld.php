@@ -132,6 +132,20 @@ check('totaal daalt met precies het banksaldo', $voor - $na === 222222,
     'verschil ' . ($voor - $na));
 check('er is geen geld bijgekomen', $na <= $voor);
 
+// --- Promotie ----------------------------------------------------------------
+
+kop('promotie: bericht ook zonder (betalende) familie');
+
+$db->exec("UPDATE users SET laatste_rang=0, xp=25000, famillie='' WHERE login='Speler'");
+$db->exec("DELETE FROM messages WHERE `to`='Speler' AND subject='Promotie'");
+
+haal('home.php');
+
+$aantal = (int) $db->query(
+    "SELECT COUNT(*) FROM messages WHERE `to`='Speler' AND subject='Promotie'"
+)->fetchColumn();
+check('promotiebericht zonder familie', $aantal > 0);
+
 // --- Cron ------------------------------------------------------------------
 
 kop('cron: alle taken draaien');

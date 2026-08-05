@@ -125,18 +125,25 @@ function fam_promotie_uitbetalen(array $user): void
         return;
     }
 
-    // Zonder familie alleen de teller bijwerken, zodat er later niet met
-    // terugwerkende kracht voor oude rangen uitbetaald wordt.
+    $nieuweRang = rank_name((int) $user['xp'], (string) ($user['geslacht'] ?? 'Man'));
+
+    // Zonder familie alleen de teller bijwerken en een kaal promotiebericht
+    // sturen — promotiegeld komt uit de familiekas, maar een rangstijging
+    // verdient sowieso een melding.
     if (($user['famillie'] ?? '') === '') {
         q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
+        notify((string) $user['login'], 'Promotie',
+            'Gefeliciteerd, je bent gepromoveerd naar ' . $nieuweRang . '.');
         return;
     }
 
-    db_transaction(static function () use ($user, $rang, $betaald): void {
+    db_transaction(static function () use ($user, $rang, $betaald, $nieuweRang): void {
         $familie = fam_van($user, true);
 
         if ($familie === null) {
             q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
+            notify((string) $user['login'], 'Promotie',
+                'Gefeliciteerd, je bent gepromoveerd naar ' . $nieuweRang . '.');
             return;
         }
 
@@ -151,13 +158,15 @@ function fam_promotie_uitbetalen(array $user): void
         q('UPDATE `users` SET `laatste_rang` = ? WHERE `id` = ?', [$rang, $user['id']]);
 
         if ($bedrag < 1) {
+            notify((string) $user['login'], 'Promotie',
+                'Gefeliciteerd, je bent gepromoveerd naar ' . $nieuweRang . '.');
             return;
         }
 
         // Alleen uitbetalen als de kas het toelaat.
         if (!fam_afboeken((string) $familie['name'], $bedrag)) {
             notify((string) $user['login'], 'Promotie',
-                'Je bent gepromoveerd, maar de kas van ' . $familie['name']
+                'Je bent gepromoveerd naar ' . $nieuweRang . ', maar de kas van ' . $familie['name']
                 . ' had niet genoeg om je promotiegeld uit te keren.');
             return;
         }
@@ -168,7 +177,7 @@ function fam_promotie_uitbetalen(array $user): void
             'Promotiegeld tot rang ' . $rang);
 
         notify((string) $user['login'], 'Promotie',
-            'Gefeliciteerd met je nieuwe rang. Je familie keert je '
+            'Gefeliciteerd met je nieuwe rang, ' . $nieuweRang . '. Je familie keert je '
             . money($bedrag) . ' promotiegeld uit.');
     });
 }
