@@ -15,6 +15,13 @@
  *    liep op de kans van de parkeerplaats.
  *  - Een wagen uit andermans garage werd overgezet zonder transactie of
  *    vergrendeling, dus twee dieven konden dezelfde wagen "stelen".
+ *  - De bonussen per locatie stonden achterstevoren: de bovenste optie
+ *    (parkeerplaats, met de slechtste wagens) had de laagste slaagkans, en
+ *    stelen uit de garage van een speler (onderaan, het grootste risico) had
+ *    juist de hoogste. Een speler die niet zelf van locatie wisselde, zag de
+ *    kans van de eerst aangevinkte optie dus nauwelijks stijgen terwijl de
+ *    andere opties eronder sneller stegen. Nu neemt de kans strikt af van
+ *    boven (makkelijkst) naar onder (moeilijkst), bij elke xp.
  */
 
 declare(strict_types=1);
@@ -33,7 +40,7 @@ function steelplekken(): array
     return [
         'parkeerplaats' => [
             'label'  => 'Steel een wagen op een parkeerplaats',
-            'bonus'  => 0,
+            'bonus'  => 10,
             'schade' => [0, 100],
         ],
         'woonwijk' => [
@@ -43,7 +50,7 @@ function steelplekken(): array
         ],
         'tankstation' => [
             'label'  => 'Steel een wagen bij een tankstation',
-            'bonus'  => 5,
+            'bonus'  => 0,
             'schade' => [0, 50],
         ],
     ];
@@ -61,13 +68,19 @@ function steelkans(array $user, string $plek): int
     return max(1, min(30, $basis + $bonus));
 }
 
-/** Slaagkans om uit de garage van een andere speler te stelen. */
+/**
+ * Slaagkans om uit de garage van een andere speler te stelen: het grootste
+ * risico van de vier opties, dus altijd lager dan tankstation (de moeilijkste
+ * straatlocatie) bij dezelfde xp.
+ */
 function garagekans(array $user): int
 {
+    $basis = (int) floor(0.05 * (int) $user['xp']);
+
     if ((int) $user['level'] > LEVEL_ADMIN) {
         return 50;
     }
-    return max(1, min(30, (int) round((int) $user['xp'] * 0.1)));
+    return max(1, min(30, $basis - 5));
 }
 
 $user = require_login();

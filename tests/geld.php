@@ -148,7 +148,7 @@ check('promotiebericht zonder familie', $aantal > 0);
 
 // --- Auto stelen -------------------------------------------------------------
 
-kop('auto stelen: slaagkans daalt nooit als xp stijgt');
+kop('auto stelen: slaagkans daalt nooit als xp stijgt, en neemt af van boven naar onder');
 
 function auto_percentages(string $html): array
 {
@@ -195,6 +195,30 @@ foreach ($kolommen as $index => $naam) {
     }
 
     check($naam . ': stijgt ergens tussen xp 0 en 1000', $gestegen);
+}
+
+// De makkelijkste optie staat bovenaan: bij elke xp mag de slaagkans nooit
+// hoger zijn verderop in de lijst (parkeerplaats, woonwijk, tankstation,
+// garage van een speler — in die volgorde). Bij de vloer (1%, lage xp) en
+// het plafond (30%, hoge xp) mogen kolommen gelijk zijn; daartussenin moet
+// er minstens één xp-waarde zijn waar het echt afneemt.
+foreach ($reeksen as $xp => $rij) {
+    for ($i = 1; $i < count($kolommen); $i++) {
+        check($kolommen[$i - 1] . ' >= ' . $kolommen[$i] . ' bij xp ' . $xp,
+            ($rij[$i - 1] ?? -1) >= ($rij[$i] ?? -1),
+            ($rij[$i - 1] ?? '?') . '% vs ' . ($rij[$i] ?? '?') . '%');
+    }
+}
+
+for ($i = 1; $i < count($kolommen); $i++) {
+    $strikt = false;
+    foreach ($reeksen as $rij) {
+        if (($rij[$i - 1] ?? -1) > ($rij[$i] ?? -1)) {
+            $strikt = true;
+            break;
+        }
+    }
+    check($kolommen[$i - 1] . ' ligt écht boven ' . $kolommen[$i] . ' bij minstens één xp', $strikt);
 }
 
 // --- Cron ------------------------------------------------------------------
