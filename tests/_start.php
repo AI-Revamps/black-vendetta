@@ -108,7 +108,8 @@ function config_tijdelijk(array $vervangingen): void
  *
  * @return array{code:int, body:string, url:string}
  */
-function haal(string $pad, ?array $post = null, ?string $jar = null): array
+/** @param array<string,string> $headers Extra headers, bv. ['CF-Connecting-IP' => '1.2.3.4']. */
+function haal(string $pad, ?array $post = null, ?string $jar = null, array $headers = []): array
 {
     $jar ??= huidige_jar();
 
@@ -123,6 +124,14 @@ function haal(string $pad, ?array $post = null, ?string $jar = null): array
 
     if ($post !== null) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post));
+    }
+
+    if ($headers !== []) {
+        $regels = [];
+        foreach ($headers as $naam => $waarde) {
+            $regels[] = $naam . ': ' . $waarde;
+        }
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $regels);
     }
 
     $body = (string) curl_exec($ch);
@@ -172,17 +181,19 @@ function som(string $html): string
 /**
  * Haal de pagina op, en post er dan naartoe met een vers token en, als de
  * pagina erom vraagt, het antwoord op de rekensom.
+ *
+ * @param array<string,string> $headers Extra headers, op beide requests.
  */
-function doe(string $pad, array $velden, ?string $jar = null): array
+function doe(string $pad, array $velden, ?string $jar = null, array $headers = []): array
 {
-    $eerst = haal($pad, null, $jar);
+    $eerst = haal($pad, null, $jar, $headers);
     $mee   = ['_token' => tok($eerst['body'])] + $velden;
 
     if (str_contains($eerst['body'], 'Hoeveel is')) {
         $mee['verify'] = som($eerst['body']);
     }
 
-    return haal($pad, $mee, $jar);
+    return haal($pad, $mee, $jar, $headers);
 }
 
 /** Log in en geef de koekjespot terug. */

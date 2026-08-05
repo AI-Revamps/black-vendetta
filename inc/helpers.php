@@ -87,9 +87,24 @@ function is_post(): bool
     return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
 }
 
-/** IP-adres van de bezoeker. */
+/**
+ * IP-adres van de bezoeker.
+ *
+ * De site draait achter Cloudflare, dus REMOTE_ADDR is Cloudflare's eigen
+ * adres, niet dat van de speler. Cloudflare zet het echte adres altijd zelf
+ * in CF-Connecting-IP; die header is door de bezoeker niet te overschrijven
+ * zolang de origin niet ook rechtstreeks (buiten Cloudflare om) bereikbaar
+ * is. Ontbreekt de header — lokale ontwikkeling, tests — dan valt deze
+ * functie terug op REMOTE_ADDR.
+ */
 function client_ip(): string
 {
+    $cf = (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
+
+    if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP)) {
+        return $cf;
+    }
+
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
 }

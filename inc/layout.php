@@ -93,6 +93,7 @@ function menu_groups(array $user): array
             'blackjack.php'=> 'Blackjack',
             'krassen.php'  => 'Krassen',
             'slots.php'    => 'Fruitmachine',
+            'loterij.php'  => 'Loterij',
         ],
     ];
 
@@ -550,7 +551,8 @@ function status_panel(array $user): void
     echo '<p class="balklabel">' . $vord . '% naar de volgende rang</p>' . "\n";
 
     if ($cel !== null) {
-        echo '<p class="waarschuwing">Je zit vast: nog ' . e(duration($cel['resterend'])) . '</p>' . "\n";
+        echo '<p class="waarschuwing">Je zit vast: nog <strong data-tot="'
+           . (time() + $cel['resterend']) . '">' . e(duration($cel['resterend'])) . '</strong></p>' . "\n";
     }
 
     // Gezondheid als balk: in één oogopslag zie je of je naar de bloedbank moet.

@@ -60,6 +60,24 @@ foreach (['home.php', 'crime.php', 'shop.php', 'help.php'] as $pagina) {
         && $o['la'] && $o['statuspaneel']);
 }
 
+$menu = haal('home.php')['body'];
+check('menu bevat Loterij',
+    (bool) preg_match('#<a href="[^"]*loterij[^"]*"[^>]*>Loterij</a>#', $menu));
+
+// --- Gevangenistimer ---------------------------------------------------------
+
+kop('gevangenistimer');
+$db = tdb();
+$db->exec("DELETE FROM jail WHERE login = 'Speler'");
+$db->exec("INSERT INTO jail (login, boete, time, stad, famillie, bo)
+           VALUES ('Speler', 1000, DATE_ADD(NOW(), INTERVAL 300 SECOND), 'Brussel', '', 0)");
+
+$html = haal('home.php')['body'];
+check('gevangenistimer heeft data-tot',
+    (bool) preg_match('/class="waarschuwing">Je zit vast:[^<]*<strong data-tot="\d+">/', $html));
+
+$db->exec("DELETE FROM jail WHERE login = 'Speler'");
+
 // --- Dood ------------------------------------------------------------------
 
 kop('dood');

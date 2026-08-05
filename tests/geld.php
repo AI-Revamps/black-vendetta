@@ -132,6 +132,95 @@ check('totaal daalt met precies het banksaldo', $voor - $na === 222222,
     'verschil ' . ($voor - $na));
 check('er is geen geld bijgekomen', $na <= $voor);
 
+// --- Promotie ----------------------------------------------------------------
+
+kop('promotie: bericht ook zonder (betalende) familie');
+
+$db->exec("UPDATE users SET laatste_rang=0, xp=25000, famillie='' WHERE login='Speler'");
+$db->exec("DELETE FROM messages WHERE `to`='Speler' AND subject='Promotie'");
+
+haal('home.php');
+
+$aantal = (int) $db->query(
+    "SELECT COUNT(*) FROM messages WHERE `to`='Speler' AND subject='Promotie'"
+)->fetchColumn();
+check('promotiebericht zonder familie', $aantal > 0);
+
+// --- Auto stelen -------------------------------------------------------------
+
+kop('auto stelen: slaagkans daalt nooit als xp stijgt, en neemt af van boven naar onder');
+
+function auto_percentages(string $html): array
+{
+    $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NOWARNING | LIBXML_NOERROR);
+    libxml_clear_errors();
+
+    $percentages = [];
+    foreach ($doc->getElementsByTagName('td') as $td) {
+        if ($td->getAttribute('class') === 'getal') {
+            $percentages[] = (int) rtrim(trim($td->textContent), '%');
+        }
+    }
+    return $percentages;
+}
+
+$zetXp  = $db->prepare("UPDATE users SET xp = ? WHERE login = 'Speler'");
+$reeksen = [];
+
+foreach ([0, 50, 100, 300, 600, 1000] as $xp) {
+    $zetXp->execute([$xp]);
+    $reeksen[$xp] = auto_percentages(haal('nickacar.php')['body']);
+}
+
+$kolommen = ['parkeerplaats', 'woonwijk', 'tankstation', 'garage van een speler'];
+
+foreach ($kolommen as $index => $naam) {
+    $vorige = null;
+    $gestegen = false;
+
+    foreach ($reeksen as $xp => $rij) {
+        $waarde = $rij[$index] ?? null;
+        check($naam . ': percentage aanwezig bij xp ' . $xp, $waarde !== null);
+
+        if ($vorige !== null) {
+            check($naam . ': ' . $vorige . '% bij lagere xp stijgt niet naar ' . $waarde . '% bij xp ' . $xp,
+                $waarde >= $vorige, $vorige . '% -> ' . $waarde . '%');
+            if ($waarde > $vorige) {
+                $gestegen = true;
+            }
+        }
+        $vorige = $waarde;
+    }
+
+    check($naam . ': stijgt ergens tussen xp 0 en 1000', $gestegen);
+}
+
+// De makkelijkste optie staat bovenaan: bij elke xp mag de slaagkans nooit
+// hoger zijn verderop in de lijst (parkeerplaats, woonwijk, tankstation,
+// garage van een speler — in die volgorde). Bij de vloer (1%, lage xp) en
+// het plafond (30%, hoge xp) mogen kolommen gelijk zijn; daartussenin moet
+// er minstens één xp-waarde zijn waar het echt afneemt.
+foreach ($reeksen as $xp => $rij) {
+    for ($i = 1; $i < count($kolommen); $i++) {
+        check($kolommen[$i - 1] . ' >= ' . $kolommen[$i] . ' bij xp ' . $xp,
+            ($rij[$i - 1] ?? -1) >= ($rij[$i] ?? -1),
+            ($rij[$i - 1] ?? '?') . '% vs ' . ($rij[$i] ?? '?') . '%');
+    }
+}
+
+for ($i = 1; $i < count($kolommen); $i++) {
+    $strikt = false;
+    foreach ($reeksen as $rij) {
+        if (($rij[$i - 1] ?? -1) > ($rij[$i] ?? -1)) {
+            $strikt = true;
+            break;
+        }
+    }
+    check($kolommen[$i - 1] . ' ligt écht boven ' . $kolommen[$i] . ' bij minstens één xp', $strikt);
+}
+
 // --- Cron ------------------------------------------------------------------
 
 kop('cron: alle taken draaien');
