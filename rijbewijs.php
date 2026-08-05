@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/inc/bootstrap.php';
 
-const LES_PRIJS      = 25_000;
+const LES_PRIJS      = 5_000;
 const LES_MAX        = 50;      // hoeveel lessen je tegelijk kunt kopen
 const LES_WACHTTIJD  = 300;     // vijf minuten tussen twee lessen
 const RIJVORD_KLAAR  = 100.0;   // bij dit percentage haal je je rijbewijs
@@ -204,8 +204,8 @@ function rijden(array $user): array
             return [$pech[array_rand($pech)], 'fout'];
         }
 
-        // Vordering in tienden van procenten, zodat het niet te snel gaat.
-        $winst = random_int(5, 30) / 10;
+        // Vordering in hele procenten.
+        $winst = (float) random_int(10, 25);
         $nieuw = min(RIJVORD_KLAAR, (float) $speler['rijvord'] + $winst);
 
         q('UPDATE `users` SET `rijvord` = ? WHERE `id` = ?', [$nieuw, $speler['id']]);

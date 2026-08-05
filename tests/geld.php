@@ -307,6 +307,79 @@ check('geen kapot plaatje-icoon: geen <img> naar images/autos zonder dat het bes
 
 $db->exec("UPDATE users SET level=1 WHERE login='Speler'");
 
+// --- Misdaad: opbrengst, kans en xp -----------------------------------------
+
+kop('misdaad: nieuwe speler kan binnen ~50 pogingen het goedkoopste wapen verdienen');
+
+// 50 pogingen bij een afkoeltijd van 60s komt overeen met de bovenkant van
+// het beoogde venster van 30-60 minuten actief spelen.
+$db->exec("UPDATE users SET xp=0, zak=0, crime=NULL WHERE login='Speler'");
+$db->exec("DELETE FROM jail WHERE login='Speler'");
+
+for ($poging = 0; $poging < 50; $poging++) {
+    $db->exec("UPDATE users SET crime=NULL WHERE login='Speler'");
+    $db->exec("DELETE FROM jail WHERE login='Speler'");
+    doe('crime.php', ['crime' => 'juwelier']);
+}
+
+$zak = (int) $db->query("SELECT zak FROM users WHERE login='Speler'")->fetchColumn();
+$xp  = (int) $db->query("SELECT xp FROM users WHERE login='Speler'")->fetchColumn();
+
+check('goedkoopste wapen (€10.000) is haalbaar binnen 50 pogingen op "beroof een juwelier"',
+    $zak >= 10000, 'zak ' . $zak . ', xp ' . $xp);
+
+// --- Rijlessen ---------------------------------------------------------------
+
+kop('rijlessen: een rijbewijs is haalbaar zonder een fortuin uit te geven');
+
+$db->exec("UPDATE users SET zak=300000, rijbewijs=0, rijvord=0, lessen=0,
+                            rijbewijstijd=NULL WHERE login='Speler'");
+
+$uitgegeven = 0;
+$klaar      = false;
+
+for ($poging = 0; $poging < 40 && !$klaar; $poging++) {
+    $lessen = (int) $db->query("SELECT lessen FROM users WHERE login='Speler'")->fetchColumn();
+
+    if ($lessen < 1) {
+        doe('rijbewijs.php', ['actie' => 'lessen', 'aantal' => '1']);
+        $uitgegeven += 5000;
+        continue;
+    }
+
+    $db->exec("UPDATE users SET rijbewijstijd=NULL WHERE login='Speler'");
+    doe('rijbewijs.php', ['actie' => 'rijden']);
+    $klaar = (int) $db->query("SELECT rijbewijs FROM users WHERE login='Speler'")->fetchColumn() === 1;
+}
+
+check('rijbewijs gehaald binnen 40 iteraties', $klaar);
+check('totale lesgeld blijft onder €150.000', $uitgegeven <= 150000, (string) $uitgegeven);
+
+// --- Voertuigprijzen -----------------------------------------------------------
+
+kop('voertuigen: prijzen passen bij de nieuwe verdiencurve');
+
+$voertuigen = $db->query(
+    "SELECT naam, aprijs FROM items WHERE type='trans' ORDER BY aprijs"
+)->fetchAll();
+
+$verwacht = [
+    'Treinabonnement' => 25000,
+    'Privé-Jet'        => 150000,
+];
+
+foreach ($voertuigen as $voertuig) {
+    if (isset($verwacht[$voertuig['naam']])) {
+        check($voertuig['naam'] . ' kost ' . $verwacht[$voertuig['naam']],
+            (int) $voertuig['aprijs'] === $verwacht[$voertuig['naam']],
+            (string) $voertuig['aprijs']);
+    }
+}
+
+check('duurste voertuig kost hoogstens €200.000',
+    (int) $voertuigen[count($voertuigen) - 1]['aprijs'] <= 200000,
+    (string) $voertuigen[count($voertuigen) - 1]['aprijs']);
+
 // --- Cron ------------------------------------------------------------------
 
 kop('cron: alle taken draaien');
