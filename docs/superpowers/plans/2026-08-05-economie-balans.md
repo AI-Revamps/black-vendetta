@@ -29,7 +29,7 @@
 - Modify: `crime.php:62-145` (`misdaden()`), `crime.php:227-245` (`misdaad_geslaagd()`)
 - Test: `tests/geld.php`
 
-- [ ] **Stap 1: Schrijf de falende test**
+- [x] **Stap 1: Schrijf de falende test**
 
 Voeg in `tests/geld.php` een nieuwe sectie toe, na de bestaande "Wapens: effect"-sectie en vóór "Cron":
 
@@ -52,14 +52,14 @@ check('minstens €5.000 verdiend binnen 40 pogingen op "beroof een juwelier"',
     $zak >= 5000, 'zak ' . $zak . ', xp ' . $xp);
 ```
 
-- [ ] **Stap 2: Draai de test, bevestig FAIL**
+- [x] **Stap 2: Draai de test, bevestig FAIL**
 
 ```bash
 php tests/geld.php
 ```
 Verwacht: FAIL — met de huidige waarden (kans 1% bij xp 0, opbrengst €500-1.000) ligt de verwachte opbrengst na 40 pogingen ruim onder €5.000.
 
-- [ ] **Stap 3: Pas `misdaden()` aan**
+- [x] **Stap 3: Pas `misdaden()` aan**
 
 In `crime.php`, vervang de definities van `kind`, `puber` en `juwelier` (laat `bar` en `member` ongewijzigd):
 
@@ -117,7 +117,7 @@ In `crime.php`, vervang de definities van `kind`, `puber` en `juwelier` (laat `b
 
 De `'label'`, `'berichten'`, `'cel'` en `'schade'` velden blijven letterlijk hetzelfde als nu — alleen `'kans'`, `'opbrengst'` veranderen en er komt een nieuw veld `'xp'` bij. Laat `'bar'` en `'member'` volledig ongewijzigd staan.
 
-- [ ] **Stap 4: Pas `misdaad_geslaagd()` aan om de nieuwe `xp`-waarde te gebruiken**
+- [x] **Stap 4: Pas `misdaad_geslaagd()` aan om de nieuwe `xp`-waarde te gebruiken**
 
 Vervang in `crime.php`:
 
@@ -134,7 +134,7 @@ $xpWinst = (int) ($def['xp'] ?? 1);
 q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + ? WHERE `id` = ?', [$buit, $xpWinst, $user['id']]);
 ```
 
-- [ ] **Stap 5: Draai de test opnieuw**
+- [x] **Stap 5: Draai de test opnieuw**
 
 ```bash
 php tests/geld.php
@@ -142,14 +142,14 @@ php tests/geld.php
 
 Bekijk de daadwerkelijke waarde van `zak` in de testuitvoer. Ligt die ruim boven €5.000 (rond de €8.000-12.000)? Dan is de ondergrens in de test goed gekozen — laat hem staan. Faalt de test nog steeds, of slaagt hij met een waarde die nauwelijks boven €5.000 uitkomt? Verhoog dan de opbrengst- of kanswaarden in `misdaden()` totdat een normale simulatie ruim boven de grens uitkomt, en draai de test opnieuw tot hij stabiel slaagt.
 
-- [ ] **Stap 6: Draai de volledige suite**
+- [x] **Stap 6: Draai de volledige suite**
 
 ```bash
 php tests/rook.php
 php tests/geld.php
 ```
 
-- [ ] **Stap 7: Commit**
+- [x] **Stap 7: Commit**
 
 ```bash
 git add crime.php tests/geld.php
@@ -166,7 +166,7 @@ git commit -m "Misdaadopbrengsten, slaagkansen en xp-winst herbalanceren"
 - Modify: `rijbewijs.php:30-32` (constanten), `rijbewijs.php:196-211` (`rijden()`)
 - Test: `tests/geld.php`
 
-- [ ] **Stap 1: Schrijf de falende test**
+- [x] **Stap 1: Schrijf de falende test**
 
 Voeg in `tests/geld.php` toe, na de misdaad-sectie uit Task 1:
 
@@ -199,14 +199,14 @@ check('rijbewijs gehaald binnen 40 iteraties', $klaar);
 check('totale lesgeld blijft onder €150.000', $uitgegeven <= 150000, (string) $uitgegeven);
 ```
 
-- [ ] **Stap 2: Draai de test, bevestig FAIL**
+- [x] **Stap 2: Draai de test, bevestig FAIL**
 
 ```bash
 php tests/geld.php
 ```
 Verwacht: FAIL op minstens één van de twee checks — met de huidige €25.000/les en 0,5%-3,0% voortgang kost dit ruim meer dan €150.000 en/of lukt het niet binnen 40 iteraties.
 
-- [ ] **Stap 3: Pas de constanten in `rijbewijs.php` aan**
+- [x] **Stap 3: Pas de constanten in `rijbewijs.php` aan**
 
 ```php
 const LES_PRIJS      = 5_000;
@@ -217,7 +217,7 @@ const RIJVORD_KLAAR  = 100.0;   // bij dit percentage haal je je rijbewijs
 
 (alleen `LES_PRIJS` verandert; de andere drie blijven zoals ze zijn)
 
-- [ ] **Stap 4: Pas de voortgang per geslaagde les aan in `rijden()`**
+- [x] **Stap 4: Pas de voortgang per geslaagde les aan in `rijden()`**
 
 Vervang:
 
@@ -233,7 +233,7 @@ door:
 $winst = (float) random_int(10, 25);
 ```
 
-- [ ] **Stap 5: Draai de test opnieuw**
+- [x] **Stap 5: Draai de test opnieuw**
 
 ```bash
 php tests/geld.php
@@ -241,14 +241,14 @@ php tests/geld.php
 
 Zoals bij Task 1: klopt de daadwerkelijke uitkomst (aantal iteraties, totaal lesgeld) met de bedoeling — een rijbewijs binnen een handvol lessen voor een paar tienduizend euro? Stel zo nodig `LES_PRIJS` of de spreiding in `rijden()` bij totdat de test stabiel en zinvol slaagt (niet nét onder de grens).
 
-- [ ] **Stap 6: Draai de volledige suite**
+- [x] **Stap 6: Draai de volledige suite**
 
 ```bash
 php tests/rook.php
 php tests/geld.php
 ```
 
-- [ ] **Stap 7: Commit**
+- [x] **Stap 7: Commit**
 
 ```bash
 git add rijbewijs.php tests/geld.php
@@ -265,7 +265,7 @@ git commit -m "Rijlessen goedkoper en sneller: rijbewijs binnen een sessie haalb
 - Modify: `install/schema.sql` (tabel `items`, vier rijen met `type = 'trans'`)
 - Test: `tests/geld.php`
 
-- [ ] **Stap 1: Schrijf de falende test**
+- [x] **Stap 1: Schrijf de falende test**
 
 Voeg in `tests/geld.php` toe, na de rijlessen-sectie uit Task 2:
 
@@ -296,13 +296,13 @@ check('duurste voertuig kost hoogstens €200.000',
     (string) $voertuigen[count($voertuigen) - 1]['aprijs']);
 ```
 
-- [ ] **Stap 2: Draai de test, bevestig FAIL**
+- [x] **Stap 2: Draai de test, bevestig FAIL**
 
 ```bash
 php tests/geld.php
 ```
 
-- [ ] **Stap 3: Pas de prijzen aan in `install/schema.sql`**
+- [x] **Stap 3: Pas de prijzen aan in `install/schema.sql`**
 
 In de `INSERT IGNORE INTO \`items\`` (rond regel 647), vervang de vier `'trans'`-rijen:
 
@@ -315,14 +315,14 @@ In de `INSERT IGNORE INTO \`items\`` (rond regel 647), vervang de vier `'trans'`
 
 De verkoopprijs (`vprijs`) schaalt mee in dezelfde verhouding als voorheen (80% van de koopprijs). De reistijd (laatste kolom) blijft ongewijzigd.
 
-- [ ] **Stap 4: Draai de test opnieuw, bevestig PASS**
+- [x] **Stap 4: Draai de test opnieuw, bevestig PASS**
 
 ```bash
 php tests/geld.php
 php tests/rook.php
 ```
 
-- [ ] **Stap 5: Commit**
+- [x] **Stap 5: Commit**
 
 ```bash
 git add install/schema.sql tests/geld.php
@@ -333,24 +333,24 @@ git commit -m "Voertuigprijzen door 10 gedeeld"
 
 ### Task 4: Volledige suite en terugkoppeling naar issue #33
 
-- [ ] **Stap 1: Draai de volledige testsuite**
+- [x] **Stap 1: Draai de volledige testsuite**
 
 ```bash
 for t in rook geld veiligheid opbouw adressen; do php tests/$t.php || break; done
 ```
 
-- [ ] **Stap 2: Vergelijk de daadwerkelijke simulatie-uitkomsten met het ontwerpdocument**
+- [x] **Stap 2: Vergelijk de daadwerkelijke simulatie-uitkomsten met het ontwerpdocument**
 
 Noteer de werkelijke waarden uit de testuitvoer van Task 1-3 (verdiend bedrag na 40 misdaadpogingen, aantal rijlessen/kosten tot een rijbewijs). Wijken die relevant af van de schattingen in `docs/superpowers/specs/2026-08-05-economie-balans-design.md`? Werk dan de tabellen in dat document bij zodat het ontwerp de werkelijke, geteste uitkomst weerspiegelt.
 
-- [ ] **Stap 3: Commit als het ontwerpdocument is bijgewerkt**
+- [x] **Stap 3: Commit als het ontwerpdocument is bijgewerkt**
 
 ```bash
 git add docs/superpowers/specs/2026-08-05-economie-balans-design.md
 git commit -m "Ontwerpdocument bijwerken met werkelijke simulatie-uitkomsten"
 ```
 
-- [ ] **Stap 4: Push en PR**
+- [x] **Stap 4: Push en PR**
 
 Volg de gebruikelijke workflow (zie eerdere branches in deze sessie): push de branch, open een PR met "Fixes #33" in de beschrijving en een korte samenvatting van de drie wijzigingen, en plaats een korte update op issue #33 zodra de PR er is.
 

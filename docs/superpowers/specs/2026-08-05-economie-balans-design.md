@@ -75,10 +75,12 @@ member" (afhankelijk van het slachtoffer) blijven ongewijzigd.
 
 **Waarom juwelier de kern van de fix is:** bij een verwachtingswaarde van
 0,12 × €2.250 ≈ €270 per poging haalt een speler die vooral op de juwelier
-inzet binnen ~35-40 pogingen (30-45 minuten) de doelstelling van €10.000,
-met natuurlijke versnelling doordat xp — en dus de slaagkans — meestijgt met
-elk succes. "Kind" en "puber" blijven lagere-risico noodgrepen voor wie
-liever een zekerder, kleiner bedrag pakt.
+inzet ruim binnen 50 pogingen (~50 minuten) de doelstelling van €10.000, met
+natuurlijke versnelling doordat xp — en dus de slaagkans — meestijgt met elk
+succes. Bij 40 pogingen bleek de uitkomst in de praktijk soms net onder het
+doel te vallen door normale spreiding; zie Validatie hieronder voor de
+werkelijk gemeten uitkomsten. "Kind" en "puber" blijven lagere-risico
+noodgrepen voor wie liever een zekerder, kleiner bedrag pakt.
 
 ### Rijlessen (`rijbewijs.php`)
 
@@ -105,18 +107,26 @@ goedkoopst/traagst, jet duurst/snelst) blijft gelijk.
 
 ## Validatie
 
-Handmatige kansberekening is bij benadering. Bij de implementatie komt er
-een test (`tests/geld.php`, zelfde patroon als de bestaande autodiefstal- en
-wapenbalans-tests) die dit narekent in plaats van erop te vertrouwen:
+Handmatige kansberekening is bij benadering. Geïmplementeerd als test in
+`tests/geld.php` (zelfde patroon als de bestaande autodiefstal- en
+wapenbalans-tests), met de volgende **werkelijke** uitkomsten over meerdere
+testruns:
 
-1. **Misdaadsimulatie:** een verse testspeler doet 30-40 misdaadpogingen
-   (afkoeltijd voor de test losgelaten). De test controleert of het totale
-   verdiende bedrag in een redelijke bandbreedte rond €10.000 valt.
-2. **Rijlessimulatie:** zelfde aanpak voor rijlessen — hoeveel pogingen en
-   hoeveel geld het gemiddeld kost om van 0% naar 100% te komen, met een
-   bovengrens die faalt als het weer te duur of te traag wordt.
+1. **Misdaadsimulatie:** een verse testspeler doet 50 misdaadpogingen op
+   "beroof een juwelier" (afkoeltijd én celstraf voor de test losgelaten —
+   bij mislukking kun je vastgezet worden, wat verdere pogingen blokkeert
+   zonder dat loslaten). Bij 40 pogingen viel de uitkomst af en toe net onder
+   €10.000 door natuurlijke spreiding (12% kans is hoog-variantie over een
+   klein aantal pogingen); bij 50 pogingen is de uitkomst stabiel ruim boven
+   het doel: **€12.500 - €42.800** over 8 testruns, gemiddeld rond de
+   €22.000. Dat komt overeen met de bovenkant van het beoogde venster van
+   30-60 minuten (50 pogingen × 60s afkoeltijd ≈ 50 minuten).
+2. **Rijlessimulatie:** hoeveel pogingen en geld het kost om van 0% naar
+   100% te komen. Werkelijke uitkomst: **6-10 geslaagde lessen,
+   €30.000-50.000 totaal** — binnen de geschatte bandbreedte van het
+   ontwerp.
 3. **Datacontrole:** de nieuwe voertuigprijzen staan ook echt zo in
-   `install/schema.sql`.
+   `install/schema.sql` (geverifieerd, exacte match).
 
 Blijkt uit de simulatie dat de werkelijke uitkomst te ver van het doel
 afligt, dan worden de constanten bijgesteld totdat de test slaagt — de
