@@ -67,6 +67,19 @@ function ads_html(): string
     return instelling('ads_html', '');
 }
 
+/**
+ * Moet dezelfde advertentiecode ook op de publieke voorpagina te zien zijn?
+ *
+ * Los van `ads_interval()`: die telt paginabezoeken van een ingelogde
+ * speler, en vóór het inloggen bestaat die teller niet. Sommige
+ * advertentienetwerken eisen dat hun code ook zichtbaar is voor bezoekers
+ * die niet ingelogd zijn, voordat ze een site goedkeuren.
+ */
+function ads_outgame(): bool
+{
+    return instelling('ads_outgame', '0') === '1';
+}
+
 // --- Premium ----------------------------------------------------------------
 
 /** Heeft deze speler op dit moment premium? */

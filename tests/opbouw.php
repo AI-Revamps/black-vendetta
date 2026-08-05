@@ -46,6 +46,37 @@ foreach (['index.php', 'help.php', 'login.php', 'register.php'] as $pagina) {
     check($pagina . ': wel een hamburger met menu', $o['hamburger'] && $o['la']);
 }
 
+// --- Advertentie op de voorpagina --------------------------------------------
+
+kop('advertentie op de voorpagina, alleen als hij aanstaat');
+
+$uit = haal('index.php', null, nieuwe_sessie())['body'];
+check('standaard geen advertentieblok op de voorpagina',
+    !str_contains($uit, 'class="advertentie"'));
+
+$baas = login('Baas', 'baaswachtwoord12345');
+doe('adm-premium.php', [
+    'actie'    => 'advertentie',
+    'html'     => '<div id="testadvertentie">Test-advertentie</div>',
+    'interval' => '25',
+    'outgame'  => '1',
+], $baas);
+
+$aan = haal('index.php', null, nieuwe_sessie())['body'];
+check('advertentieblok verschijnt als de instelling aanstaat',
+    str_contains($aan, 'class="advertentie"')
+        && str_contains($aan, '<div id="testadvertentie">Test-advertentie</div>'));
+
+// Instelling weer uitzetten, anders draait elke volgende pagina met reclame.
+doe('adm-premium.php', [
+    'actie'    => 'advertentie',
+    'html'     => '',
+    'interval' => '25',
+], $baas);
+
+$weerUit = haal('index.php', null, nieuwe_sessie())['body'];
+check('advertentieblok weg na uitzetten', !str_contains($weerUit, 'class="advertentie"'));
+
 // --- Ingelogd --------------------------------------------------------------
 
 kop('ingelogd');

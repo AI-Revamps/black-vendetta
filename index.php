@@ -3,9 +3,35 @@
  * Voorpagina.
  *
  * Vervangt de oude frameset. Ingelogde spelers gaan meteen door naar hun status.
+ *
+ * Kan dezelfde advertentiecode tonen als advertentie.php (aan/uit op
+ * adm-premium.php), voor bezoekers die nog niet ingelogd zijn. Daarom krijgt
+ * ook deze pagina het ruimere beleid dat advertentienetwerken nodig hebben,
+ * ongeacht of de advertentie op dit moment aanstaat — dat weet je pas na het
+ * laden van inc/premium.php, en de header moet eerder verstuurd worden.
  */
 
 declare(strict_types=1);
+
+define('BV_ADVERTENTIEPAGINA', true);
+
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: same-origin');
+    header('Content-Type: text/html; charset=utf-8');
+
+    header(
+        "Content-Security-Policy: "
+        . "default-src 'self' https:; "
+        . "script-src 'self' 'unsafe-inline' https:; "
+        . "style-src 'self' 'unsafe-inline' https:; "
+        . "img-src 'self' data: https: http:; "
+        . "frame-src https:; "
+        . "form-action 'self'; "
+        . "frame-ancestors 'self'; "
+        . "base-uri 'self'"
+    );
+}
 
 require __DIR__ . '/inc/bootstrap.php';
 
@@ -61,4 +87,13 @@ binnen.</p>
 </p>
 <?php
 panel_close();
+
+if (ads_outgame() && ads_html() !== '') {
+    panel_open('Advertentie');
+    // Bewust niet ge-escaped, net als op advertentie.php: dit is HTML die de
+    // beheerder zelf heeft ingeplakt om een advertentienetwerk te laten werken.
+    echo '<div class="advertentie">' . ads_html() . '</div>';
+    panel_close();
+}
+
 layout_footer();

@@ -132,6 +132,38 @@ check('totaal daalt met precies het banksaldo', $voor - $na === 222222,
     'verschil ' . ($voor - $na));
 check('er is geen geld bijgekomen', $na <= $voor);
 
+// --- Huis --------------------------------------------------------------------
+
+kop('huis: geen gratis huis bij registratie of herstart');
+
+$vraagHuizen = $db->prepare('SELECT COUNT(*) FROM huizen WHERE login = ?');
+
+// Registratie: een gloednieuwe speler krijgt geen huis cadeau dat meteen
+// weer verkocht kan worden voor gratis startgeld.
+$nieuweLogin = 'Huistest' . random_int(10000, 99999);
+doe('register.php', [
+    'gebruiker'   => $nieuweLogin,
+    'pass'        => 'eenlangwachtwoord',
+    'passconfirm' => 'eenlangwachtwoord',
+    'email'       => strtolower($nieuweLogin) . '@voorbeeld.test',
+    'geslacht'    => 'Man',
+], nieuwe_sessie());
+
+$vraagHuizen->execute([$nieuweLogin]);
+check('nieuwe speler krijgt geen gratis huis', (int) $vraagHuizen->fetchColumn() === 0);
+
+// Herstart na overlijden: Doelwit is hierboven vermoord. Diezelfde truc mag
+// niet herhaalbaar zijn door telkens dood te gaan en opnieuw te beginnen.
+$doelwitJar = login('Doelwit', 'eenlangwachtwoord');
+doe('rip.php', [], $doelwitJar);
+
+$vraagHuizen->execute(['Doelwit']);
+check('herstart na overlijden geeft geen gratis huis', (int) $vraagHuizen->fetchColumn() === 0);
+
+// Registreren en inloggen als Doelwit hebben de gedeelde standaardsessie
+// verlegd; de tests hierna verwachten weer Speler als ingelogde speler.
+login('Speler', 'eenlangwachtwoord');
+
 // --- Promotie ----------------------------------------------------------------
 
 kop('promotie: bericht ook zonder (betalende) familie');
@@ -220,6 +252,29 @@ for ($i = 1; $i < count($kolommen); $i++) {
     }
     check($kolommen[$i - 1] . ' ligt écht boven ' . $kolommen[$i] . ' bij minstens één xp', $strikt);
 }
+
+// --- Autoafbeeldingen ---------------------------------------------------------
+
+kop('auto stelen: geen kapot plaatje als de afbeelding ontbreekt');
+
+// Level boven LEVEL_ADMIN geeft een vaste slaagkans van 50%, zodat een
+// geslaagde diefstal binnen een paar pogingen gegarandeerd is. De afkoeltijd
+// wordt voor elke poging losgelaten: op de testserver hoeft niet echt
+// gewacht te worden.
+$db->exec("UPDATE users SET level=1000 WHERE login='Speler'");
+
+$gelukt = false;
+for ($poging = 0; $poging < 20 && !$gelukt; $poging++) {
+    $db->exec("UPDATE users SET ac=NULL WHERE login='Speler'");
+    $r = doe('nickacar.php', ['waar' => 'parkeerplaats']);
+    $gelukt = str_contains(melding($r['body']), '[ok]') && str_contains($r['body'], 'gestolen');
+}
+
+check('een autodiefstal is gelukt binnen 20 pogingen', $gelukt);
+check('geen kapot plaatje-icoon: geen <img> naar images/autos zonder dat het bestand bestaat',
+    !preg_match('#<img src="[^"]*images/autos/[^"]*"#', $r['body']), $r['body']);
+
+$db->exec("UPDATE users SET level=1 WHERE login='Speler'");
 
 // --- Cron ------------------------------------------------------------------
 

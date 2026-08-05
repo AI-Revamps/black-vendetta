@@ -133,8 +133,6 @@ function aanmelden(array $in): string
                 (int) config('game.start_money', 1000),
             ]
         );
-        // Je begint met een huis in je startstad; dat geeft daar thuisvoordeel.
-        huis_geven($login, $stad);
     });
 
     if (!$activatieNodig) {
