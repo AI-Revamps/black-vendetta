@@ -253,6 +253,37 @@ for ($i = 1; $i < count($kolommen); $i++) {
     check($kolommen[$i - 1] . ' ligt écht boven ' . $kolommen[$i] . ' bij minstens één xp', $strikt);
 }
 
+// --- Wapens: effect --------------------------------------------------------
+
+kop('wapens: effect is een vermenigvuldiger op trefzekerheid, hoger is beter');
+
+$wapens = $db->query(
+    "SELECT naam, aprijs, effect FROM items WHERE type='att' ORDER BY aprijs"
+)->fetchAll();
+
+check('alle zes wapens staan in de catalogus', count($wapens) === 6, (string) count($wapens));
+
+$vorige = null;
+foreach ($wapens as $wapen) {
+    if ($vorige !== null) {
+        check($vorige['naam'] . ' (€' . number_format((int) $vorige['aprijs'], 0, ',', '.') . ') <= '
+            . $wapen['naam'] . ' (€' . number_format((int) $wapen['aprijs'], 0, ',', '.') . ') qua effect',
+            (float) $wapen['effect'] >= (float) $vorige['effect'],
+            $vorige['effect'] . ' -> ' . $wapen['effect']);
+    }
+    $vorige = $wapen;
+}
+
+$m16    = (float) $db->query("SELECT effect FROM items WHERE naam='M16'")->fetchColumn();
+$tommy  = (float) $db->query("SELECT effect FROM items WHERE naam='Tommy Gun'")->fetchColumn();
+check('Tommy Gun (140.000) is nu écht effectiever dan de goedkopere M16 (50.000)',
+    $tommy > $m16, "M16 {$m16} vs Tommy Gun {$tommy}");
+
+$goedkoopste = (float) $db->query(
+    "SELECT effect FROM items WHERE type='att' ORDER BY aprijs LIMIT 1"
+)->fetchColumn();
+check('zelfs het goedkoopste wapen is beter dan blote handen (effect boven de 1.0-basiswaarde)',
+    $goedkoopste > 1.0, (string) $goedkoopste);
 // --- Autoafbeeldingen ---------------------------------------------------------
 
 kop('auto stelen: geen kapot plaatje als de afbeelding ontbreekt');
