@@ -64,8 +64,9 @@ function misdaden(): array
     return [
         'kind' => [
             'label'     => 'Steel van een kind',
-            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 2)),
-            'opbrengst' => static fn (): int => random_int(1, 10),
+            'kans'      => static fn (int $xp): int => min(60, 20 + (int) round($xp / 2)),
+            'opbrengst' => static fn (): int => random_int(20, 60),
+            'xp'        => 2,
             'berichten' => [
                 'Het kind had niets bij zich.',
                 'Het kind begon te schreeuwen, je bent er maar vandoor gegaan.',
@@ -79,8 +80,9 @@ function misdaden(): array
 
         'puber' => [
             'label'     => 'Steel van een puber',
-            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 3.33)),
-            'opbrengst' => static fn (): int => random_int(1, 100),
+            'kans'      => static fn (int $xp): int => min(50, 15 + (int) round($xp / 3)),
+            'opbrengst' => static fn (): int => random_int(60, 200),
+            'xp'        => 3,
             'berichten' => [
                 'Hij had niets bij zich.',
                 'De puber kende je nog van een eerdere ruzie en kwam woedend op je af. Je moest vluchten.',
@@ -95,8 +97,9 @@ function misdaden(): array
 
         'juwelier' => [
             'label'     => 'Beroof een juwelier',
-            'kans'      => static fn (int $xp): int => min(50, (int) round($xp / 6.66)),
-            'opbrengst' => static fn (): int => random_int(500, 1000),
+            'kans'      => static fn (int $xp): int => min(40, 12 + (int) round($xp / 5)),
+            'opbrengst' => static fn (): int => random_int(1500, 3000),
+            'xp'        => 5,
             'berichten' => [
                 'Er liep net een andere gangster met een lading juwelen naar buiten.',
                 'De juwelier haalde een geweer van achter de toonbank en begon te schieten. Je kon net op tijd wegkomen.',
@@ -238,8 +241,9 @@ function misdaad_geslaagd(array $user, string $keuze, array $def): array
         return steel_van_member($user);
     }
 
-    $buit = ($def['opbrengst'])();
-    q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + 1 WHERE `id` = ?', [$buit, $user['id']]);
+    $buit    = ($def['opbrengst'])();
+    $xpWinst = (int) ($def['xp'] ?? 1);
+    q('UPDATE `users` SET `zak` = `zak` + ?, `xp` = `xp` + ? WHERE `id` = ?', [$buit, $xpWinst, $user['id']]);
 
     return ['tekst' => 'Het is gelukt. Je hebt ' . money($buit) . ' gestolen.', 'type' => 'ok'];
 }
