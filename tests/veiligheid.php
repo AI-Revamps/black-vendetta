@@ -257,4 +257,41 @@ foreach (array_map('basename', glob(BV_WORTEL . '/*.php') ?: []) as $pagina) {
 check('geen wijzigende GET-links', $verdacht === [],
     implode(' | ', array_slice($verdacht, 0, 5)));
 
+// --- Deel: IP-adres achter Cloudflare ---------------------------------------
+
+kop('IP-adres: CF-Connecting-IP telt, REMOTE_ADDR is de terugval');
+
+$db  = tdb();
+$vraagIp = $db->prepare('SELECT ip FROM users WHERE login = ?');
+$db->exec("DELETE FROM users WHERE login LIKE 'Cftest%'");
+
+$login1 = 'Cftest' . random_int(10000, 99999);
+doe('register.php', [
+    'gebruiker'   => $login1,
+    'pass'        => 'eenlangwachtwoord',
+    'passconfirm' => 'eenlangwachtwoord',
+    'email'       => strtolower($login1) . '@voorbeeld.test',
+    'geslacht'    => 'Man',
+], nieuwe_sessie(), ['CF-Connecting-IP' => '203.0.113.9']);
+
+$vraagIp->execute([$login1]);
+$ip1 = $vraagIp->fetchColumn();
+check('CF-Connecting-IP wordt overgenomen', $ip1 === '203.0.113.9', (string) $ip1);
+
+$login2 = 'Cftest' . random_int(10000, 99999);
+doe('register.php', [
+    'gebruiker'   => $login2,
+    'pass'        => 'eenlangwachtwoord',
+    'passconfirm' => 'eenlangwachtwoord',
+    'email'       => strtolower($login2) . '@voorbeeld.test',
+    'geslacht'    => 'Man',
+], nieuwe_sessie());
+
+$vraagIp->execute([$login2]);
+$ip2 = $vraagIp->fetchColumn();
+check('zonder de header valt terug op REMOTE_ADDR', $ip2 !== '203.0.113.9' && $ip2 !== '',
+    (string) $ip2);
+
+$db->exec("DELETE FROM users WHERE login LIKE 'Cftest%'");
+
 samenvatting();
