@@ -70,9 +70,10 @@ function weerstand(array $speler, string $stad): float
 }
 
 /**
- * Trefzekerheid van de schutter: moordervaring gedeeld door het wapen.
+ * Trefzekerheid van de schutter: moordervaring keer het wapen.
  *
- * LET OP - hier is bewust van het origineel afgeweken.
+ * LET OP - hier is bewust van het origineel afgeweken, en dit is een tweede
+ * keer aangepast na de eerste herbouw.
  *
  * De oude formule was `100 / (weerstand * rand * aim) * kogels`. Daarin zat de
  * trefzekerheid in de noemer, waardoor méér moordervaring juist mínder schade
@@ -80,15 +81,23 @@ function weerstand(array $speler, string $stad): float
  * PHP 5 gaf dat oneindig veel schade (elke beginner doodde in één keer), op
  * PHP 8 is het een fatale fout.
  *
- * Hier telt trefzekerheid als vermenigvuldiger en zit er een ondergrens in.
- * Wil je de balans anders, pas dan de constanten bovenaan dit bestand aan.
+ * De eerste herbouw loste dat op door te delen door het wapen-effect in
+ * plaats van erdoor. Dat werkte, maar wapens in `items` kregen daardoor een
+ * *lager* effect naarmate ze duurder waren (zie install/schema.sql) — het
+ * omgekeerde van bescherming, waar een hoger effect een betere vest is. Op
+ * dezelfde winkelpagina las de kolom "Effect" dus twee kanten op. Nu telt het
+ * wapen-effect als vermenigvuldiger, net als bescherming: hoger is beter, en
+ * de waarden in `items` zijn dienovereenkomstig herzien.
+ *
+ * Wil je de balans anders, pas dan de constanten bovenaan dit bestand aan, of
+ * de effectwaarden van de wapens via adm-items.php.
  */
 function trefzekerheid(array $speler): float
 {
     $ervaring = max(GEVECHT_MIN_AIM, (float) $speler['se'] / 100);
     $wapen    = item_effect('att', (int) $speler['wapon']);
 
-    return $ervaring / $wapen;
+    return $ervaring * $wapen;
 }
 
 /**

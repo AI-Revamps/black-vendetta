@@ -91,8 +91,9 @@ foreach (itemsoorten() as $soort => $label) {
     panel_close();
 }
 
-echo '<p class="uitleg">Bij wapens is een lager effect beter: het staat in de noemer van de '
-   . 'trefzekerheid. Bij vervoer is het effect de reistijd in seconden.</p>';
+echo '<p class="uitleg">Bij wapens en bescherming is een hoger effect beter: het is een '
+   . 'vermenigvuldiger op respectievelijk trefzekerheid en weerstand. Bij vervoer is het '
+   . 'effect de reistijd in seconden — daar is lager beter.</p>';
 
 layout_footer();
 

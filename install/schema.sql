@@ -645,16 +645,16 @@ INSERT IGNORE INTO `stad` (`stad`, `kogels`, `prijs`, `drugs`, `drank`, `drugsp`
   ('Enschede',  100, 1273, 544,   0, 10080, 2803, 4500, 1000);
 
 INSERT IGNORE INTO `items` (`id`, `nr`, `type`, `naam`, `aprijs`, `vprijs`, `effect`) VALUES
-  (1,  1, 'att',   'Uzi',               25000,   20000,    3.00),
+  (1,  1, 'att',   'Uzi',               25000,   20000,    1.60),
   (2,  2, 'att',   'M16',               50000,   40000,    2.00),
   (3,  1, 'trans', 'Treinabonnement',  250000,  200000, 3600.00),
   (4,  3, 'trans', 'Limousine',       1000000,  750000, 1800.00),
-  (7,  4, 'att',   'Sniper Rifle',     100000,   80000,    1.50),
+  (7,  4, 'att',   'Sniper Rifle',     100000,   80000,    3.20),
   (8,  2, 'trans', 'Taxi',             750000,  600000, 2400.00),
-  (9,  3, 'att',   '9mm',               10000,    8000,    4.00),
+  (9,  3, 'att',   '9mm',               10000,    8000,    1.20),
   (10, 4, 'trans', 'Privé-Jet',       1500000, 1200000,  900.00),
-  (13, 6, 'att',   'Tommy Gun',        140000,  120000,    2.00),
-  (14, 5, 'att',   'Magnum Semi Auto',  75000,   60000,    1.99),
+  (13, 6, 'att',   'Tommy Gun',        140000,  120000,    4.20),
+  (14, 5, 'att',   'Magnum Semi Auto',  75000,   60000,    2.50),
   (15, 0, 'def',   'Geen bescherming',      0,       0,    1.00),
   (16, 2, 'def',   'Kogelvrije vest',  100000,   75000,    4.00),
   (17, 1, 'def',   'Kogelvrij schild',  30000,   20000,    2.00);
